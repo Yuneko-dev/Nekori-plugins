@@ -2,165 +2,23 @@ import { fetchApi } from '@libs/fetch';
 import { load } from 'cheerio';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
-import { FilterTypes, Filters } from '@libs/filterInputs';
 import { storage } from '@libs/storage';
-import { bytesToUtf8, Buffer, createVolumePage } from '@libs/utils';
-import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
-import { NodeHtmlMarkdown } from 'node-html-markdown';
-
-const htmlToMarkdown = (html: string): string => {
-  if (html.length === 0) {
-    return '';
-  }
-  return NodeHtmlMarkdown.translate(html, {
-    blockElements: [
-      // Metadata
-      'head',
-      'title',
-      'meta',
-      'base',
-      'link',
-
-      // Script
-      'script',
-      'noscript',
-
-      // Style
-      'style',
-
-      // Embedded content
-      'iframe',
-      'object',
-      'embed',
-      'applet',
-
-      // SVG / Canvas
-      'svg',
-      'canvas',
-
-      // Media source
-      'source',
-      'track',
-
-      // Template
-      'template',
-
-      // Param
-      'param',
-
-      // Media
-      'audio',
-      'video',
-
-      // Other
-      'wbr',
-    ],
-  });
-};
-
-function urlToPath(url: string): string {
-  if (!isUrlAbsolute(url)) {
-    return url;
-  } else {
-    const parsed = new URL(url);
-    return url.slice(parsed.origin.length);
-  }
-}
-
-const decodeXorChunk = (encoded: string, key: string): string => {
-  const input = Buffer.from(encoded, 'base64');
-  if (!key) {
-    return bytesToUtf8(input);
-  }
-
-  const output: number[] = [];
-  for (let i = 0; i < input.length; i++) {
-    output.push(input[i] ^ key.charCodeAt(i % key.length));
-  }
-  return bytesToUtf8(new Uint8Array(output));
-};
-
-const parseProtectedChunks = (raw: string): string[] => {
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed)) {
-      return parsed.filter((item): item is string => typeof item === 'string');
-    }
-  } catch {
-    // fallback to single-chunk payload
-  }
-
-  return [raw];
-};
-
-const decodeProtectedContent = (
-  mode: string,
-  key: string,
-  chunks: string[],
-): string => {
-  if (!chunks.length) {
-    return '';
-  }
-
-  const sortedChunks = [...chunks].sort((a, b) => {
-    const ai = Number.parseInt(a.substring(0, 4), 10);
-    const bi = Number.parseInt(b.substring(0, 4), 10);
-    if (Number.isNaN(ai) || Number.isNaN(bi)) {
-      return 0;
-    }
-    return ai - bi;
-  });
-
-  let content = '';
-
-  for (const chunk of sortedChunks) {
-    const payload = /^\d{4}/.test(chunk) ? chunk.substring(4) : chunk;
-
-    if (mode === 'xor_shuffle') {
-      content += decodeXorChunk(payload, key);
-    } else if (mode === 'base64_reverse') {
-      content += Buffer.from(
-        payload.split('').reverse().join(''),
-        'base64',
-      ).toString('utf-8');
-    } else {
-      content += Buffer.from(payload, 'base64').toString('utf-8');
-    }
-  }
-
-  return content.replace(
-    /\[note(\d+)]/gi,
-    '<span id="anchor-note$1" class="note-icon none-print inline note-tooltip" data-tooltip-content="#note$1 .note-content" data-note-id="note$1"><i class="fas fa-sticky-note"></i></span><a id="anchor-note$1" class="inline-print none" href="#note$1">[note]</a>',
-  );
-};
-
-const parseDmyToIso = (value: string): string | undefined => {
-  const matched = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!matched) {
-    return undefined;
-  }
-
-  const day = Number(matched[1]);
-  const month = Number(matched[2]) - 1;
-  const year = Number(matched[3]);
-  const date = new Date(year, month, day);
-
-  if (Number.isNaN(date.getTime())) {
-    return undefined;
-  }
-
-  return date.toISOString();
-};
+import { createVolumePage } from '@libs/utils';
+import filters from './filters';
+import {
+  decodeProtectedContent,
+  htmlToMarkdown,
+  parseDmyToIso,
+  parseProtectedChunks,
+  urlToPath,
+} from './utils';
 
 class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.12';
+  version = '1.2.13';
+  filters = filters;
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
 
@@ -275,9 +133,23 @@ class HakoPlugin implements Plugin.PluginBase {
   }
   async popularNovels(
     pageNo: number,
-    { filters }: Plugin.PopularNovelsOptions<typeof this.filters>,
+    {
+      filters,
+      showLatestNovels,
+    }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
     let link = this.site + '/danh-sach';
+    if (showLatestNovels) {
+      filters = {
+        alphabet: this.filters.alphabet,
+        sort: {
+          ...this.filters.sort,
+          value: 'capnhat',
+        },
+        status: this.filters.status,
+        type: this.filters.type,
+      } as typeof this.filters;
+    }
     if (filters) {
       if (filters.alphabet.value) {
         link += '/' + filters.alphabet.value;
@@ -664,80 +536,6 @@ class HakoPlugin implements Plugin.PluginBase {
       Referer: this.site,
     },
   };
-
-  filters = {
-    alphabet: {
-      type: FilterTypes.Picker,
-      value: '',
-      label: 'Chữ cái',
-      options: [
-        { label: 'Tất cả', value: '' },
-        { label: 'Khác', value: 'khac' },
-        { label: 'A', value: 'a' },
-        { label: 'B', value: 'b' },
-        { label: 'C', value: 'c' },
-        { label: 'D', value: 'd' },
-        { label: 'E', value: 'e' },
-        { label: 'F', value: 'f' },
-        { label: 'G', value: 'g' },
-        { label: 'H', value: 'h' },
-        { label: 'I', value: 'i' },
-        { label: 'J', value: 'j' },
-        { label: 'K', value: 'k' },
-        { label: 'L', value: 'l' },
-        { label: 'M', value: 'm' },
-        { label: 'N', value: 'n' },
-        { label: 'O', value: 'o' },
-        { label: 'P', value: 'p' },
-        { label: 'Q', value: 'q' },
-        { label: 'R', value: 'r' },
-        { label: 'S', value: 's' },
-        { label: 'T', value: 't' },
-        { label: 'U', value: 'u' },
-        { label: 'V', value: 'v' },
-        { label: 'W', value: 'w' },
-        { label: 'X', value: 'x' },
-        { label: 'Y', value: 'y' },
-        { label: 'Z', value: 'z' },
-      ],
-    },
-    type: {
-      type: FilterTypes.CheckboxGroup,
-      label: 'Phân loại',
-      value: ['truyendich', 'sangtac', 'convert'],
-      options: [
-        { label: 'Truyện dịch', value: 'truyendich' },
-        { label: 'Truyện sáng tác', value: 'sangtac' },
-        { label: 'Truyện AI dịch (Convert)', value: 'convert' },
-      ],
-    },
-    status: {
-      type: FilterTypes.CheckboxGroup,
-      label: 'Tình trạng',
-      value: ['dangtienhanh', 'tamngung', 'hoanthanh'],
-      options: [
-        { label: 'Đang tiến hành', value: 'dangtienhanh' },
-        { label: 'Tạm ngưng', value: 'tamngung' },
-        { label: 'Đã hoàn thành', value: 'hoanthanh' },
-        { label: 'Truyện chưa duyệt', value: 'chuaduyet' },
-      ],
-    },
-    sort: {
-      type: FilterTypes.Picker,
-      label: 'Sắp xếp',
-      value: 'topthang',
-      options: [
-        { label: 'A-Z', value: 'tentruyen' },
-        { label: 'Z-A', value: 'tentruyenza' },
-        { label: 'Mới cập nhật', value: 'capnhat' },
-        { label: 'Truyện mới', value: 'truyenmoi' },
-        { label: 'Theo dõi', value: 'theodoi' },
-        { label: 'Top toàn thời gian', value: 'top' },
-        { label: 'Top tháng', value: 'topthang' },
-        { label: 'Số từ', value: 'sotu' },
-      ],
-    },
-  } satisfies Filters;
 }
 
 export default new HakoPlugin();

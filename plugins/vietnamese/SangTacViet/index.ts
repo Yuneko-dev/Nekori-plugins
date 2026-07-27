@@ -24,6 +24,7 @@ const DOMAIN_URLS = [
   'https://sangtacviet.xyz',
   'https://sangtacviet.pro',
   'https://dns1.stv-appdomain-00000001.org',
+  'http://14.225.254.182', // ??? wtf
 ];
 const DOMAINS = Object.fromEntries(DOMAIN_URLS.map(u => [new URL(u).host, u]));
 
@@ -237,7 +238,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.30';
+  version = '1.0.31';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {

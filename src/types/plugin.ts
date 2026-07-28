@@ -112,7 +112,7 @@ export namespace Plugin {
 
   export type PluginSettings = Record<string, PluginSetting>;
 
-  export type PluginBase = {
+  export type PluginCommon = {
     id: string;
     name: string;
     /**
@@ -149,12 +149,16 @@ export namespace Plugin {
     resolveUrl?(path: string, isNovel?: boolean): string;
   };
 
-  export type PagePlugin = {
+  export type PluginBase = PluginCommon & {
+    parsePage?: never;
+  };
+
+  export type PagePlugin = Omit<PluginCommon, 'parseNovel'> & {
     parseNovel(
       novelPath: string,
     ): Promise<SourceNovel & { totalPages: number }>;
     parsePage(novelPath: string, page: string): Promise<SourcePage>;
-  } & PluginBase;
+  };
 }
 
 export namespace HTMLParser2Util {

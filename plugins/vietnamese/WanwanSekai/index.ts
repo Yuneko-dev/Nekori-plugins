@@ -9,7 +9,7 @@ class WanwanSekaiPlugin implements Plugin.PluginBase {
   name = 'WanwanSekai';
   icon = 'src/vi/wanwansekai/icon.png';
   site = 'https://wanwansekai.com';
-  version = '1.0.3';
+  version = '1.0.4';
 
   private allNovels: Plugin.NovelItem[] = [];
 
@@ -156,13 +156,6 @@ class WanwanSekaiPlugin implements Plugin.PluginBase {
     $('.reading-content script').remove();
 
     return $('.reading-content').html() || '';
-  }
-
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

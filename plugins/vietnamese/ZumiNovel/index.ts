@@ -4,7 +4,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
 import { storage } from '@libs/storage';
-import { createVolumePage, decodeHtmlEntities } from '@libs/utils';
+import { decodeHtmlEntities } from '@libs/utils';
 
 const SITE = 'https://zuminovel.com';
 
@@ -127,7 +127,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
   name = 'ZumiNovel';
   icon = 'src/vi/zuminovel/icon.png';
   site = SITE;
-  version = '1.0.7';
+  version = '1.0.8';
 
   pluginSettings: Plugin.PluginSettings = {
     showRaw: {
@@ -356,7 +356,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
           name,
           chapterNumber: chapterIndex,
         };
-        if (volumeName) chapter.page = createVolumePage(volumeName);
+        if (volumeName) chapter.page = volumeName;
         if (c.createdAt) chapter.releaseTime = c.createdAt;
 
         chapters.push(chapter);
@@ -365,11 +365,6 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
     novel.chapters = chapters;
 
     return novel;
-  }
-
-  async parsePage(novelPath: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return { chapters: novel.chapters || [] };
   }
 
   async parseChapter(chapterPath: string): Promise<string> {

@@ -3,14 +3,13 @@ import { Plugin } from '@/types/plugin';
 import { CheerioAPI, load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
-import { createVolumePage } from '@libs/utils';
 
 class ValvrareTeamPlugin implements Plugin.PluginBase {
   id = 'valvrareteam';
   name = 'Valvrareteam';
   icon = 'src/vi/valvrareteam/icon.png';
   site = 'https://valvrareteam.net';
-  version = '1.0.12';
+  version = '1.0.13';
 
   api = 'https://val-ssr-2kzit.ondigitalocean.app/api';
 
@@ -113,8 +112,8 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
 
     $('.module-container').each((_, moduleElement) => {
       const $module = $(moduleElement);
-      const volumeName = createVolumePage(
-        this.normalizeInline($module.find('.module-title').first().text()),
+      const volumeName = this.normalizeInline(
+        $module.find('.module-title').first().text(),
       );
 
       const templateId = $module
@@ -214,13 +213,6 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
     console.log('Parsed novel:', novel);
 
     return novel;
-  }
-
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
   }
 
   parseNovelId(html: string) {

@@ -5,4 +5,3 @@
  * are handled by LNReader eXtended when plugin metadata is loaded.
  */
 export { ContentType, ContentWarning } from '../types/constants';
-export type { ContentType, ContentWarning } from '../types/constants';

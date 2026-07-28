@@ -13,7 +13,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
   icon = 'src/vi/jukanovel/icon.png';
   site = 'https://sangtacviet.online';
   // 'https://jukaza.site';
-  version = '1.0.9';
+  version = '1.0.10';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {
@@ -95,12 +95,6 @@ class JukaNovelPlugin implements Plugin.PluginBase {
 
     novel.chapters = chapters;
     return novel;
-  }
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
   }
   async parseChapter(chapterPath: string): Promise<string> {
     const chapterIdMatch = chapterPath.match(/\/(\d+)/);

@@ -137,14 +137,6 @@ class TemplatePlugin implements Plugin.PluginBase {
     novel.chapters = chapters;
     return novel;
   }
-  // ! Trong ứng dụng LNReader gốc, hàm này được gọi khi phát hiện trong chương có trường "page". Nhưng hàm này lại không bắt buộc
-  // ! Vì thế, nếu truyện có chapter sử dụng page, nên triển khai hàm này để tránh crash.
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
-  }
   // Hàm này được gọi khi người dùng nhấn vào một chương để đọc. Trả về nội dung của chương đó dưới dạng HTML string.
   async parseChapter(chapterPath: string): Promise<string> {
     const response = await fetchText(`${this.site}${chapterPath}`);

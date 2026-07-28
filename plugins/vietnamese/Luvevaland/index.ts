@@ -10,7 +10,7 @@ class LuvevalandPlugin implements Plugin.PluginBase {
   name = 'Luvevaland';
   icon = 'src/vi/luvevaland/icon.png';
   site = 'https://luvevaland.co';
-  version = '1.0.3';
+  version = '1.0.4';
   filters: Filters | undefined = undefined;
 
   async popularNovels(
@@ -137,13 +137,6 @@ class LuvevalandPlugin implements Plugin.PluginBase {
     if (!day || !month || !year) return null;
     // Return YYYY-MM-DD
     return `${year}-${month}-${day}`;
-  }
-
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
   }
 
   async parseChapter(chapterPath: string): Promise<string> {

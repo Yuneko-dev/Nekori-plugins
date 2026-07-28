@@ -48,16 +48,3 @@ export const NodeCrypto = crypto;
  */
 export const getUserAgent = () =>
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
-
-export const VOLUME_PAGE_MARKER = '\u200b' as const;
-
-export type VolumePage = `${string}${typeof VOLUME_PAGE_MARKER}`;
-
-export const createVolumePage = (name: string): VolumePage => {
-  const normalizedName = name.replace(/\u200b/g, '');
-  if (!normalizedName.trim()) {
-    throw new Error('Volume name must be non-empty');
-  }
-
-  return `${normalizedName}${VOLUME_PAGE_MARKER}`;
-};

@@ -22,7 +22,7 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
   name = 'Tiểu Thuyết Mạng';
   icon = 'src/vi/tieuthuyetmang/icon.png';
   site = 'https://tieuthuyetmang.com';
-  version = '1.0.7';
+  version = '1.0.8';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -291,18 +291,6 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
         : NovelStatus.Unknown,
       chapters,
     };
-  }
-
-  async parsePage(
-    novelPath: string,
-    pageNo: number,
-  ): Promise<Plugin.ChapterItem[]> {
-    if (pageNo > 1) {
-      return [];
-    }
-
-    const novel = await this.parseNovel(novelPath);
-    return novel.chapters || [];
   }
 
   async parseChapter(chapterPath: string): Promise<string> {

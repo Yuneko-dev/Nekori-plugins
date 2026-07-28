@@ -3,7 +3,6 @@ import { load } from 'cheerio';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { createVolumePage } from '@libs/utils';
 import filters from './filters';
 import {
   decodeProtectedContent,
@@ -17,7 +16,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.13';
+  version = '1.2.14';
   filters = filters;
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
@@ -300,15 +299,13 @@ class HakoPlugin implements Plugin.PluginBase {
     let part = 1;
 
     $('.volume-list').each((_, volumeElement) => {
-      const volume = createVolumePage(
-        $(volumeElement)
-          .find('.sect-title')
-          .first()
-          .text()
-          .replace(/\*/g, '') // ?
-          .replace(/\s+/g, ' ')
-          .trim(),
-      );
+      const volume = $(volumeElement)
+        .find('.sect-title')
+        .first()
+        .text()
+        .replace(/\*/g, '') // ?
+        .replace(/\s+/g, ' ')
+        .trim();
 
       $(volumeElement)
         .find('.list-chapters > li')
@@ -396,12 +393,6 @@ class HakoPlugin implements Plugin.PluginBase {
 
     console.log(novel);
     return novel;
-  }
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
   }
   async parseChapter(chapterPath: string): Promise<string> {
     const html = await this.fetchHtmlFromMirrors(

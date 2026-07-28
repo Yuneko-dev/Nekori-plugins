@@ -3,7 +3,7 @@ import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
-import { createVolumePage, encodeHtmlEntities } from '@libs/utils';
+import { encodeHtmlEntities } from '@libs/utils';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 import { storage } from '@libs/storage';
 import { ContentType } from '@libs/pluginMetadata';
@@ -17,7 +17,7 @@ class KKPhimPlugin implements Plugin.PluginBase {
   name = 'KKPhim';
   icon = 'src/vi/kkphim/icon.png';
   site = SITE;
-  version = '1.0.2';
+  version = '1.0.3';
   customJS = 'src/vi/kkphim/player.js';
   contentType = ContentType.VIDEO;
 
@@ -236,7 +236,7 @@ class KKPhimPlugin implements Plugin.PluginBase {
               name: ep.name,
               path: ep.m3u8,
               chapterNumber: Number.isFinite(epNum) ? epNum : chapterIndex,
-              page: serverName ? createVolumePage(serverName) : undefined,
+              page: `Server: ${serverName}`,
             });
           }
         }
@@ -245,14 +245,6 @@ class KKPhimPlugin implements Plugin.PluginBase {
 
     novel.chapters = chapters;
     return novel;
-  }
-
-  // ---------- parsePage ----------
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: (novel.chapters || []).filter(ch => ch.page === page),
-    };
   }
 
   // ---------- parseChapter ----------

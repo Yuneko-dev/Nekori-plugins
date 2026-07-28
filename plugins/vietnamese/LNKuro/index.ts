@@ -4,14 +4,13 @@ import { Filters, FilterTypes } from '@libs/filterInputs';
 import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
-import { createVolumePage } from '@libs/utils';
 
 class LNKuroPlugin implements Plugin.PluginBase {
   id = 'lnkuro';
   name = 'LNKuro';
   icon = 'src/vi/lnkuro/icon.png';
   site = 'https://lnkuro.top';
-  version = '1.0.5';
+  version = '1.0.6';
   filters = {
     genre: {
       label: 'Thể loại',
@@ -154,9 +153,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
 
     webnovelSection.each((i, el) => {
       const w = loadCheerio(el);
-      const volumeName = createVolumePage(
-        w('.section-title_kuro').text().trim(),
-      );
+      const volumeName = w('.section-title_kuro').text().trim();
       w('.novel_kuro ul.chapter-list_kuro li').each((i, el) => {
         const li = $(el);
         const aTag = li.find('a');
@@ -196,12 +193,6 @@ class LNKuroPlugin implements Plugin.PluginBase {
   convertDate(ddmmyyyy: string) {
     const [day, month, year] = ddmmyyyy.split('/');
     return `${year}-${month}-${day}`;
-  }
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
   }
   async parseChapter(chapterPath: string): Promise<string> {
     const response = await fetchText(`${this.site}${chapterPath}`);

@@ -13,7 +13,7 @@ class BaoMoiPlugin implements Plugin.PluginBase {
   name = 'Báo Mới';
   icon = 'src/vi/baomoi/icon.png';
   site = 'https://baomoi.com';
-  version = '1.0.10';
+  version = '1.0.11';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {
@@ -333,13 +333,6 @@ class BaoMoiPlugin implements Plugin.PluginBase {
     }
     console.log('Parsed novel:', novel);
     return novel;
-  }
-
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const novel = await this.parseNovel(novelPath);
-    return {
-      chapters: novel.chapters || [],
-    };
   }
 
   async parseChapter(chapterPath: string): Promise<string> {

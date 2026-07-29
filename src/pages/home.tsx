@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { BookOpen, Search, Settings, Zap } from 'lucide-react';
 import PluginHeader from '../components/plugin-header';
@@ -23,6 +23,13 @@ function Home() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [activeTab, setActiveTab] = useState('popular');
+
+  useEffect(() => {
+    const updatedPlugin = plugins.find(item => item.id === plugin?.id);
+    if (updatedPlugin && updatedPlugin !== plugin) {
+      selectPlugin(updatedPlugin, false);
+    }
+  }, [plugin, selectPlugin, plugins]);
 
   const filteredPlugins = useMemo(
     () =>

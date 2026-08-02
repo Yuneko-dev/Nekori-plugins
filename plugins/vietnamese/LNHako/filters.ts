@@ -319,5 +319,4 @@ export default {
       },
     ],
   },
-  
 } satisfies Filters;

@@ -14,8 +14,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   id = 'animevietsub';
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
-  site = 'https://animevietsub.meme';
-  version = '1.0.41';
+  site = 'https://animevietsub.ing';
+  version = '1.0.42';
   filters = filters;
   contentType = ContentType.VIDEO;
 

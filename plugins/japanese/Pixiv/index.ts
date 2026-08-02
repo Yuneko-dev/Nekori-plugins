@@ -3,107 +3,17 @@ import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import { defaultCover } from '@libs/defaultCover';
 import { FilterTypes, Filters } from '@libs/filterInputs';
-import { storage } from '@libs/storage';
 import { encodeHtmlEntities } from '@libs/utils';
-
-const supportedLanguages: Record<string, string> = {
-  af: 'Afrikaans',
-  sq: 'Albanian',
-  ar: 'Arabic',
-  be: 'Belarusian',
-  bn: 'Bengali',
-  bg: 'Bulgarian',
-  ca: 'Catalan',
-  zh: 'Chinese',
-  'zh-CN': 'Chinese (Simplified)',
-  'zh-TW': 'Chinese (Traditional)',
-  hr: 'Croatian',
-  cs: 'Czech',
-  da: 'Danish',
-  nl: 'Dutch',
-  en: 'English',
-  eo: 'Esperanto',
-  et: 'Estonian',
-  fi: 'Finnish',
-  fr: 'French',
-  gl: 'Galician',
-  ka: 'Georgian',
-  de: 'German',
-  el: 'Greek',
-  gu: 'Gujarati',
-  ht: 'Haitian Creole',
-  he: 'Hebrew',
-  hi: 'Hindi',
-  hu: 'Hungarian',
-  is: 'Icelandic',
-  id: 'Indonesian',
-  ga: 'Irish',
-  it: 'Italian',
-  ja: 'Japanese',
-  kn: 'Kannada',
-  ko: 'Korean',
-  lv: 'Latvian',
-  lt: 'Lithuanian',
-  mk: 'Macedonian',
-  mr: 'Marathi',
-  ms: 'Malay',
-  mt: 'Maltese',
-  no: 'Norwegian',
-  fa: 'Persian',
-  pl: 'Polish',
-  pt: 'Portuguese',
-  ro: 'Romanian',
-  ru: 'Russian',
-  sr: 'Serbian',
-  sk: 'Slovak',
-  sl: 'Slovenian',
-  es: 'Spanish',
-  sw: 'Swahili',
-  sv: 'Swedish',
-  tl: 'Tagalog',
-  ta: 'Tamil',
-  te: 'Telugu',
-  th: 'Thai',
-  tr: 'Turkish',
-  uk: 'Ukrainian',
-  ur: 'Urdu',
-  vi: 'Vietnamese',
-  cy: 'Welsh',
-};
-
-const pluginSettingTranslate: Plugin.SelectSetting = {
-  label: 'Language',
-  type: 'Select',
-  options: Object.keys(supportedLanguages).map(key => ({
-    value: key,
-    label: supportedLanguages[key],
-  })),
-  value: 'en',
-};
+import { ContentType, ContentWarning } from '@/types/constants';
 
 class PixivNovelPlugin implements Plugin.PagePlugin {
   id = 'pixiv.novel';
   name = 'Pixiv Novel';
   icon = 'src/jp/pixivnovel/icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.0.12';
-
-  pluginSettings: Plugin.PluginSettings = {
-    pixiv_translate: {
-      value: false,
-      label: 'Translate Titles & Summaries (Google Translate)',
-      type: 'Switch',
-    },
-    pixiv_translateLang: pluginSettingTranslate,
-  };
-
-  get settingPixivTranslate() {
-    return storage.get('pixiv_translate');
-  }
-
-  get settingPixivTranslateLang() {
-    return storage.get('pixiv_translateLang') || 'en';
-  }
+  version = '1.0.13';
+  contentType = ContentType.NOVEL;
+  contentWarning = ContentWarning.MIXED;
 
   get imageRequestInit() {
     return {
@@ -136,34 +46,6 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
       throw new Error(json.message || 'Pixiv API error');
     }
     return json.body;
-  }
-
-  async translateService(
-    text: string,
-    targetLang?: string,
-    sourceLang = 'auto',
-  ): Promise<string> {
-    if (!text) return text;
-    const lang = (targetLang || this.settingPixivTranslateLang).trim();
-    if (lang === sourceLang) return text;
-
-    try {
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${lang}&dt=t&q=${encodeURIComponent(
-        text,
-      )}&_t=${Date.now()}_${lang}`;
-      const res = await fetchApi(url);
-      const json = await res.json();
-      if (json && json[0]) {
-        return json[0].map((item: any) => item[0]).join('');
-      }
-    } catch (e) {
-      // ignore error
-    }
-    return text;
-  }
-
-  isJapanese(text: string): boolean {
-    return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
   }
 
   /**
@@ -209,18 +91,6 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
         path,
         cover: coverUrl,
       });
-    }
-
-    if (this.settingPixivTranslate && novels.length > 0) {
-      let content = ``;
-      for (const novel of novels) {
-        content += novel.name + '\n';
-      }
-      content = await this.translateService(content);
-      const translatedNames = content.split('\n');
-      for (let i = 0; i < novels.length; i++) {
-        novels[i].name = translatedNames[i] || novels[i].name;
-      }
     }
 
     return novels;
@@ -311,25 +181,6 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
       totalPages,
     };
 
-    if (this.settingPixivTranslate) {
-      if (novel.genres) {
-        const trans = await this.translateService(
-          `${novel.name}\n${novel.genres}\n${novel.summary}`,
-        );
-        const arr = trans.split('\n');
-        novel.name = arr[0] || novel.name;
-        novel.genres = arr[1] || novel.genres;
-        novel.summary = arr.slice(2).join('\n') || novel.summary;
-      } else {
-        const trans = await this.translateService(
-          `${novel.name}\n${novel.summary}`,
-        );
-        const arr = trans.split('\n');
-        novel.name = arr[0] || novel.name;
-        novel.summary = arr.slice(1).join('\n') || novel.summary;
-      }
-    }
-
     return novel;
   }
 
@@ -368,25 +219,6 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
       ],
       totalPages: 1,
     };
-
-    if (this.settingPixivTranslate) {
-      if (novel.genres) {
-        const trans = await this.translateService(
-          `${novel.name}\n${novel.genres}\n${novel.summary}`,
-        );
-        const arr = trans.split('\n');
-        novel.name = arr[0] || novel.name;
-        novel.genres = arr[1] || novel.genres;
-        novel.summary = arr.slice(2).join('\n') || novel.summary;
-      } else {
-        const trans = await this.translateService(
-          `${novel.name}\n${novel.summary}`,
-        );
-        const arr = trans.split('\n');
-        novel.name = arr[0] || novel.name;
-        novel.summary = arr.slice(1).join('\n') || novel.summary;
-      }
-    }
 
     return novel;
   }
@@ -449,11 +281,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     searchTerm: string,
     pageNo: number,
   ): Promise<Plugin.NovelItem[]> {
-    let finalSearchTerm = searchTerm;
-    if (searchTerm && !this.isJapanese(searchTerm)) {
-      finalSearchTerm = await this.translateService(searchTerm, 'ja', 'auto');
-    }
-    const encodedTerm = encodeURIComponent(finalSearchTerm);
+    const encodedTerm = encodeURIComponent(searchTerm);
     const url = `${this.site}/ajax/search/novels/${encodedTerm}?word=${encodedTerm}&order=date_d&mode=all&p=${pageNo}&s_mode=s_tag&lang=en`;
 
     const body = await this.fetchJson(url);
@@ -479,18 +307,6 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
       });
     }
 
-    if (this.settingPixivTranslate && novels.length > 0) {
-      let content = ``;
-      for (const novel of novels) {
-        content += novel.name + '\n';
-      }
-      content = await this.translateService(content);
-      const translatedNames = content.split('\n');
-      for (let i = 0; i < novels.length; i++) {
-        novels[i].name = translatedNames[i] || novels[i].name;
-      }
-    }
-
     return novels;
   }
 
@@ -507,10 +323,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
   }
 
   get filters(): Filters {
-    const translate = this.settingPixivTranslate;
-    const getLabel = (jp: string, en: string) =>
-      translate ? `${jp} (${en})` : jp;
-
+    const getLabel = (jp: string, en: string) => `${jp} (${en})`;
     return {
       mode: {
         type: FilterTypes.Picker,

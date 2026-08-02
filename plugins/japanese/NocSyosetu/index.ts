@@ -1,87 +1,11 @@
 import { load as loadCheerio } from 'cheerio';
-import { fetchApi, fetchText } from '@libs/fetch';
+import { fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { storage } from '@libs/storage';
 import { get, set } from '@libs/cookie';
 import { ContentType, ContentWarning } from '@libs/pluginMetadata';
-
-const supportedLanguages: Record<string, string> = {
-  af: 'Afrikaans',
-  sq: 'Albanian',
-  ar: 'Arabic',
-  be: 'Belarusian',
-  bn: 'Bengali',
-  bg: 'Bulgarian',
-  ca: 'Catalan',
-  zh: 'Chinese',
-  'zh-CN': 'Chinese (Simplified)',
-  'zh-TW': 'Chinese (Traditional)',
-  hr: 'Croatian',
-  cs: 'Czech',
-  da: 'Danish',
-  nl: 'Dutch',
-  en: 'English',
-  eo: 'Esperanto',
-  et: 'Estonian',
-  fi: 'Finnish',
-  fr: 'French',
-  gl: 'Galician',
-  ka: 'Georgian',
-  de: 'German',
-  el: 'Greek',
-  gu: 'Gujarati',
-  ht: 'Haitian Creole',
-  he: 'Hebrew',
-  hi: 'Hindi',
-  hu: 'Hungarian',
-  is: 'Icelandic',
-  id: 'Indonesian',
-  ga: 'Irish',
-  it: 'Italian',
-  ja: 'Japanese',
-  kn: 'Kannada',
-  ko: 'Korean',
-  lv: 'Latvian',
-  lt: 'Lithuanian',
-  mk: 'Macedonian',
-  mr: 'Marathi',
-  ms: 'Malay',
-  mt: 'Maltese',
-  no: 'Norwegian',
-  fa: 'Persian',
-  pl: 'Polish',
-  pt: 'Portuguese',
-  ro: 'Romanian',
-  ru: 'Russian',
-  sr: 'Serbian',
-  sk: 'Slovak',
-  sl: 'Slovenian',
-  es: 'Spanish',
-  sw: 'Swahili',
-  sv: 'Swedish',
-  tl: 'Tagalog',
-  ta: 'Tamil',
-  te: 'Telugu',
-  th: 'Thai',
-  tr: 'Turkish',
-  uk: 'Ukrainian',
-  ur: 'Urdu',
-  vi: 'Vietnamese',
-  cy: 'Welsh',
-};
-
-const pluginSettingTranslate: Plugin.SelectSetting = {
-  label: 'Language',
-  type: 'Select',
-  options: Object.keys(supportedLanguages).map(key => ({
-    value: key,
-    label: supportedLanguages[key],
-  })),
-  value: 'en',
-};
 
 // Because the selector was debugged on a computer, it must use a Windows user agent.
 const UserAgent =
@@ -92,18 +16,9 @@ class NocSyosetu implements Plugin.PagePlugin {
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.1.20';
+  version = '1.1.21';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.NSFW;
-
-  pluginSettings: Plugin.PluginSettings = {
-    nocsyosetu_translate: {
-      value: false,
-      label: 'Translate Titles & Summaries (Google Translate)',
-      type: 'Switch',
-    },
-    nocsyosetu_translateLang: pluginSettingTranslate,
-  };
 
   private async checkR18Cookie(url: string) {
     const urlObj = new URL(url);
@@ -118,19 +33,8 @@ class NocSyosetu implements Plugin.PagePlugin {
     }
   }
 
-  get settingNocSyosetuTranslate() {
-    return storage.get('nocsyosetu_translate');
-  }
-
-  get settingNocSyosetuTranslateLang() {
-    return storage.get('nocsyosetu_translateLang') || 'en';
-  }
-
   get filters(): Filters {
-    const translate = this.settingNocSyosetuTranslate;
-    const getLabel = (jp: string, en: string) =>
-      translate ? `${jp} (${en})` : jp;
-
+    const getLabel = (jp: string, en: string) => `${jp} (${en})`;
     return {
       order: {
         label: getLabel('並び替え', 'Order By'),
@@ -284,39 +188,6 @@ class NocSyosetu implements Plugin.PagePlugin {
     } satisfies Filters;
   }
 
-  async translateService(
-    text: string,
-    targetLang?: string,
-    sourceLang = 'auto',
-  ): Promise<string> {
-    if (!text) return text;
-    const lang = (
-      targetLang ||
-      storage.get('nocsyosetu_translateLang') ||
-      'en'
-    ).trim();
-    if (lang === sourceLang) return text;
-
-    try {
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${lang}&dt=t&q=${encodeURIComponent(
-        text,
-      )}&_t=${Date.now()}_${lang}`;
-      const res = await fetchApi(url);
-      const json = await res.json();
-      if (json && json[0]) {
-        return json[0].map((item: any) => item[0]).join('');
-      }
-    } catch (e) {
-      // ignore error
-    }
-    return text;
-  }
-
-  // dirty hack
-  isJapanese(text: string): boolean {
-    return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
-  }
-
   private parseNovels($: any): Plugin.NovelItem[] {
     const novels: Plugin.NovelItem[] = [];
 
@@ -409,18 +280,6 @@ class NocSyosetu implements Plugin.PagePlugin {
       this.checkCacheR18(body);
     }
 
-    if (this.settingNocSyosetuTranslate && pageNovels.length > 0) {
-      let content = ``;
-      for (const novel of pageNovels) {
-        content += novel.name + '\n';
-      }
-      content = await this.translateService(content);
-      const translatedNames = content.split('\n');
-      for (let i = 0; i < pageNovels.length; i++) {
-        pageNovels[i].name = translatedNames[i] || pageNovels[i].name;
-      }
-    }
-
     return pageNovels;
   }
 
@@ -493,11 +352,11 @@ class NocSyosetu implements Plugin.PagePlugin {
       }
     }
 
-    let name =
+    const name =
       $('.p-novel__title').text().trim() ||
       $('title').text().replace('ノクターンノベルズ', '').trim();
-    let summary = ($('#novel_ex').html() || '').replace(/<br>/g, '\n').trim();
-    let genres = $('meta[property="og:description"]')
+    const summary = ($('#novel_ex').html() || '').replace(/<br>/g, '\n').trim();
+    const genres = $('meta[property="og:description"]')
       .attr('content')
       ?.split(' ')
       .join(',');
@@ -516,23 +375,6 @@ class NocSyosetu implements Plugin.PagePlugin {
         path: novelUrl,
         releaseTime,
       });
-    }
-
-    if (this.settingNocSyosetuTranslate) {
-      if (genres) {
-        const trans = await this.translateService(
-          `${name}\n${genres}\n${summary}`,
-        );
-        const arr = trans.split('\n');
-        name = arr[0];
-        genres = arr[1];
-        summary = arr.slice(2).join('\n');
-      } else {
-        const trans = await this.translateService(`${name}\n${summary}`);
-        const arr = trans.split('\n');
-        name = arr[0];
-        summary = arr.slice(1).join('\n');
-      }
     }
 
     const novel: Plugin.SourceNovel & { totalPages: number } = {
@@ -589,13 +431,8 @@ class NocSyosetu implements Plugin.PagePlugin {
     searchTerm: string,
     pageNo: number,
   ): Promise<Plugin.NovelItem[]> {
-    let finalSearchTerm = searchTerm;
-    if (searchTerm && !this.isJapanese(searchTerm)) {
-      finalSearchTerm = await this.translateService(searchTerm, 'ja', 'auto');
-    }
-
     const url = `${this.site}/search/search/search.php?order_former=search&word=${encodeURIComponent(
-      finalSearchTerm,
+      searchTerm,
     )}${
       pageNo !== undefined
         ? `&p=${pageNo <= 1 || pageNo > 100 ? '1' : pageNo}` // check if pagenum is between 1 and 100
@@ -612,18 +449,6 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     if (pageNovels.length === 0 && pageNo === 1) {
       this.checkCacheR18(body);
-    }
-
-    if (this.settingNocSyosetuTranslate && pageNovels.length > 0) {
-      let content = ``;
-      for (const novel of pageNovels) {
-        content += novel.name + '\n';
-      }
-      content = await this.translateService(content);
-      const translatedNames = content.split('\n');
-      for (let i = 0; i < pageNovels.length; i++) {
-        pageNovels[i].name = translatedNames[i] || pageNovels[i].name;
-      }
     }
 
     return pageNovels;

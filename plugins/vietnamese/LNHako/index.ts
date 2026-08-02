@@ -157,11 +157,26 @@ class HakoPlugin implements Plugin.PluginBase {
         'author',
         filters.author?.value ?? this.filters.author.value,
       );
-      url.searchParams.set('illustrator', filters.illustrator?.value ?? this.filters.illustrator.value);
-      url.searchParams.set('title', filters.title?.value ?? this.filters.title.value);
-      url.searchParams.set('status', filters.status?.value ?? this.filters.status.value);
-      url.searchParams.set('sapxep', filters.sapxep?.value ?? this.filters.sapxep.value);
-      url.searchParams.set('seriestype', filters.seriestype?.value ?? this.filters.seriestype.value);
+      url.searchParams.set(
+        'illustrator',
+        filters.illustrator?.value ?? this.filters.illustrator.value,
+      );
+      url.searchParams.set(
+        'title',
+        filters.title?.value ?? this.filters.title.value,
+      );
+      url.searchParams.set(
+        'status',
+        filters.status?.value ?? this.filters.status.value,
+      );
+      url.searchParams.set(
+        'sapxep',
+        filters.sapxep?.value ?? this.filters.sapxep.value,
+      );
+      url.searchParams.set(
+        'seriestype',
+        filters.seriestype?.value ?? this.filters.seriestype.value,
+      );
       const genres = filters.genres?.value ?? this.filters.genres.value;
       if (genres.include?.length) {
         url.searchParams.set('selectgenres', genres.include.join(','));

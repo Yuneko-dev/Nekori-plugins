@@ -4,7 +4,6 @@ import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { storage } from '@libs/storage';
 import {
   Buffer,
   NodeCrypto,
@@ -13,104 +12,20 @@ import {
 } from '@libs/utils';
 import { get, setFromResponse } from '@libs/cookie';
 
-const supportedLanguages: Record<string, string> = {
-  af: 'Afrikaans',
-  sq: 'Albanian',
-  ar: 'Arabic',
-  be: 'Belarusian',
-  bn: 'Bengali',
-  bg: 'Bulgarian',
-  ca: 'Catalan',
-  zh: 'Chinese',
-  'zh-CN': 'Chinese (Simplified)',
-  'zh-TW': 'Chinese (Traditional)',
-  hr: 'Croatian',
-  cs: 'Czech',
-  da: 'Danish',
-  nl: 'Dutch',
-  en: 'English',
-  eo: 'Esperanto',
-  et: 'Estonian',
-  fi: 'Finnish',
-  fr: 'French',
-  gl: 'Galician',
-  ka: 'Georgian',
-  de: 'German',
-  el: 'Greek',
-  gu: 'Gujarati',
-  ht: 'Haitian Creole',
-  he: 'Hebrew',
-  hi: 'Hindi',
-  hu: 'Hungarian',
-  is: 'Icelandic',
-  id: 'Indonesian',
-  ga: 'Irish',
-  it: 'Italian',
-  ja: 'Japanese',
-  kn: 'Kannada',
-  ko: 'Korean',
-  lv: 'Latvian',
-  lt: 'Lithuanian',
-  mk: 'Macedonian',
-  mr: 'Marathi',
-  ms: 'Malay',
-  mt: 'Maltese',
-  no: 'Norwegian',
-  fa: 'Persian',
-  pl: 'Polish',
-  pt: 'Portuguese',
-  ro: 'Romanian',
-  ru: 'Russian',
-  sr: 'Serbian',
-  sk: 'Slovak',
-  sl: 'Slovenian',
-  es: 'Spanish',
-  sw: 'Swahili',
-  sv: 'Swedish',
-  tl: 'Tagalog',
-  ta: 'Tamil',
-  te: 'Telugu',
-  th: 'Thai',
-  tr: 'Turkish',
-  uk: 'Ukrainian',
-  ur: 'Urdu',
-  vi: 'Vietnamese',
-  cy: 'Welsh',
-};
-
-const pluginSettingTranslate: Plugin.SelectSetting = {
-  label: 'Language',
-  type: 'Select',
-  options: Object.keys(supportedLanguages).map(key => ({
-    value: key,
-    label: supportedLanguages[key],
-  })),
-  value: 'en',
-};
-
 // https://t.me/s/newtoki_url
-const SITE = 'https://toki28.com';
+const SITE = 'https://toki31.com';
 
 class NewtokiPlugin implements Plugin.PluginBase {
   id = 'newtoki.novel';
   name = 'Newtoki';
   icon = 'src/kr/newtoki/icon.png';
   site = SITE;
-  version = '1.0.7';
+  version = '1.0.9';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
       Referer: SITE + '/',
     },
-  };
-
-  pluginSettings: Plugin.PluginSettings = {
-    newtoki_translate: {
-      value: false,
-      label: 'Translate Titles & Summaries (Google Translate)',
-      type: 'Switch',
-    },
-    newtoki_translateLang: pluginSettingTranslate,
   };
 
   private defaultHeaders(): Record<string, string> {
@@ -119,42 +34,6 @@ class NewtokiPlugin implements Plugin.PluginBase {
       'Accept':
         'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     };
-  }
-
-  get settingTranslate() {
-    return storage.get('newtoki_translate');
-  }
-
-  get settingTranslateLang() {
-    return storage.get('newtoki_translateLang') || 'en';
-  }
-
-  async translateService(
-    text: string,
-    targetLang?: string,
-    sourceLang = 'auto',
-  ): Promise<string> {
-    if (!text) return text;
-    const lang = (targetLang || this.settingTranslateLang).trim();
-    if (lang === sourceLang) return text;
-
-    try {
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${lang}&dt=t&q=${encodeURIComponent(
-        text,
-      )}&_t=${Date.now()}_${lang}`;
-      const res = await fetchApi(url);
-      const json = await res.json();
-      if (json && json[0]) {
-        return json[0].map((item: any) => item[0]).join('');
-      }
-    } catch (e) {
-      // ignore error
-    }
-    return text;
-  }
-
-  isKorean(text: string): boolean {
-    return /[\uAC00-\uD7AF\u1100-\u11FF]/.test(text);
   }
 
   // --- Base64url helpers ---
@@ -217,10 +96,7 @@ class NewtokiPlugin implements Plugin.PluginBase {
   }
 
   get filters(): Filters {
-    const translate = this.settingTranslate;
-    const getLabel = (kr: string, en: string) =>
-      translate ? `${kr} (${en})` : kr;
-
+    const getLabel = (kr: string, en: string) => `${kr} (${en})`;
     return {
       sort: {
         type: FilterTypes.Picker,
@@ -319,18 +195,6 @@ class NewtokiPlugin implements Plugin.PluginBase {
 
     const novels = this.parseNovelList($);
 
-    if (this.settingTranslate && novels.length > 0) {
-      let content = '';
-      for (const novel of novels) {
-        content += novel.name + '\n';
-      }
-      content = await this.translateService(content);
-      const translatedNames = content.split('\n');
-      for (let i = 0; i < novels.length; i++) {
-        novels[i].name = translatedNames[i] || novels[i].name;
-      }
-    }
-
     return novels;
   }
 
@@ -345,15 +209,15 @@ class NewtokiPlugin implements Plugin.PluginBase {
     const $ = loadCheerio(body);
 
     // Parse novel info
-    let name = $('section.novel-detail .nd-info h1').text().trim();
+    const name = $('section.novel-detail .nd-info h1').text().trim();
     const cover =
       $('section.novel-detail .nd-thumb img').attr('src') || defaultCover;
     const authorText = $('section.novel-detail .nd-meta span')
       .first()
       .text()
       .trim();
-    let summary = $('section.novel-detail .nd-desc').text().trim();
-    let genres = $('section.novel-detail .hero-v2-tags a')
+    const summary = $('section.novel-detail .nd-desc').text().trim();
+    const genres = $('section.novel-detail .hero-v2-tags a')
       .map((_i: number, el: any) => $(el).text().replace('#', '').trim())
       .get()
       .join(',');
@@ -380,39 +244,6 @@ class NewtokiPlugin implements Plugin.PluginBase {
 
     // Chapters are listed newest-first on the page, reverse for correct order
     chapters.reverse();
-
-    if (this.settingTranslate) {
-      if (genres) {
-        const trans = await this.translateService(
-          `${name}\n${genres}\n${summary}`,
-        );
-        const arr = trans.split('\n');
-        name = arr[0] || name;
-        genres = arr[1] || genres;
-        summary = arr.slice(2).join('\n') || summary;
-      } else {
-        const trans = await this.translateService(`${name}\n${summary}`);
-        const arr = trans.split('\n');
-        name = arr[0] || name;
-        summary = arr.slice(1).join('\n') || summary;
-      }
-
-      if (chapters.length > 0) {
-        let chapterNames = '';
-        for (const ch of chapters) {
-          chapterNames += ch.name + '\n';
-        }
-        const translated = await this.translateService(
-          chapterNames,
-          undefined,
-          'ko',
-        );
-        const translatedArr = translated.split('\n');
-        for (let i = 0; i < chapters.length; i++) {
-          chapters[i].name = translatedArr[i]?.trim() || chapters[i].name;
-        }
-      }
-    }
 
     const novel: Plugin.SourceNovel = {
       path: novelPath,
@@ -547,13 +378,8 @@ class NewtokiPlugin implements Plugin.PluginBase {
     searchTerm: string,
     pageNo: number,
   ): Promise<Plugin.NovelItem[]> {
-    let finalSearchTerm = searchTerm;
-    if (this.settingTranslate && searchTerm && !this.isKorean(searchTerm)) {
-      finalSearchTerm = await this.translateService(searchTerm, 'ko', 'auto');
-    }
-
     const url = `${this.site}/novel?page=${pageNo}&q=${encodeURIComponent(
-      finalSearchTerm,
+      searchTerm,
     )}`;
 
     const body = await fetchText(url, { headers: this.defaultHeaders() });
@@ -565,18 +391,6 @@ class NewtokiPlugin implements Plugin.PluginBase {
     const $ = loadCheerio(body);
 
     const novels = this.parseNovelList($);
-
-    if (this.settingTranslate && novels.length > 0) {
-      let content = '';
-      for (const novel of novels) {
-        content += novel.name + '\n';
-      }
-      content = await this.translateService(content);
-      const translatedNames = content.split('\n');
-      for (let i = 0; i < novels.length; i++) {
-        novels[i].name = translatedNames[i] || novels[i].name;
-      }
-    }
 
     return novels;
   }

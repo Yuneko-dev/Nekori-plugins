@@ -5,7 +5,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
 import { storage } from '@libs/storage';
-import { Buffer, decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
+import { Buffer, encodeHtmlEntities } from '@libs/utils';
 import { cbc } from '@libs/aes';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 
@@ -46,96 +46,15 @@ type EncryptedPayload = {
   enc: string;
 };
 
-const supportedLanguages: Record<string, string> = {
-  af: 'Afrikaans',
-  sq: 'Albanian',
-  ar: 'Arabic',
-  be: 'Belarusian',
-  bn: 'Bengali',
-  bg: 'Bulgarian',
-  ca: 'Catalan',
-  zh: 'Chinese',
-  'zh-CN': 'Chinese (Simplified)',
-  'zh-TW': 'Chinese (Traditional)',
-  hr: 'Croatian',
-  cs: 'Czech',
-  da: 'Danish',
-  nl: 'Dutch',
-  en: 'English',
-  eo: 'Esperanto',
-  et: 'Estonian',
-  fi: 'Finnish',
-  fr: 'French',
-  gl: 'Galician',
-  ka: 'Georgian',
-  de: 'German',
-  el: 'Greek',
-  gu: 'Gujarati',
-  ht: 'Haitian Creole',
-  he: 'Hebrew',
-  hi: 'Hindi',
-  hu: 'Hungarian',
-  is: 'Icelandic',
-  id: 'Indonesian',
-  ga: 'Irish',
-  it: 'Italian',
-  ja: 'Japanese',
-  kn: 'Kannada',
-  ko: 'Korean',
-  lv: 'Latvian',
-  lt: 'Lithuanian',
-  mk: 'Macedonian',
-  mr: 'Marathi',
-  ms: 'Malay',
-  mt: 'Maltese',
-  no: 'Norwegian',
-  fa: 'Persian',
-  pl: 'Polish',
-  pt: 'Portuguese',
-  ro: 'Romanian',
-  ru: 'Russian',
-  sr: 'Serbian',
-  sk: 'Slovak',
-  sl: 'Slovenian',
-  es: 'Spanish',
-  sw: 'Swahili',
-  sv: 'Swedish',
-  tl: 'Tagalog',
-  ta: 'Tamil',
-  te: 'Telugu',
-  th: 'Thai',
-  tr: 'Turkish',
-  uk: 'Ukrainian',
-  ur: 'Urdu',
-  vi: 'Vietnamese',
-  cy: 'Welsh',
-};
-
-const pluginSettingTranslate: Plugin.SelectSetting = {
-  label: 'Language',
-  type: 'Select',
-  options: Object.keys(supportedLanguages).map(key => ({
-    value: key,
-    label: supportedLanguages[key],
-  })),
-  value: 'en',
-};
-
 class TomatoMTLPlugin implements Plugin.PluginBase {
   id = 'tomatomtl';
   name = 'TomatoMTL';
   icon = 'src/vi/tomatomtl/icon.png';
   site = SITE;
-  version = '1.0.6';
+  version = '1.0.7';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
-    translate: {
-      value: false,
-      label: 'Translate Titles (Google Translate)',
-      type: 'Switch',
-    },
-    translateLang: pluginSettingTranslate,
     usingProxyThumbnail: {
       value: false,
       label: 'Use proxied thumbnail URLs (may fix missing covers)',
@@ -144,14 +63,6 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
   };
 
   // ─── Setting accessors ──────────────────────────────
-  get translate(): boolean {
-    return storage.get('translate');
-  }
-
-  get translateLang(): string {
-    return storage.get('translateLang') || 'en';
-  }
-
   get usingProxyThumbnail(): boolean {
     return storage.get('usingProxyThumbnail');
   }
@@ -280,87 +191,6 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
     }
   }
 
-  // ─── Novel list title translation ─────────────────────────
-  // The site's explorer API returns Chinese-only book_name.
-  private async translateNovelNames(
-    novels: Plugin.NovelItem[],
-  ): Promise<Plugin.NovelItem[]> {
-    if (!novels.length || !this.translate) return novels;
-
-    const names = novels.map(n => n.name);
-    try {
-      const translated = await this.translateGoogle(names, this.translateLang);
-      if (translated.length === names.length) {
-        return novels.map((n, i) => ({
-          ...n,
-          name: translated[i] || n.name,
-        }));
-      }
-    } catch {
-      //
-    }
-    return novels;
-  }
-
-  // ─── Translation helpers ───────────────────────────────────
-  private async translateGoogle(
-    lines: string[],
-    target: string,
-  ): Promise<string[]> {
-    if (!lines.length) return [];
-    const body = JSON.stringify([[lines, 'auto', target], 'te']);
-    const res = await fetchApi(
-      'https://translate-pa.googleapis.com/v1/translateHtml',
-      {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json+protobuf',
-          'x-goog-api-key': 'AIzaSyATBXajvzQLTDHEQbcpq0Ihe0vWDHmO520',
-          'x-client-data': 'CIH/ygE=',
-        },
-        body,
-      },
-    );
-    const data = (await res.json()) as unknown;
-    if (Array.isArray(data) && Array.isArray(data[0])) {
-      return (data[0] as unknown[]).map(l =>
-        decodeHtmlEntities(String(l ?? '')),
-      );
-    }
-    return lines;
-  }
-
-  private async translateChunked(
-    lines: string[],
-    target: string,
-  ): Promise<string[]> {
-    const chunks: string[][] = [];
-    let current: string[] = [];
-    let charCount = 0;
-    for (const line of lines) {
-      if (charCount + line.length > 4500 && current.length) {
-        chunks.push(current);
-        current = [];
-        charCount = 0;
-      }
-      current.push(line);
-      charCount += line.length;
-    }
-    if (current.length) chunks.push(current);
-
-    const results: string[][] = [];
-    for (const chunk of chunks) {
-      try {
-        const out = await this.translateGoogle(chunk, target);
-        results.push(out.length === chunk.length ? out : chunk);
-      } catch (err) {
-        console.warn('TomatoMTL translation chunk failed:', err);
-        results.push(chunk);
-      }
-    }
-    return results.flat();
-  }
-
   // ─── Plugin API: novel listings ────────────────────────────
   async popularNovels(
     pageNo: number,
@@ -390,9 +220,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
 
     const res = await fetchApi(url, { headers });
     if (!res.ok) {
-      throw new Error(
-        'Mở plugin này trong WebView của LNReader để bỏ qua Cloudflare',
-      );
+      throw new Error('Open this plugin in a WebView to bypass Cloudflare.');
     }
     this.absorbSetCookie(res.headers.get('set-cookie'));
 
@@ -401,14 +229,13 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
     } | null;
     if (!data || !Array.isArray(data.books)) return [];
 
-    const novels = data.books
+    return data.books
       .filter(b => b && b.book_id)
       .map(book => ({
         name: String(book.book_name || '').trim() || `#${book.book_id}`,
         path: `/book/${book.book_id}`,
         cover: this.normalizeCoverUrl(book.thumb_url) || defaultCover,
       }));
-    return this.translateNovelNames(novels);
   }
 
   async searchNovels(
@@ -468,7 +295,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
         }
       }
     }
-    return this.translateNovelNames(novels);
+    return novels;
   }
 
   // ─── Plugin API: novel details ─────────────────────────────
@@ -492,17 +319,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
       $('title').text().trim() ||
       '';
 
-    let novelName = chineseName || fallbackName || `#${bookId}`;
-    try {
-      if (!this.translate) throw new Error('Translation disabled');
-      const [translateName] = await this.translateGoogle(
-        [novelName],
-        this.translateLang,
-      );
-      if (translateName) novelName = translateName;
-    } catch {
-      // Keep original name if translation fails
-    }
+    const novelName = chineseName || fallbackName || `#${bookId}`;
 
     const novel: Plugin.SourceNovel = {
       path: `/book/${bookId}`,
@@ -689,16 +506,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
     // Group every 50 chapters into a "Volume" page label so the chapter
     // list mirrors the accordion the website itself shows. This makes
     // long catalogs (often 1k+ chapters) browsable inside LNReader.
-    // Translate chapter titles to Vietnamese using Google (chunked for large lists)
     const titles = entries.map(e => e.title);
-    let translatedTitles = titles;
-    try {
-      if (!this.translate) throw new Error('Translation disabled');
-      const result = await this.translateChunked(titles, this.translateLang);
-      if (result.length === titles.length) translatedTitles = result;
-    } catch {
-      // Fall back to original Chinese titles
-    }
 
     const chapters: Plugin.ChapterItem[] = entries.map((entry, idx) => {
       const chapterNumber = idx + 1;
@@ -708,10 +516,10 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
         1;
       const end = Math.min(start + CHAPTERS_PER_VOLUME - 1, entries.length);
       return {
-        name: translatedTitles[idx] || entry.title,
+        name: titles[idx] || entry.title,
         path: `/book/${bookId}/${entry.id}`,
         chapterNumber,
-        page: `Chương ${start} - ${end}`,
+        page: `Chapter ${start} - ${end}`,
       };
     });
     return chapters;

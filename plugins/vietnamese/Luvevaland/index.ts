@@ -9,8 +9,8 @@ class LuvevalandPlugin implements Plugin.PluginBase {
   id = 'luvevaland.co';
   name = 'Luvevaland';
   icon = 'src/vi/luvevaland/icon.png';
-  site = 'https://luvevaland.co';
-  version = '1.0.4';
+  site = 'https://luvevalandn1.co';
+  version = '1.0.5';
   filters: Filters | undefined = undefined;
 
   async popularNovels(

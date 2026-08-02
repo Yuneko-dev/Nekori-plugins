@@ -4,7 +4,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { defaultCover } from '@libs/defaultCover';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { encodeHtmlEntities } from '@libs/utils';
-import { ContentType, ContentWarning } from '@/types/constants';
+import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 
 class PixivNovelPlugin implements Plugin.PagePlugin {
   id = 'pixiv.novel';

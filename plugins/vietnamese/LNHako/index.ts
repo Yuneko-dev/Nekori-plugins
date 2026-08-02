@@ -16,7 +16,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.14';
+  version = '1.2.15';
   filters = filters;
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
@@ -89,7 +89,7 @@ class HakoPlugin implements Plugin.PluginBase {
     return storage.get('showMetadataInDescription') as boolean;
   }
 
-  private async fetchHtmlFromMirrors(
+  private async fetchHtml(
     path: string,
     validator?: (html: string) => boolean,
   ): Promise<string> {
@@ -137,35 +137,43 @@ class HakoPlugin implements Plugin.PluginBase {
       showLatestNovels,
     }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
-    let link = this.site + '/danh-sach';
+    const url = new URL(`${this.site}/tim-kiem-nang-cao`);
     if (showLatestNovels) {
       filters = {
-        alphabet: this.filters.alphabet,
-        sort: {
-          ...this.filters.sort,
+        author: this.filters.author,
+        illustrator: this.filters.illustrator,
+        title: this.filters.title,
+        status: this.filters.status,
+        sapxep: {
+          ...this.filters.sapxep,
           value: 'capnhat',
         },
-        status: this.filters.status,
-        type: this.filters.type,
+        genres: this.filters.genres,
+        seriestype: this.filters.seriestype,
       } as typeof this.filters;
     }
     if (filters) {
-      if (filters.alphabet.value) {
-        link += '/' + filters.alphabet.value;
+      url.searchParams.set(
+        'author',
+        filters.author?.value ?? this.filters.author.value,
+      );
+      url.searchParams.set('illustrator', filters.illustrator?.value ?? this.filters.illustrator.value);
+      url.searchParams.set('title', filters.title?.value ?? this.filters.title.value);
+      url.searchParams.set('status', filters.status?.value ?? this.filters.status.value);
+      url.searchParams.set('sapxep', filters.sapxep?.value ?? this.filters.sapxep.value);
+      url.searchParams.set('seriestype', filters.seriestype?.value ?? this.filters.seriestype.value);
+      const genres = filters.genres?.value ?? this.filters.genres.value;
+      if (genres.include?.length) {
+        url.searchParams.set('selectgenres', genres.include.join(','));
       }
-      const params = new URLSearchParams();
-      for (const novelType of filters.type.value) {
-        params.append(novelType, '1');
+      if (genres.exclude?.length) {
+        url.searchParams.set('rejectgenres', genres.exclude.join(','));
       }
-      for (const status of filters.status.value) {
-        params.append(status, '1');
-      }
-      params.append('sapxep', filters.sort.value);
-      link += '?' + params.toString() + '&page=' + pageNo;
-    } else {
-      link += '?page=' + pageNo;
     }
-    return this.parseNovels(link);
+    if (pageNo > 1) {
+      url.searchParams.set('page', pageNo.toString());
+    }
+    return this.parseNovels(url.toString());
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
@@ -179,7 +187,7 @@ class HakoPlugin implements Plugin.PluginBase {
       genres: '',
       status: '',
     };
-    const html = await this.fetchHtmlFromMirrors(
+    const html = await this.fetchHtml(
       novelPath,
       html => load(html)('.volume-list .list-chapters li').length > 0,
     );
@@ -395,7 +403,7 @@ class HakoPlugin implements Plugin.PluginBase {
     return novel;
   }
   async parseChapter(chapterPath: string): Promise<string> {
-    const html = await this.fetchHtmlFromMirrors(
+    const html = await this.fetchHtml(
       chapterPath,
       html => load(html)('div#chapter-content').length > 0,
     );
@@ -513,9 +521,12 @@ class HakoPlugin implements Plugin.PluginBase {
     searchTerm: string,
     pageNo: number,
   ): Promise<Plugin.NovelItem[]> {
-    const url =
-      this.site + '/tim-kiem?keywords=' + searchTerm + '&page=' + pageNo;
-    return this.parseNovels(url);
+    const url = new URL(`${this.site}/tim-kiem`);
+    url.searchParams.set('keywords', searchTerm);
+    if (pageNo > 1) {
+      url.searchParams.set('page', pageNo.toString());
+    }
+    return this.parseNovels(url.toString());
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

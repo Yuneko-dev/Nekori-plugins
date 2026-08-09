@@ -1,6 +1,5 @@
 import { fetchApi } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
-import { Filters, FilterTypes } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import {
@@ -13,29 +12,45 @@ import { storage } from '@libs/storage';
 import { ctr } from '@libs/aes';
 import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 
+import filters from './filters';
+
 const SITE = 'https://hentaiz.bike';
 const STORAGE_URL = 'https://storage.haiten.org';
 const MIMIX_API = 'https://x.mimix.cc/watch/';
+const EMBED_ORIGIN = 'https://x.haiten.org';
+
+// SvelteKit "remote function" endpoint hash. It changes on every site
+// deployment, so it is resolved at runtime and cached in `storage`.
+const REMOTE_HASH_KEY = 'htz_remote_hash';
+const REMOTE_HASH_TTL = 6 * 60 * 60 * 1000; // 6h
 
 function hexToBytes(hex: string): Uint8Array {
   return Buffer.from(hex, 'hex');
 }
 
-async function decryptVideoData(videoId: string): Promise<{
+type VideoData = {
+  id: string;
+  segDomain: string;
+  masterUrl: string;
   m3u8Master: string;
   m3u8Playlists: string[];
   variantFolders: string[];
-  segDomain: string;
-  id: string;
-} | null> {
+};
+
+/**
+ * Fetch + decrypt the mimix payload (AES-256-CTR, key = sha256(videoId)).
+ * The response body is `<iv-hex>:<ciphertext-hex>`.
+ */
+async function decryptVideoData(videoId: string): Promise<VideoData | null> {
   try {
-    const res = await fetchApi(MIMIX_API + videoId);
+    const res = await fetchApi(MIMIX_API + videoId, {
+      headers: { Referer: EMBED_ORIGIN + '/' },
+    });
     if (!res.ok) {
       console.error('[HTZ] mimix fetch failed:', res.status);
       return null;
     }
-    const rawText = await res.text();
-    const text = rawText.trim();
+    const text = (await res.text()).trim();
     const colonIdx = text.indexOf(':');
     if (colonIdx < 0) {
       console.error('[HTZ] invalid mimix response format');
@@ -47,8 +62,7 @@ async function decryptVideoData(videoId: string): Promise<{
     const key = NodeCrypto.createHash('sha256').update(videoId).digest();
 
     const cipher = ctr(key, iv);
-    const decrypted = cipher.decrypt(ct);
-    const jsonStr = new TextDecoder().decode(decrypted);
+    const jsonStr = new TextDecoder().decode(cipher.decrypt(ct));
     const data = JSON.parse(jsonStr);
 
     const m3u8 = data.defaultM3u8;
@@ -57,10 +71,11 @@ async function decryptVideoData(videoId: string): Promise<{
       return null;
     }
 
-    const segDomain =
+    const segDomain: string =
       data.segmentDomains?.length > 0
         ? data.segmentDomains[0]
         : data.domain || '';
+    const id: string = data.id || videoId;
 
     const variantFolders: string[] = [];
     for (const line of m3u8.master.split('\n')) {
@@ -75,11 +90,12 @@ async function decryptVideoData(videoId: string): Promise<{
     }
 
     return {
+      id,
+      segDomain,
+      masterUrl: `${segDomain}/${id}/master.m3u8`,
       m3u8Master: m3u8.master,
       m3u8Playlists: m3u8.playlists,
       variantFolders,
-      segDomain,
-      id: data.id || videoId,
     };
   } catch (e) {
     console.error('[HTZ] decryptVideoData error:', e);
@@ -120,8 +136,10 @@ function decodeSvelteData(data: any[]): any {
     }
     const obj: Record<string, any> = {};
     cache.set(idx, obj);
-    for (const [key, i] of Object.entries(val)) {
-      obj[key] = resolve(i as number);
+    // `Object.keys` (ES5) instead of `Object.entries` (ES2017): the project
+    // compiles against an ES2016 lib.
+    for (const key of Object.keys(val)) {
+      obj[key] = resolve(val[key] as number);
     }
     return obj;
   }
@@ -137,323 +155,196 @@ async function fetchSvelteData(url: string): Promise<any> {
   return decodeSvelteData(pageNode.data);
 }
 
-const genreOptions: { label: string; value: string }[] = [
-  { label: '3D', value: '3d' },
-  { label: 'Ahegao', value: 'ahegao' },
-  { label: 'Anal', value: 'anal' },
-  { label: 'Bao cao su', value: 'bao-cao-su' },
-  { label: 'Bạo dâm', value: 'bao-dam' },
-  { label: 'Big Boobs', value: 'big-boobs' },
-  { label: 'Big girls', value: 'big-girls' },
-  { label: 'Bondage', value: 'bondage' },
-  { label: 'Bú liếm', value: 'bu-liem' },
-  { label: 'Công cộng', value: 'cong-cong' },
-  { label: 'Cosplay', value: 'cosplay' },
-  { label: 'Da ngăm', value: 'da-ngam' },
-  { label: 'Đẻ con', value: 'de-con' },
-  { label: 'Đồ Bơi', value: 'do-boi' },
-  { label: 'Double Penetration', value: 'double-penetration' },
-  { label: 'Đụ Vú', value: 'du-vu' },
-  { label: 'Elf', value: 'elf' },
-  { label: 'Fantasy', value: 'fantasy' },
-  { label: 'Femdom', value: 'femdom' },
-  { label: 'Foot Job', value: 'foot-job' },
-  { label: 'Furry', value: 'furry' },
-  { label: 'Futanari', value: 'futanari' },
-  { label: 'Gái quậy', value: 'gai-quay' },
-  { label: 'Gang Bang', value: 'gang-bang' },
-  { label: 'Giáo viên', value: 'giao-vien' },
-  { label: 'Goblin', value: 'goblin' },
-  { label: 'Guro', value: 'guro' },
-  { label: 'Harem', value: 'harem' },
-  { label: 'Hiếp dâm', value: 'hiep-dam' },
-  { label: 'Idol', value: 'idol' },
-  { label: 'Josei', value: 'josei' },
-  { label: 'Kemonomimi', value: 'kemonomimi' },
-  { label: 'Loạn luân', value: 'loan-luan' },
-  { label: 'Loli', value: 'loli' },
-  { label: 'Maid', value: 'maid' },
-  { label: 'Mang thai', value: 'mang-thai' },
-  { label: 'Megane', value: 'megane' },
-  { label: 'MILF', value: 'milf' },
-  { label: 'Mind Break', value: 'mind-break' },
-  { label: 'Monster', value: 'monster' },
-  { label: 'Ngủ', value: 'ngu' },
-  { label: 'NTR', value: 'ntr' },
-  { label: 'Nữ sinh', value: 'nu-sinh' },
-  { label: 'Plot', value: 'plot' },
-  { label: 'Scat', value: 'scat' },
-  { label: 'Sex Toy', value: 'sex-toy' },
-  { label: 'Shota', value: 'shota' },
-  { label: 'Softcore', value: 'softcore' },
-  { label: 'Stocking', value: 'stocking' },
-  { label: 'Sữa mẹ', value: 'sua-me' },
-  { label: 'Succubus', value: 'succubus' },
-  { label: 'Thác loạn', value: 'thac-loan' },
-  { label: 'Thôi miên', value: 'thoi-mien' },
-  { label: 'Threesome', value: 'threesome' },
-  { label: 'Thủ Dâm', value: 'thu-dam' },
-  { label: 'Thuốc kích dục', value: 'thuoc-kich-duc' },
-  { label: 'Tiểu tiện', value: 'tieu-tien' },
-  { label: 'Tống tình', value: 'tong-tinh' },
-  { label: 'Trap', value: 'trap' },
-  { label: 'Tsundere', value: 'tsundere' },
-  { label: 'Ugly Bastard', value: 'ugly-bastard' },
-  { label: 'Vanilla', value: 'vanilla' },
-  { label: 'Virgin', value: 'virgin' },
-  { label: 'Vú lép', value: 'vu-lep' },
-  { label: 'Wafuku', value: 'wafuku' },
-  { label: 'X-Ray', value: 'x-ray' },
-  { label: 'Xúc tu', value: 'xuc-tu' },
-  { label: 'Yaoi', value: 'yaoi' },
-  { label: 'Y Tá', value: 'y-ta' },
-  { label: 'Yuri', value: 'yuri' },
-];
+/** Collapse `.` / `..` segments in an absolute path. */
+function normalizePath(path: string): string {
+  const out: string[] = [];
+  for (const part of path.split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') out.pop();
+    else out.push(part);
+  }
+  return '/' + out.join('/');
+}
 
-const studioOptions: { label: string; value: string }[] = [
-  { label: 'Tất cả', value: 'ALL' },
-  { label: '26RegionSFM', value: '26regionsfm' },
-  { label: 'Actas', value: 'actas' },
-  { label: 'Active', value: 'active' },
-  { label: 'Adult Source Media', value: 'adult-source-media' },
-  { label: 'affect3D', value: 'affect3d' },
-  { label: 'Aiban Work', value: 'aiban-work' },
-  { label: 'AIC', value: 'aic' },
-  { label: 'AIC Plus+', value: 'aic-plus' },
-  { label: 'Akita Shoten', value: 'akita-shoten' },
-  { label: 'Alles', value: 'alles' },
-  { label: 'Amelialtie', value: 'amelialtie' },
-  { label: 'Amusteven', value: 'amusteven' },
-  { label: 'Animac', value: 'animac' },
-  { label: 'AniMan', value: 'animan' },
-  { label: 'Animate Film', value: 'animate-film' },
-  { label: 'Anime Antenna Iinkai', value: 'anime-antenna-iinkai' },
-  { label: 'Antechinus', value: 'antechinus' },
-  { label: 'APPP', value: 'appp' },
-  { label: 'Armor', value: 'armor' },
-  { label: 'Arms', value: 'arms' },
-  { label: 'AT-2', value: 'at-2' },
-  { label: 'Atelier KOB', value: 'atelier-kob' },
-  { label: 'Awakoto-ya', value: 'awakoto-ya' },
-  { label: 'Axel3D', value: 'axel3d' },
-  { label: 'BEAM Entertainment', value: 'beam-entertainment' },
-  { label: 'BloomZ', value: 'bloomz' },
-  { label: 'Blue bread', value: 'blue-bread' },
-  { label: 'Blue Cat', value: 'blue-cat' },
-  { label: 'Blue Eyes', value: 'blue-eyes' },
-  { label: 'BOMB! CUTE! BOMB!', value: 'bomb-cute-bomb' },
-  { label: 'BOOTLEG', value: 'bootleg' },
-  { label: 'Break Bottle', value: 'break-bottle' },
-  { label: 'Bunny Walker', value: 'bunny-walker' },
-  { label: 'CherryLips', value: 'cherrylips' },
-  { label: 'ChiChinoya', value: 'chichinoya' },
-  { label: 'chippai', value: 'chippai' },
-  { label: 'Chocolat', value: 'chocolat' },
-  { label: 'Chu Chu', value: 'chu-chu' },
-  { label: 'Circle Tribute', value: 'circle-tribute' },
-  { label: 'Collaboration Works', value: 'collaboration-works' },
-  { label: 'Cosmic Ray', value: 'cosmic-ray' },
-  { label: 'Cosmos', value: 'cosmos' },
-  { label: 'Cotton Doll', value: 'cotton-doll' },
-  { label: 'Cranberry', value: 'cranberry' },
-  { label: 'Critical Mass Video', value: 'critical-mass-video' },
-  { label: 'D3', value: 'd3' },
-  { label: 'Dezmall', value: 'dezmall' },
-  { label: 'Digital Works', value: 'digital-works' },
-  { label: 'Discovery', value: 'discovery' },
-  { label: 'DMT', value: 'dmt' },
-  { label: 'Doberman Studio', value: 'doberman-studio' },
-  { label: 'Dollhouse', value: 'dollhouse' },
-  { label: 'Dream Force', value: 'dream-force' },
-  { label: 'EBIMARU-DO', value: 'ebimaru-do' },
-  { label: 'Echo', value: 'echo' },
-  { label: 'EDGE', value: 'edge' },
-  { label: 'Erozuki', value: 'erozuki' },
-  { label: 'Exprational', value: 'exprational' },
-  { label: 'Five Ways', value: 'five-ways' },
-  { label: 'Flavors Soft', value: 'flavors-soft' },
-  { label: 'Forged3DX', value: 'forged3dx' },
-  { label: 'FOW', value: 'fow' },
-  { label: 'Frontier Works', value: 'frontier-works' },
-  { label: 'G-Lam', value: 'g-lam' },
-  { label: 'Glovision', value: 'glovision' },
-  { label: 'Godoy', value: 'godoy' },
-  { label: 'GOLD BEAR', value: 'gold-bear' },
-  { label: 'Green Bunny', value: 'green-bunny' },
-  { label: 'Guheihei', value: 'guheihei' },
-  { label: 'Guilty', value: 'guilty' },
-  { label: 'H69 Verse', value: 'h69-verse' },
-  { label: 'Hills', value: 'hills' },
-  { label: 'Himajin Planning', value: 'himajin-planning' },
-  { label: 'Hoods Entertainment', value: 'hoods-entertainment' },
-  { label: 'HoriPro', value: 'horipro' },
-  { label: 'Hot Bear', value: 'hot-bear' },
-  { label: 'HouKIBOSHI', value: 'houkiboshi' },
-  { label: 'HY', value: 'hy' },
-  { label: 'Image House', value: 'image-house' },
-  { label: 'IMP', value: 'imp' },
-  { label: 'InitialAI', value: 'initialai' },
-  { label: 'Innocent Grey', value: 'innocent-grey' },
-  { label: 'ITONAMI', value: 'itonami' },
-  { label: 'Ivory Tower', value: 'ivory-tower' },
-  { label: 'Jackerman', value: 'jackerman' },
-  { label: 'Jam', value: 'jam' },
-  { label: 'JapanAnime', value: 'japananime' },
-  { label: 'Jellyfish', value: 'jellyfish' },
-  { label: 'Jerid', value: 'jerid' },
-  { label: 'JT2XTREME', value: 'jt2xtreme' },
-  { label: 'Juicy Mango', value: 'juicy-mango' },
-  { label: 'Kanade Creative', value: 'kanade-creative' },
-  { label: 'Kanitarumono', value: 'kanitarumono' },
-  { label: 'Kazuki Production', value: 'kazuki-production' },
-  { label: 'King Bee', value: 'king-bee' },
-  { label: 'Kitty Media', value: 'kitty-media' },
-  { label: 'L', value: 'l' },
-  { label: 'Lantis', value: 'lantis' },
-  { label: 'Lune Pictures', value: 'lune-pictures' },
-  { label: 'MaF', value: 'maf' },
-  { label: 'Magic Bus', value: 'magic-bus' },
-  { label: 'Majin', value: 'majin' },
-  { label: 'Maplestar', value: 'maplestar' },
-  { label: 'marmalade*star', value: 'marmaladestar' },
-  { label: 'Mary Jane', value: 'mary-jane' },
-  { label: 'Media Bank', value: 'media-bank' },
-  { label: 'Media Blasters', value: 'media-blasters' },
-  { label: 'Mendez SFM', value: 'mendez-sfm' },
-  { label: 'Metoro', value: 'metoro' },
-  { label: 'Milkshake', value: 'milkshake' },
-  { label: 'Milky', value: 'milky' },
-  { label: 'Milky Animation Label', value: 'milky-animation-label' },
-  { label: 'Mitsu', value: 'mitsu' },
-  { label: 'Miwo3x', value: 'miwo3x' },
-  { label: 'MizudeppO', value: 'mizudeppo' },
-  { label: 'mmdia', value: 'mmdia' },
-  { label: 'Mousou Senka', value: 'mousou-senka' },
-  { label: 'MS Pictures', value: 'ms-pictures' },
-  { label: 'N/A', value: 'na' },
-  { label: 'Nagoonimation', value: 'nagoonimation' },
-  { label: 'Najar', value: 'najar' },
-  { label: 'Natural High', value: 'natural-high' },
-  { label: 'Nekokoya', value: 'nekokoya' },
-  { label: 'Neural Desires', value: 'neural-desires' },
-  { label: 'New Generation', value: 'new-generation' },
-  { label: 'Nihikime no Dozeu', value: 'nihikime-no-dozeu' },
-  { label: 'Nikovako', value: 'nikovako' },
-  { label: 'No Future', value: 'no-future' },
-  { label: 'Nur', value: 'nur' },
-  { label: 'NuTech Digital', value: 'nutech-digital' },
-  { label: 'Office Take Off', value: 'office-take-off' },
-  { label: 'Office Takeout', value: 'office-takeout' },
-  { label: 'OLE-M', value: 'ole-m' },
-  { label: 'opiumud', value: 'opiumud' },
-  { label: 'OZ', value: 'oz' },
-  { label: 'PashminaA', value: 'pashminaa' },
-  { label: 'Passione', value: 'passione' },
-  { label: 'peachpie', value: 'peachpie' },
-  { label: 'PerfectDeadbeat', value: 'perfectdeadbeat' },
-  { label: 'Picante Circus', value: 'picante-circus' },
-  { label: 'Pink Pineapple', value: 'pink-pineapple' },
-  { label: 'Pink sama', value: 'pink-sama' },
-  { label: 'Pixy', value: 'pixy' },
-  { label: 'Platinum Milky', value: 'platinum-milky' },
-  { label: 'Poly Animation', value: 'poly-animation' },
-  { label: 'PoRO', value: 'poro' },
-  { label: 'Production Reed', value: 'production-reed' },
-  { label: 'Queen Bee', value: 'queen-bee' },
-  { label: 'Rabbit Gate', value: 'rabbit-gate' },
-  { label: 'Raiose', value: 'raiose' },
-  { label: 'RD', value: 'rd' },
-  { label: 'RiffleR18', value: 'riffler18' },
-  { label: "Ryuu M's", value: "ryuu-m's" },
-  { label: 'Sakura Purin', value: 'sakura-purin' },
-  { label: 'schoolzone', value: 'schoolzone' },
-  { label: 'Seismic', value: 'seismic' },
-  { label: 'SELFISH', value: 'selfish' },
-  { label: 'Sentai Filmworks', value: 'sentai-filmworks' },
-  { label: 'Seven', value: 'seven' },
-  { label: 'Shinkuukan', value: 'shinkuukan' },
-  { label: 'Shion', value: 'shion' },
-  { label: 'Showten', value: 'showten' },
-  { label: "Silky's", value: "silky's" },
-  { label: 'Skuddbutt', value: 'skuddbutt' },
-  { label: 'Socrates', value: 'socrates' },
-  { label: 'SPEED', value: 'speed' },
-  { label: 'Studio 1st', value: 'studio-1st' },
-  { label: 'Studio 9 MAiami', value: 'studio-9-maiami' },
-  { label: 'Studio CA', value: 'studio-ca' },
-  { label: 'Studio Eromatick', value: 'studio-eromatick' },
-  { label: 'Studio Fantasia', value: 'studio-fantasia' },
-  { label: 'studioGGB', value: 'studioggb' },
-  { label: 'Studio Gokumi', value: 'studio-gokumi' },
-  { label: 'Studio Ten Carat', value: 'studio-ten-carat' },
-  { label: 'Studio Tulip', value: 'studio-tulip' },
-  { label: 'Studio Zealot', value: 'studio-zealot' },
-  { label: 'Suiseisha', value: 'suiseisha' },
-  { label: 'Suzuki Mirano', value: 'suzuki-mirano' },
-  { label: 'SYLD', value: 'syld' },
-  { label: 'Tavac', value: 'tavac' },
-  { label: 'TheCount', value: 'thecount' },
-  { label: 'Thelewdcook', value: 'thelewdcook' },
-  { label: 't japan', value: 't-japan' },
-  { label: 'TOHO animation', value: 'toho-animation' },
-  { label: 'Toranoana', value: 'toranoana' },
-  { label: 'Torudaya', value: 'torudaya' },
-  { label: 'Toshiba Entertainment', value: 'toshiba-entertainment' },
-  { label: 'T-Rex', value: 't-rex' },
-  { label: 'TR Sensual Studio', value: 'tr-sensual-studio' },
-  { label: 'Umemaro 3D', value: 'umemaro-3d' },
-  { label: 'Union Cho', value: 'union-cho' },
-  { label: 'Valkyria', value: 'valkyria' },
-  { label: 'ViciNeko', value: 'vicineko' },
-  { label: 'WHITE BEAR', value: 'white-bear' },
-  { label: 'Wild Life', value: 'wild-life' },
-  { label: 'XTER', value: 'xter' },
-  { label: 'Y.O.U.C', value: 'y.o.u.c' },
-  { label: 'ZIZ', value: 'ziz' },
-  { label: 'ZMSFM', value: 'zmsfm' },
-  { label: 'Zyc', value: 'zyc' },
-  { label: 'なめらか動画部', value: 'なめらか動画部' },
-];
+/**
+ * Resolve the current SvelteKit remote-function hash.
+ *
+ * The site exposes `/_app/remote/<hash>/<fnName>`. The hash is embedded in one
+ * of the immutable JS chunks reachable from the page's leaf node chunk, so we
+ * walk: page HTML -> node_ids -> app entry -> nodes/<id>.js -> its imports.
+ *
+ * @param forceRefresh skip (and overwrite) the cached value. Used when the
+ *   site redeploys mid-TTL and the cached hash starts returning 404.
+ */
+async function resolveRemoteHash(
+  slug: string,
+  forceRefresh = false,
+): Promise<string | null> {
+  if (!forceRefresh) {
+    const cached = storage.get(REMOTE_HASH_KEY);
+    if (cached) return cached as string;
+  }
 
-const yearOptions: { label: string; value: string }[] = [
-  { label: 'Tất cả', value: 'ALL' },
-  { label: '2026', value: '2026' },
-  { label: '2025', value: '2025' },
-  { label: '2024', value: '2024' },
-  { label: '2023', value: '2023' },
-  { label: '2022', value: '2022' },
-  { label: '2021', value: '2021' },
-  { label: '2020', value: '2020' },
-  { label: '2019', value: '2019' },
-  { label: '2018', value: '2018' },
-  { label: '2017', value: '2017' },
-  { label: '2016', value: '2016' },
-  { label: '2015', value: '2015' },
-  { label: '2014', value: '2014' },
-  { label: '2013', value: '2013' },
-  { label: '2012', value: '2012' },
-  { label: '2011', value: '2011' },
-  { label: '2010', value: '2010' },
-  { label: '2009', value: '2009' },
-  { label: '2008', value: '2008' },
-  { label: '2007', value: '2007' },
-  { label: '2006', value: '2006' },
-  { label: '2005', value: '2005' },
-  { label: '2004', value: '2004' },
-  { label: '2003', value: '2003' },
-  { label: '2002', value: '2002' },
-  { label: '2001', value: '2001' },
-  { label: '2000', value: '2000' },
-  { label: '1999', value: '1999' },
-  { label: '1994', value: '1994' },
-];
+  const getText = async (url: string) => {
+    const r = await fetchApi(url);
+    return r.ok ? await r.text() : '';
+  };
+
+  try {
+    const html = await getText(`${SITE}/watch/${slug}`);
+    if (!html) return null;
+
+    // Fast path: hash occasionally appears inline.
+    const inline = html.match(/_app\/remote\/([a-z0-9]{5,12})\//i);
+    if (inline) {
+      storage.set(REMOTE_HASH_KEY, inline[1], REMOTE_HASH_TTL);
+      return inline[1];
+    }
+
+    const idsMatch = html.match(/node_ids:\s*\[([^\]]*)\]/);
+    const appMatch = html.match(
+      /\/_app\/immutable\/entry\/app\.[^"'\s\\]+\.js/,
+    );
+    if (!idsMatch || !appMatch) return null;
+
+    const nodeIds = idsMatch[1]
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const leafId = nodeIds[nodeIds.length - 1];
+
+    const appJs = await getText(SITE + appMatch[0]);
+    const nodeFile = appJs.match(
+      new RegExp(`nodes/${leafId}\\.[A-Za-z0-9_-]+\\.js`),
+    );
+    if (!nodeFile) return null;
+
+    // BFS over the leaf chunk's relative imports, bounded to keep it cheap.
+    const seen = new Set<string>();
+    const queue: string[] = ['/_app/immutable/' + nodeFile[0]];
+    let budget = 40;
+
+    while (queue.length > 0 && budget-- > 0) {
+      const path = queue.shift() as string;
+      if (seen.has(path)) continue;
+      seen.add(path);
+
+      const code = await getText(SITE + path);
+      if (!code) continue;
+
+      const hit = code.match(/([a-z0-9]{5,12})\/getEpisodeEmbedUrl/i);
+      if (hit) {
+        storage.set(REMOTE_HASH_KEY, hit[1], REMOTE_HASH_TTL);
+        return hit[1];
+      }
+
+      const dir = path.substring(0, path.lastIndexOf('/'));
+      const importRe = /["'](\.{1,2}\/[A-Za-z0-9_\-./]+\.js)["']/g;
+      let m: RegExpExecArray | null;
+      while ((m = importRe.exec(code)) !== null) {
+        queue.push(normalizePath(dir + '/' + m[1]));
+      }
+    }
+  } catch (e) {
+    console.error('[HTZ] resolveRemoteHash error:', e);
+  }
+  return null;
+}
+
+/**
+ * Call a SvelteKit remote query. Arguments are devalue-encoded and base64'd
+ * into the `payload` search param; the response is devalue-encoded too.
+ *
+ * Returns the HTTP status alongside the data so the caller can tell a stale
+ * hash (404) apart from a genuine empty result.
+ */
+async function callRemote(
+  hash: string,
+  fnName: string,
+  args: Record<string, unknown>,
+  slug: string,
+): Promise<{ status: number; data: any }> {
+  const keys = Object.keys(args);
+  // devalue layout: [ {<key>: <idx>, ...}, ...values ] with index 0 = root map
+  const encoded: any[] = [['__skrao', 1]];
+  const rootMap: Record<string, number> = {};
+  let next = 2;
+  for (const k of keys) rootMap[k] = next++;
+  encoded.push(rootMap);
+  for (const k of keys) encoded.push(args[k]);
+
+  const payload = Buffer.from(JSON.stringify(encoded)).toString('base64');
+  const url = `${SITE}/_app/remote/${hash}/${fnName}?payload=${encodeURIComponent(payload)}`;
+
+  const res = await fetchApi(url, {
+    headers: {
+      'Referer': `${SITE}/watch/${slug}`,
+      'x-sveltekit-pathname': `/watch/${slug}`,
+      'x-sveltekit-search': '',
+    },
+  });
+  if (!res.ok) {
+    console.error(`[HTZ] remote ${fnName} failed:`, res.status);
+    return { status: res.status, data: null };
+  }
+
+  try {
+    const body = await res.json();
+    if (body?.type !== 'result' || !body.data) {
+      return { status: res.status, data: null };
+    }
+
+    const root = decodeSvelteData(JSON.parse(body.data));
+    // Remote results are wrapped: { _: <actual>, q: <refresh map> }
+    const data =
+      root && typeof root === 'object' && '_' in root ? root._ : root;
+    return { status: res.status, data };
+  } catch (e) {
+    console.error(`[HTZ] remote ${fnName} decode error:`, e);
+    return { status: res.status, data: null };
+  }
+}
+
+/**
+ * Call a remote function, transparently recovering from a stale cached hash.
+ *
+ * The hash rotates whenever the site redeploys, which can happen at any point
+ * inside the cache TTL. When that happens the endpoint 404s, so we evict the
+ * cached value, re-resolve from the live page and replay the call once.
+ */
+async function callRemoteWithRetry(
+  fnName: string,
+  args: Record<string, unknown>,
+  slug: string,
+): Promise<any> {
+  const hash = await resolveRemoteHash(slug);
+  if (!hash) {
+    console.error('[HTZ] could not resolve remote hash');
+    return null;
+  }
+
+  const first = await callRemote(hash, fnName, args, slug);
+  if (first.data) return first.data;
+
+  // 2xx with no data means the call really did return nothing -> don't retry.
+  if (first.status >= 200 && first.status < 300) return null;
+
+  console.log(`[HTZ] hash "${hash}" looks stale (${first.status}), refreshing`);
+  storage.delete(REMOTE_HASH_KEY);
+
+  const fresh = await resolveRemoteHash(slug, true);
+  if (!fresh || fresh === hash) return null;
+
+  const second = await callRemote(fresh, fnName, args, slug);
+  return second.data;
+}
 
 class HentaiZPlugin implements Plugin.PluginBase {
   id = 'hentaiz';
   name = 'HentaiZ';
   icon = 'src/vi/hentaiz/icon.png';
   site = SITE;
-  version = '1.0.14';
+  version = '1.1.0';
   contentType = ContentType.VIDEO;
   contentWarning = ContentWarning.NSFW;
 
@@ -477,73 +368,7 @@ class HentaiZPlugin implements Plugin.PluginBase {
     return storage.get('enableEmbed') as boolean;
   }
 
-  filters = {
-    sort: {
-      type: FilterTypes.Picker,
-      label: 'Sắp xếp',
-      value: 'publishedAt_desc',
-      options: [
-        { label: 'Mới nhất', value: 'publishedAt_desc' },
-        { label: 'Xem nhiều', value: 'views_desc' },
-        { label: 'Tên A-Z', value: 'title_asc' },
-      ],
-    },
-    animationType: {
-      type: FilterTypes.Picker,
-      label: 'Loại phim',
-      value: 'ALL',
-      options: [
-        { label: 'Tất cả', value: 'ALL' },
-        { label: 'Hentai 2D', value: 'TWO_D' },
-        { label: 'Hentai 3D', value: 'THREE_D' },
-        { label: 'Hentai Motion', value: 'MOTION' },
-      ],
-    },
-    contentRating: {
-      type: FilterTypes.Picker,
-      label: 'Kiểm duyệt',
-      value: 'ALL',
-      options: [
-        { label: 'Tất cả', value: 'ALL' },
-        { label: 'Có che', value: 'CENSORED' },
-        { label: 'Không che', value: 'UNCENSORED' },
-      ],
-    },
-    isTrailer: {
-      type: FilterTypes.Picker,
-      label: 'Loại nội dung',
-      value: 'ALL',
-      options: [
-        { label: 'Tất cả', value: 'ALL' },
-        { label: 'Phim đầy đủ', value: 'false' },
-        { label: 'Trailer', value: 'true' },
-      ],
-    },
-    genres: {
-      type: FilterTypes.CheckboxGroup,
-      label: 'Thể loại',
-      value: [],
-      options: genreOptions,
-    },
-    excludeGenres: {
-      type: FilterTypes.CheckboxGroup,
-      label: 'Loại trừ',
-      value: [],
-      options: genreOptions,
-    },
-    studios: {
-      type: FilterTypes.Picker,
-      label: 'Hãng phim',
-      value: 'ALL',
-      options: studioOptions,
-    },
-    year: {
-      type: FilterTypes.Picker,
-      label: 'Năm',
-      value: 'ALL',
-      options: yearOptions,
-    },
-  } satisfies Filters;
+  filters = filters;
 
   // ---------- helpers ----------
 
@@ -706,11 +531,21 @@ class HentaiZPlugin implements Plugin.PluginBase {
 
     novel.status = NovelStatus.Completed;
 
-    // Fetch all episodes of the same series by searching for the title
+    // Fetch all episodes of the same series via the `getSeriesEpisodes`
+    // remote function (authoritative), falling back to a title search.
     const chapters: Plugin.ChapterItem[] = [];
     const seriesTitle = ep.title || '';
 
-    if (seriesTitle) {
+    let seriesEps: any[] = [];
+
+    const series = await callRemoteWithRetry(
+      'getSeriesEpisodes',
+      { currentSlug: slug },
+      slug,
+    );
+    if (Array.isArray(series?.episodes)) seriesEps = series.episodes;
+
+    if (seriesEps.length === 0 && seriesTitle) {
       const searchUrl = this.buildBrowseUrl(
         1,
         {
@@ -727,33 +562,36 @@ class HentaiZPlugin implements Plugin.PluginBase {
       );
 
       const browseData = await fetchSvelteData(searchUrl);
-      if (browseData?.episodes) {
-        const seriesEps = browseData.episodes.filter(
+      if (Array.isArray(browseData?.episodes)) {
+        seriesEps = browseData.episodes.filter(
           (e: any) => e?.title === seriesTitle,
         );
-
-        // Get cover from browse data (detail endpoint has no images)
-        if (novel.cover === defaultCover && seriesEps.length > 0) {
-          const firstEp = seriesEps[0];
-          if (firstEp.backdropImage?.filePath) {
-            novel.cover = STORAGE_URL + firstEp.backdropImage.filePath;
-          } else if (firstEp.posterImage?.filePath) {
-            novel.cover = STORAGE_URL + firstEp.posterImage.filePath;
-          }
-        }
-
-        seriesEps
-          .sort(
-            (a: any, b: any) => (a.episodeNumber || 0) - (b.episodeNumber || 0),
-          )
-          .forEach((e: any) => {
-            chapters.push({
-              name: `Tập ${e.episodeNumber || 1}`,
-              path: '/watch/' + e.slug,
-              chapterNumber: e.episodeNumber || 1,
-            });
-          });
       }
+    }
+
+    if (seriesEps.length > 0) {
+      // Detail endpoint may not carry images; take them from the list instead
+      if (novel.cover === defaultCover) {
+        const firstEp = seriesEps[0];
+        if (firstEp.backdropImage?.filePath) {
+          novel.cover = STORAGE_URL + firstEp.backdropImage.filePath;
+        } else if (firstEp.posterImage?.filePath) {
+          novel.cover = STORAGE_URL + firstEp.posterImage.filePath;
+        }
+      }
+
+      seriesEps
+        .filter((e: any) => e?.slug)
+        .sort(
+          (a: any, b: any) => (a.episodeNumber || 0) - (b.episodeNumber || 0),
+        )
+        .forEach((e: any) => {
+          chapters.push({
+            name: `Tập ${e.episodeNumber || 1}`,
+            path: '/watch/' + e.slug,
+            chapterNumber: e.episodeNumber || 1,
+          });
+        });
     }
 
     // Fallback: if search found nothing, add current episode
@@ -777,12 +615,33 @@ class HentaiZPlugin implements Plugin.PluginBase {
 
   // ---------- parseChapter ----------
 
+  /**
+   * Resolve the iframe embed URL for an episode.
+   *
+   * The site no longer ships `embedUrl` inside `__data.json` (it only exposes
+   * `hasEmbed`); it is served by the `getEpisodeEmbedUrl` remote function.
+   */
+  private async getEmbedUrl(slug: string): Promise<string> {
+    const data = await fetchSvelteData(`${SITE}/watch/${slug}/__data.json`);
+    const ep = data?.episode;
+
+    // Legacy field, kept as a fast path in case the site restores it.
+    if (ep?.embedUrl) return ep.embedUrl as string;
+    if (!ep?.id) return '';
+
+    // `callRemoteWithRetry` handles a hash that went stale mid-TTL.
+    const result = await callRemoteWithRetry(
+      'getEpisodeEmbedUrl',
+      { episodeId: ep.id },
+      slug,
+    );
+
+    return result?.embedUrl || '';
+  }
+
   async parseChapter(chapterPath: string): Promise<string> {
     const slug = chapterPath.replace('/watch/', '');
-    const dataUrl = `${SITE}/watch/${slug}/__data.json`;
-    const data = await fetchSvelteData(dataUrl);
-
-    const embedUrl = data?.episode?.embedUrl || '';
+    const embedUrl = await this.getEmbedUrl(slug);
 
     if (!embedUrl) {
       throw new Error('Không tìm thấy nguồn phát video.');
@@ -804,6 +663,12 @@ class HentaiZPlugin implements Plugin.PluginBase {
     const videoData = await decryptVideoData(videoId);
     if (!videoData) {
       return this.buildPlayerHtml({ iframe: embedUrl });
+    }
+
+    // Preferred: the CDN serves a real master playlist with `ACAO: *`, so the
+    // core player can stream it directly without any blob juggling.
+    if (videoData.masterUrl) {
+      return this.buildPlayerHtml({ m3u8: videoData.masterUrl });
     }
 
     // Build absolute-URL m3u8 playlists and embed as JSON data attribute
@@ -843,6 +708,7 @@ class HentaiZPlugin implements Plugin.PluginBase {
 
   private buildPlayerHtml(opts: {
     iframe?: string;
+    m3u8?: string;
     m3u8Master?: string;
     m3u8Playlists?: string[];
   }): string {
@@ -861,6 +727,15 @@ class HentaiZPlugin implements Plugin.PluginBase {
         '<meta name="lnreader-video-mode" content="direct">',
         '<meta name="lnreader-video-type" content="iframe">',
         `<meta name="lnreader-video-url" content="${esc(opts.iframe)}">`,
+      ].join('\n');
+    }
+
+    if (opts.m3u8) {
+      return [
+        ...base,
+        '<meta name="lnreader-video-mode" content="direct">',
+        '<meta name="lnreader-video-type" content="m3u8">',
+        `<meta name="lnreader-video-url" content="${esc(opts.m3u8)}">`,
       ].join('\n');
     }
 

@@ -171,8 +171,8 @@ class CosplayTelePlugin implements Plugin.PluginBase {
   name = 'CosplayTele';
   icon = 'src/en/cosplaytele/icon.png';
   site = SITE;
-  version = '1.0.2';
-  contentType = ContentType.IMAGE;
+  version = '1.0.3';
+  contentType = ContentType.MIXED;
   contentWarning = ContentWarning.NSFW;
 
   customJS = 'src/en/cosplaytele/custom.js';

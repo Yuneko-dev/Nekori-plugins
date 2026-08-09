@@ -138,9 +138,8 @@ function decodeSvelteData(data: any[]): any {
     cache.set(idx, obj);
     // `Object.keys` (ES5) instead of `Object.entries` (ES2017): the project
     // compiles against an ES2016 lib.
-    const keys = Object.keys(val);
-    for (let k = 0; k < keys.length; k++) {
-      obj[keys[k]] = resolve(val[keys[k]] as number);
+    for (const key of Object.keys(val)) {
+      obj[key] = resolve(val[key] as number);
     }
     return obj;
   }
@@ -203,7 +202,9 @@ async function resolveRemoteHash(
     }
 
     const idsMatch = html.match(/node_ids:\s*\[([^\]]*)\]/);
-    const appMatch = html.match(/\/_app\/immutable\/entry\/app\.[^"'\s\\]+\.js/);
+    const appMatch = html.match(
+      /\/_app\/immutable\/entry\/app\.[^"'\s\\]+\.js/,
+    );
     if (!idsMatch || !appMatch) return null;
 
     const nodeIds = idsMatch[1]

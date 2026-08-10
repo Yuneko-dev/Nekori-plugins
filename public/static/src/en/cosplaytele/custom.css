@@ -1,3 +1,8 @@
+:root {
+  --reader-margin-right: 0px;
+  --reader-margin-left: 0px;
+}
+
 #LNReader-chapter p:has(img),
 #LNReader-chapter div:has(img):not(#LNReader-chapter),
 #LNReader-chapter figure {

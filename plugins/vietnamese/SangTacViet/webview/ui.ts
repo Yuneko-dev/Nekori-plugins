@@ -220,9 +220,8 @@ const styles = `
 
   .stv-captcha__image {
     display: block;
-    max-height: 90px;
-    max-width: 100%;
-    object-fit: contain;
+    height: auto;
+    width: 100%;
   }
 
   .stv-captcha__label {
@@ -317,9 +316,9 @@ export function createCaptchaView(
     <style>${styles}</style>
     <section class="captcha-card" aria-labelledby="captcha-title">
       <header class="captcha-card__header">
-        <p class="captcha-card__eyebrow">Bảo vệ nội dung</p>
-        <h2 class="captcha-card__title" id="captcha-title">Xác minh bạn là người đọc</h2>
-        <p class="captcha-card__description">Chọn một phương thức xác thực để tiếp tục đọc chương.</p>
+        <p class="captcha-card__eyebrow">Sáng Tác Việt</p>
+        <h2 class="captcha-card__title" id="captcha-title">Xác minh captcha</h2>
+        <p class="captcha-card__description">Sáng Tác Việt cần bạn xác minh captcha để tiếp tục đọc chương.</p>
       </header>
       <div class="captcha-tabs" role="tablist" aria-label="Nhà cung cấp captcha">
         ${PROVIDERS.map(

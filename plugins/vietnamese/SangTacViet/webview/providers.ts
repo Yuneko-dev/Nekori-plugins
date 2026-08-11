@@ -111,7 +111,6 @@ function createSangTacVietProvider(): CaptchaProvider {
     if (!image || !input) return;
     image.src = `/generate_captcha.php?random=${Math.random()}`;
     input.value = '';
-    input.focus();
   };
 
   return {

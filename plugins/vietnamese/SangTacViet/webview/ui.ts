@@ -17,7 +17,7 @@ const PROVIDERS: { name: ProviderName; label: string }[] = [
 
 const styles = `
   body {
-    padding-top: calc(var(--reader-margin-top, 0px) + var(--tsundoku-safe-top, 0px));
+    padding-top: 110px;
   }
 
   #captcha-placeholder {

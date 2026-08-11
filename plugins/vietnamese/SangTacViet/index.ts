@@ -238,7 +238,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.31';
+  version = '1.0.32';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -618,7 +618,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
   }
 
-  private async _parseChapter(chapterPath: string): Promise<string> {
+  private async _parseChapter(chapterPath: string, cfCount = 0): Promise<string> {
     // Path: /truyen/{host}/{sty}/{bookid}/{chapterId}/
     const pathParts = chapterPath.replace(/^\/|\/$/g, '').split('/');
     const bookHost = pathParts[1] || '';
@@ -729,6 +729,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
           // return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
           // Test Cloudflare Captcha
           try {
+            if (cfCount > 2) {
+              throw new Error('Too many Cloudflare captcha attempts. Aborting.');
+            }
             const captchaToken = await solveCloudflareTurnstile(
               `${this.site}${chapterPath}`,
               '0x4AAAAAABVjME7NHipdnj-c',
@@ -760,7 +763,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
               'Captcha verification response:',
               await respCaptcha.text(),
             );
-            return this._parseChapter(chapterPath); // Retry after captcha
+            return this._parseChapter(chapterPath, cfCount + 1); // Retry after captcha
           } catch (e) {
             console.error('Captcha solving error:', e);
             return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";

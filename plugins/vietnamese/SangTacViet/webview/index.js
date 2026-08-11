@@ -26,6 +26,10 @@ const captchaHTML = `<div>
   </div>
 
   <style>
+    body {
+      padding-top: calc(var(--reader-margin-top) + var(--tsundoku-safe-top, 0px));
+    }
+
     .captcha-container {
       width: 320px;
       border: 1px solid #d1d1d1;

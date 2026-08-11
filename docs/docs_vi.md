@@ -168,22 +168,6 @@ window.reader.fetch(url, init); // Sử dụng tương đương Fetch API
 
 - Trong Reader, URL (location) mặc định sử dụng sẽ là URL site của plugin (Không phải URL của Chapter). Trong Playground, nó là localhost URL.
 
-> [!WARNING]
-> API mới: `solveCloudflare` (import từ `@libs/webview`) là một API gọi WebView ẩn để bypass các yêu cầu bị Cloudflare chặn. Nhưng đây không phải một API ổn định, nó có thể bị xóa bất kì lúc nào. Luôn kiểm tra kiểu của `solveCloudflare` có phải một function hay không trước khi sử dụng.
-
-```js
-import { solveCloudflare } from '@/lib/utils';
-
-const result1 = await solveCloudflare(
-  'https://2captcha.com/demo/cloudflare-turnstile',
-  'turnstile',
-);
-const result2 = await solveCloudflare(
-  'https://2captcha.com/demo/cloudflare-turnstile-challenge',
-  'interstitial',
-);
-```
-
 ### 4. Xây dựng Plugin Video (Anime)
 
 LNReader cung cấp sẵn một trình phát video (Core Player) mạnh mẽ dựa trên `hls.js` và `HTML5 Video`. Nó hỗ trợ phát `m3u8`, `mp4` và cả `iframe` trực tiếp trong ứng dụng. Bạn **không cần** tự viết CSS hay nhúng thư viện bên ngoài. Chỉ cần plugin trả về một cấu trúc HTML chứa các thẻ `<meta>` đúng quy chuẩn, phần còn lại sẽ do App tự động xử lý.
@@ -262,6 +246,6 @@ Các thuộc tính / phương thức khác có thể xem [tại đây](https://g
 
 ## Các thẻ meta đặc biệt khác
 
-| #   | Cú pháp                                        | Mô tả                                                                                     |
-| --- | ---------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1   | `<meta id="lnreader-video-disable-progress"/>` | Đánh dấu chapter video này không sử dụng lưu progess (Ví dụ: Không có thời gian kết thúc) |
+| #   | Cú pháp                                        | Mô tả                                                                                                                                               |
+| --- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `<meta id="lnreader-video-disable-progress"/>` | Đánh dấu chapter video này không sử dụng lưu progess (Ví dụ: Live; Không có thời gian kết thúc). Đồng thời video này cũng sẽ không hỗ trợ tải xuống |

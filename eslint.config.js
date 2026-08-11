@@ -177,7 +177,6 @@ export default tseslint.config(
                 '!@libs/utils',
                 '!@libs/cookie',
                 '!@libs/storage',
-                '!@libs/webview',
                 '!@/types/plugin',
               ],
               message:
@@ -199,11 +198,6 @@ export default tseslint.config(
             "ImportDeclaration[source.value='@libs/utils'] ImportSpecifier[imported.name=/^(Buffer|encodeHtmlEntities|decodeHtmlEntities|NodeCrypto|getUserAgent)$/]",
           'message':
             'WARNING: Plugins using this utility function/variable will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
-        },
-        {
-          'selector': "ImportDeclaration[source.value='@libs/webview']",
-          'message':
-            'WARNING: Plugins using this webview function will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
         },
         {
           'selector': "ImportDeclaration[source.value='@libs/cookie']",

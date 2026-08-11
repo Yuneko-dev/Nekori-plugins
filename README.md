@@ -75,7 +75,6 @@ Plugins in this repository make use of new API functions that are not available 
 - `@libs/utils`: added `utf8ToBytes`, `bytesToUtf8`, `getUserAgent`, `Buffer`, `NodeCrypto` (Used similarly to `import NodeCrypto from "node:crypto"`), `encodeHtmlEntities` and `decodeHtmlEntities`
 - `@libs/fetch`: removed `fetchFile`
 - `@libs/cookie`
-- `@libs/webview`
 - `@libs/pluginMetadata`
 
 ---

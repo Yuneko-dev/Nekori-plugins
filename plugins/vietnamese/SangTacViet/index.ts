@@ -8,7 +8,6 @@ import { defaultCover } from '@libs/defaultCover';
 import { storage } from '@libs/storage';
 import { get, set, setFromResponse, removeSessionCookies } from '@libs/cookie';
 import { decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
-import { solveCloudflareTurnstile } from '@libs/webview';
 import filters from './filters';
 import { STVChapterError } from './STVError';
 import { HOST_PATTERNS, ABT_HOSTS, looksLikeExternalUrl } from './ExternalURL';
@@ -238,7 +237,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.32';
+  version = '1.0.33';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -726,48 +725,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       console.warn('Unexpected chapter API response', data);
       switch (String(data.code)) {
         case '21': {
-          // return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
-          // Test Cloudflare Captcha
-          try {
-            if (cfCount > 2) {
-              throw new Error('Too many Cloudflare captcha attempts. Aborting.');
-            }
-            const captchaToken = await solveCloudflareTurnstile(
-              `${this.site}${chapterPath}`,
-              '0x4AAAAAABVjME7NHipdnj-c',
-            );
-            if (!captchaToken) {
-              throw new Error('Captcha solving failed or was cancelled.');
-            }
-            const body = new URLSearchParams();
-            body.set('ajax', 'verifycaptcha');
-            body.set('token', captchaToken);
-            body.set('purpose', 'read');
-            body.set('provider', 'cloudflare');
-            // Verify the captcha token with the server
-            const respCaptcha = await fetchApi(
-              `${this.site}/index.php?ngmar=verifyca`,
-              {
-                headers: {
-                  accept: '*/*',
-                  'accept-language': 'vi',
-                  'content-type': 'application/x-www-form-urlencoded',
-                  pragma: 'no-cache',
-                  referer: `${this.site}${chapterPath}`,
-                },
-                body: body.toString(),
-                method: 'POST',
-              },
-            );
-            console.log(
-              'Captcha verification response:',
-              await respCaptcha.text(),
-            );
-            return this._parseChapter(chapterPath, cfCount + 1); // Retry after captcha
-          } catch (e) {
-            console.error('Captcha solving error:', e);
-            return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
-          }
+          return "<meta id='no-cache-marker'/><meta id='no-prefetch-marker'/><div id='captcha-placeholder'></div>";
         }
         default: {
           throw new STVChapterError(Number(data.code), data);

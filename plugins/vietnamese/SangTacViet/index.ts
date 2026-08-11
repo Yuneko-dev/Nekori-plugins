@@ -237,7 +237,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.35';
+  version = '1.0.36';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -617,7 +617,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
   }
 
-  private async _parseChapter(chapterPath: string, cfCount = 0): Promise<string> {
+  private async _parseChapter(chapterPath: string): Promise<string> {
     // Path: /truyen/{host}/{sty}/{bookid}/{chapterId}/
     const pathParts = chapterPath.replace(/^\/|\/$/g, '').split('/');
     const bookHost = pathParts[1] || '';
@@ -720,7 +720,10 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       const applyName = this.autoName && this.translateEnabled;
       const content = normalizeChapterHtml(host, rawData, applyName);
       const title = data.chaptername?.trim();
-      return (title ? `<h2>${title}</h2>` : '') + wrapWithParagraphs(content);
+      return (
+        (title ? `<h2>${title}</h2>` : '') +
+        wrapWithParagraphs(content).replace(/http:\/\//, 'https://')
+      );
     } else {
       console.warn('Unexpected chapter API response', data);
       switch (String(data.code)) {

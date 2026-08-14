@@ -1,10 +1,7 @@
 /* core-player.css */
 
 body {
-    padding-top: max(
-        var(--reader-margin-top),
-        var(--tsundoku-safe-top, 0px)
-    );
+  padding-top: max(var(--reader-margin-top), var(--tsundoku-safe-top, 0px));
 }
 
 :root {
@@ -25,7 +22,7 @@ body {
 #LNReader-chapter:has(> .local-video-button) > h4 {
   margin-top: 8px;
   font-weight: 400;
-  opacity: .72;
+  opacity: 0.72;
 }
 
 #LNReader-chapter:has(> .local-video-button) > .local-video-button {
@@ -100,7 +97,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 7px;
-  border: 1px solid color-mix(in srgb, var(--reader-text-color) 30%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--reader-text-color) 30%, transparent);
   border-radius: 50%;
   background: color-mix(
     in srgb,
@@ -109,7 +107,7 @@ body {
   );
   box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
   color: var(--reader-text-color);
-  opacity: .7;
+  opacity: 0.7;
 }
 
 #lnreader-debug-toggle svg {
@@ -122,6 +120,6 @@ body {
   stroke-width: 2;
 }
 
-#lnreader-debug-toggle[aria-expanded="true"] {
+#lnreader-debug-toggle[aria-expanded='true'] {
   opacity: 1;
 }

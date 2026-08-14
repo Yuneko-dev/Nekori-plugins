@@ -9,11 +9,7 @@ export type NavigationStore = {
   shouldAutoSubmitChapter: boolean;
   setParseNovelPath(path: string, autoSubmit?: boolean): void;
   clearParseNovelPath(): void;
-  setParseChapterPath(
-    path: string,
-    autoSubmit?: boolean,
-    title?: string,
-  ): void;
+  setParseChapterPath(path: string, autoSubmit?: boolean, title?: string): void;
   clearParseChapterPath(): void;
 };
 

@@ -1,4 +1,11 @@
-import { app, BrowserWindow, Menu, session, protocol } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  components,
+  Menu,
+  session,
+  protocol,
+} from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registerAllHandlers } from './ipc/index.js';
@@ -99,6 +106,8 @@ function buildMenu() {
 }
 
 app.whenReady().then(async () => {
+  await components.whenReady();
+  console.log('Components ready:', components.status());
   app.userAgentFallback = app.userAgentFallback
     .replace(/Electron\/[\d\.]+/gi, '')
     .replace(/ {2,}/g, ' ');

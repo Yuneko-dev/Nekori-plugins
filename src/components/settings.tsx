@@ -14,14 +14,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import useDebounce from '@/hooks/useDebounce';
-import { FetchMode } from '@/types/types';
 import { useAppStore } from '@/store';
 import { storage } from '@libs/storage';
 import { Switch } from '@/components/ui/switch';
 
 export default function SettingsSection() {
   const [cookies, setCookies] = useState('');
-  const [fetchMode, setFetchMode] = useState<FetchMode>(FetchMode.PROXY);
   const [useUserAgent, setUseUserAgent] = useState<CheckedState>(true);
   const [loading, setLoading] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
@@ -29,14 +27,13 @@ export default function SettingsSection() {
 
   const debouncedCookies = useDebounce(cookies, 500);
 
-  const isElectron = !!window.electronAPI;
   const plugin = useAppStore(state => state.plugin);
   const [pluginSettingValues, setPluginSettingValues] = useState<
     Record<string, any>
   >({});
 
   useEffect(() => {
-    if (isElectron && plugin?.pluginSettings) {
+    if (plugin?.pluginSettings) {
       const vals: Record<string, any> = {};
       Object.entries(plugin.pluginSettings).forEach(([key, setting]) => {
         const stored = storage.get(key);
@@ -44,7 +41,7 @@ export default function SettingsSection() {
       });
       setPluginSettingValues(vals);
     }
-  }, [plugin, isElectron]);
+  }, [plugin]);
 
   const handlePluginSettingChange = (key: string, value: any) => {
     setPluginSettingValues(prev => ({ ...prev, [key]: value }));
@@ -53,15 +50,12 @@ export default function SettingsSection() {
   };
 
   useEffect(() => {
-    const p = isElectron
-      ? window.electronAPI!.invoke('settings:get')
-      : fetch('settings').then(res => res.json());
-
-    p.then((data: any) => {
-      if (data.cookies !== undefined) setCookies(data.cookies || '');
-      if (data.fetchMode !== undefined) setFetchMode(data.fetchMode);
-      if (data.useUserAgent !== undefined) setUseUserAgent(data.useUserAgent);
-    })
+    window
+      .electronAPI!.invoke('settings:get')
+      .then((data: any) => {
+        if (data.cookies !== undefined) setCookies(data.cookies || '');
+        if (data.useUserAgent !== undefined) setUseUserAgent(data.useUserAgent);
+      })
       .catch((err: any) => console.error('Failed to load settings:', err))
       .finally(() => setInitialLoaded(true));
   }, []);
@@ -79,35 +73,15 @@ export default function SettingsSection() {
 
     const settingsData = {
       cookies: debouncedCookies,
-      fetchMode: fetchMode,
       useUserAgent: useUserAgent === true,
     };
 
-    const p = isElectron
-      ? window.electronAPI!.invoke('settings:set', settingsData)
-      : fetch('settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(settingsData),
-        });
-
-    p.then(() => setAlertVisible(true))
+    window
+      .electronAPI!.invoke('settings:set', settingsData)
+      .then(() => setAlertVisible(true))
       .catch((error: any) => console.error('Failed to save settings:', error))
       .finally(() => setLoading(false));
-  }, [debouncedCookies, fetchMode, useUserAgent, initialLoaded]);
-
-  const getFetchModeLabel = (mode: FetchMode) => {
-    switch (mode) {
-      case FetchMode.PROXY:
-        return 'Proxy';
-      case FetchMode.NODE_FETCH:
-        return 'Node Fetch';
-      case FetchMode.CURL:
-        return 'Curl';
-      default:
-        return 'Proxy';
-    }
-  };
+  }, [debouncedCookies, useUserAgent, initialLoaded]);
 
   return (
     <div className="space-y-6">
@@ -133,8 +107,7 @@ export default function SettingsSection() {
 
         <div className="space-y-6">
           {/* Plugin Settings Section */}
-          {isElectron &&
-            plugin &&
+          {plugin &&
             plugin.pluginSettings &&
             Object.keys(plugin.pluginSettings).length > 0 && (
               <div>
@@ -334,50 +307,6 @@ export default function SettingsSection() {
                   Additional cookies to send with requests (optional)
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Fetch Settings Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-px flex-1 bg-border"></div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                Fetch Settings
-              </h3>
-              <div className="h-px flex-1 bg-border"></div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="fetch-mode"
-                className="font-semibold text-foreground"
-              >
-                Fetch Mode
-              </Label>
-              <Select
-                value={fetchMode.toString()}
-                onValueChange={value =>
-                  setFetchMode(parseInt(value) as FetchMode)
-                }
-              >
-                <SelectTrigger id="fetch-mode">
-                  <SelectValue>{getFetchModeLabel(fetchMode)}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={FetchMode.PROXY.toString()}>
-                    Proxy
-                  </SelectItem>
-                  <SelectItem value={FetchMode.NODE_FETCH.toString()}>
-                    Node Fetch
-                  </SelectItem>
-                  <SelectItem value={FetchMode.CURL.toString()}>
-                    Curl
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Select the method used to fetch data from sources
-              </p>
             </div>
           </div>
         </div>

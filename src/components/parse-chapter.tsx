@@ -1,27 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, FileText, Code } from 'lucide-react';
+import { Copy, FileText, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAppStore } from '@/store';
-import { readerMockScript } from '@/lib/reader-mock';
-import corePlayerRaw from '../lib/core-player.js?raw';
-import corePlayerCss from '../lib/core-player.css?raw';
+import { buildPreviewDocument } from '@/lib/preview-document';
 
 export default function ParseChapterSection() {
-  const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
-
   const plugin = useAppStore(state => state.plugin);
   const parseChapterPath = useAppStore(state => state.parseChapterPath);
+  const parseChapterTitle = useAppStore(state => state.parseChapterTitle);
   const shouldAutoSubmitChapter = useAppStore(
     state => state.shouldAutoSubmitChapter,
   );
@@ -29,38 +25,16 @@ export default function ParseChapterSection() {
     state => state.clearParseChapterPath,
   );
   const [chapterPath, setChapterPath] = useState('');
+  /** "Novel name - Chapter name", only known when navigated from Parse Novel. */
+  const [chapterTitle, setChapterTitle] = useState('');
   const [chapterText, setChapterText] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
-  const [showRawHtml, setShowRawHtml] = useState(false);
-
-  const [customCSSLoaded, setCustomCSSLoaded] = useState(false);
-  const [customCSSError, setCustomCSSError] = useState(false);
-  const [customJSLoaded, setCustomJSLoaded] = useState(false);
-  const [customJSError, setCustomJSError] = useState(false);
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'asset-loaded') {
-        if (event.data.asset === 'css') setCustomCSSLoaded(true);
-        if (event.data.asset === 'js') setCustomJSLoaded(true);
-      } else if (event.data?.type === 'asset-error') {
-        if (event.data.asset === 'css') setCustomCSSError(true);
-        if (event.data.asset === 'js') setCustomJSError(true);
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
 
   const fetchChapterByPath = async (path: string) => {
     if (plugin && path.trim()) {
       setLoading(true);
       setFetchError('');
-      setCustomCSSLoaded(false);
-      setCustomCSSError(false);
-      setCustomJSLoaded(false);
-      setCustomJSError(false);
       try {
         const result = await plugin.parseChapter(path);
         setChapterText(result);
@@ -96,6 +70,7 @@ export default function ParseChapterSection() {
   useEffect(() => {
     if (parseChapterPath) {
       setChapterPath(parseChapterPath);
+      setChapterTitle(parseChapterTitle || '');
 
       if (shouldAutoSubmitChapter && plugin) {
         fetchChapterByPath(parseChapterPath);
@@ -105,15 +80,41 @@ export default function ParseChapterSection() {
     }
   }, [
     parseChapterPath,
+    parseChapterTitle,
     shouldAutoSubmitChapter,
     plugin,
     clearParseChapterPath,
   ]);
 
-  const isVideoChapter =
-    /<meta\s+name=["']lnreader-chapter-type["']\s+content=["']video["']/i.test(
-      chapterText,
-    );
+  const openPreview = async () => {
+    if (!plugin || !chapterText) return;
+    if (!window.electronAPI) {
+      toast.error('Preview requires the Electron playground');
+      return;
+    }
+    // Only a jump from Parse Novel knows the novel and chapter names; a
+    // hand-typed path falls back to the plugin name and the path itself.
+    const title = chapterTitle || `${plugin.name} - ${chapterPath}`;
+    try {
+      await window.electronAPI.invoke('preview:open', {
+        pluginId: plugin.id,
+        title,
+        html: buildPreviewDocument({
+          html: chapterText,
+          title,
+          customCSS: plugin.customCSS,
+          customJS: plugin.customJS,
+          dark: document.documentElement.classList.contains('dark'),
+        }),
+        // Same role as react-native-webview's `source.baseUrl` in the app.
+        baseUrl: plugin.site,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to open preview';
+      toast.error(message);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -152,7 +153,11 @@ export default function ParseChapterSection() {
           <Input
             placeholder="Enter chapter path..."
             value={chapterPath}
-            onChange={e => setChapterPath(e.target.value)}
+            onChange={e => {
+              setChapterPath(e.target.value);
+              // The stored title belongs to the chapter we navigated from.
+              setChapterTitle('');
+            }}
             onKeyPress={handleKeyPress}
             className="flex-1"
             disabled={!plugin}
@@ -221,16 +226,20 @@ export default function ParseChapterSection() {
                 </p>
               </div>
               <div className="flex gap-2 items-center">
-                <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-muted/50">
-                  <Code className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    Raw HTML
-                  </span>
-                  <Switch
-                    checked={showRawHtml}
-                    onCheckedChange={setShowRawHtml}
-                  />
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" className="gap-2" onClick={openPreview}>
+                      <ExternalLink className="w-4 h-4" />
+                      Mở Preview
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Open the chapter in a separate Electron tab, based at{' '}
+                      {plugin?.site}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -273,59 +282,13 @@ export default function ParseChapterSection() {
             <div className="border border-border rounded-lg">
               <div className="bg-muted/50 rounded-t-lg px-4 py-2 border-b border-border">
                 <p className="text-xs text-muted-foreground font-medium">
-                  {showRawHtml ? 'RAW HTML' : 'CHAPTER CONTENT'} (
-                  {chapterText.length} characters)
+                  RAW HTML ({chapterText.length} characters)
                 </p>
               </div>
               <div className="bg-background rounded-b-lg p-6 max-h-[600px] overflow-y-auto">
-                {showRawHtml ? (
-                  <pre className="text-xs text-foreground font-mono whitespace-pre-wrap break-words">
-                    {chapterText}
-                  </pre>
-                ) : (
-                  <iframe
-                    title="Chapter Content Preview"
-                    srcDoc={`
-                      <!DOCTYPE html>
-                      <html>
-                        <head>
-                          <meta charset="utf-8">
-                          <meta name="viewport" content="width=device-width, initial-scale=1">
-                          <style>
-                            body { 
-                              font-family: system-ui, -apple-system, sans-serif;
-                              color: ${document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'};
-                              margin: 0;
-                              padding: 0;
-                              line-height: 1.6;
-                            }
-                            img, video, iframe { max-width: 100%; height: auto; }
-                            a { color: #3b82f6; }
-                            ${isVideoChapter ? corePlayerCss : ''}
-                          </style>
-                          <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js"></script>
-                          ${isElectron ? readerMockScript : ''}
-                          ${isVideoChapter ? `<script>${corePlayerRaw}</script>` : ''}
-                          ${
-                            plugin?.customCSS
-                              ? `<link rel="stylesheet" href="/public/static/${plugin.customCSS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'css' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'css' }, '*')">`
-                              : ''
-                          }
-                        </head>
-                        <body>
-                          ${chapterText}
-                          ${
-                            plugin?.customJS
-                              ? `<script src="/public/static/${plugin.customJS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'js' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'js' }, '*')"></script>`
-                              : ''
-                          }
-                        </body>
-                      </html>
-                    `}
-                    className="w-full min-h-[500px] border-none bg-transparent"
-                    sandbox="allow-scripts allow-same-origin allow-popups"
-                  />
-                )}
+                <pre className="text-xs text-foreground font-mono whitespace-pre-wrap break-words">
+                  {chapterText}
+                </pre>
               </div>
             </div>
 
@@ -334,40 +297,11 @@ export default function ParseChapterSection() {
                 <p className="text-sm text-muted-foreground">
                   Content loaded successfully
                 </p>
-                {plugin?.customCSS && (
-                  <span
-                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      customCSSLoaded
-                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-                        : customCSSError
-                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                    }`}
-                  >
-                    CSS:{' '}
-                    {customCSSLoaded
-                      ? '✓ Applied'
-                      : customCSSError
-                        ? '✗ Failed'
-                        : '⋯ Loading'}
-                  </span>
-                )}
-                {plugin?.customJS && (
-                  <span
-                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      customJSLoaded
-                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-                        : customJSError
-                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                          : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                    }`}
-                  >
-                    JS:{' '}
-                    {customJSLoaded
-                      ? '✓ Applied'
-                      : customJSError
-                        ? '✗ Failed'
-                        : '⋯ Loading'}
+                {(plugin?.customCSS || plugin?.customJS) && (
+                  <span className="text-xs px-2 py-1 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                    Custom {plugin?.customCSS ? 'CSS' : ''}
+                    {plugin?.customCSS && plugin?.customJS ? ' + ' : ''}
+                    {plugin?.customJS ? 'JS' : ''} injected into preview
                   </span>
                 )}
               </div>
@@ -377,7 +311,7 @@ export default function ParseChapterSection() {
                 onClick={() => {
                   setChapterText('');
                   setChapterPath('');
-                  setShowRawHtml(false);
+                  setChapterTitle('');
                 }}
               >
                 Clear

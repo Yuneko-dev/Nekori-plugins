@@ -8,29 +8,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import App from './App';
+import { registerPreviewStorageBridge } from './lib/preview-bridge';
 
-const isElectron = !!window.electronAPI;
-
-if (!isElectron) {
-  const { fetch: originalFetch } = window;
-  window.fetch = async (...args) => {
-    const [resource, config] = args;
-    if (resource.toString().includes('localhost'))
-      return await originalFetch(resource, config);
-    const _res = await originalFetch('http://localhost:3000/' + resource, {
-      ...config,
-      credentials: 'include',
-      mode: 'cors',
-    });
-    Object.defineProperty(_res, 'url', {
-      value: _res.url.includes('localhost') ? resource.toString() : _res.url,
-    });
-    return _res;
-  };
-}
+registerPreviewStorageBridge();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <App />,
 );

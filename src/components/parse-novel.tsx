@@ -113,8 +113,9 @@ export default function ParseNovelSection({
     }
   };
 
-  const handleParseChapter = (path: string) => {
-    setParseChapterPath(path, true);
+  const handleParseChapter = (path: string, chapterName?: string) => {
+    const title = [sourceNovel?.name, chapterName].filter(Boolean).join(' - ');
+    setParseChapterPath(path, true, title || undefined);
     onNavigateToParseChapter?.();
   };
 
@@ -544,7 +545,10 @@ export default function ParseNovelSection({
                                     size="sm"
                                     className="h-7 w-7 p-0"
                                     onClick={() =>
-                                      handleParseChapter(chapter.path)
+                                      handleParseChapter(
+                                        chapter.path,
+                                        chapter.name,
+                                      )
                                     }
                                   >
                                     <ArrowRight className="w-3.5 h-3.5" />

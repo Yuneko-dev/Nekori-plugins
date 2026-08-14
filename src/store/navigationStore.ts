@@ -3,11 +3,17 @@ import { StoreCreator } from '.';
 export type NavigationStore = {
   parseNovelPath?: string;
   parseChapterPath?: string;
+  /** "Novel name - Chapter name", carried over for the preview window title. */
+  parseChapterTitle?: string;
   shouldAutoSubmitNovel: boolean;
   shouldAutoSubmitChapter: boolean;
   setParseNovelPath(path: string, autoSubmit?: boolean): void;
   clearParseNovelPath(): void;
-  setParseChapterPath(path: string, autoSubmit?: boolean): void;
+  setParseChapterPath(
+    path: string,
+    autoSubmit?: boolean,
+    title?: string,
+  ): void;
   clearParseChapterPath(): void;
 };
 
@@ -18,6 +24,7 @@ export type NavigationStore = {
 export const NavigationStore: StoreCreator<NavigationStore> = set => ({
   parseNovelPath: undefined,
   parseChapterPath: undefined,
+  parseChapterTitle: undefined,
   shouldAutoSubmitNovel: false,
   shouldAutoSubmitChapter: false,
 
@@ -37,10 +44,11 @@ export const NavigationStore: StoreCreator<NavigationStore> = set => ({
     }));
   },
 
-  setParseChapterPath(path: string, autoSubmit = true) {
+  setParseChapterPath(path: string, autoSubmit = true, title?: string) {
     set(state => ({
       ...state,
       parseChapterPath: path,
+      parseChapterTitle: title,
       shouldAutoSubmitChapter: autoSubmit,
     }));
   },
@@ -49,6 +57,7 @@ export const NavigationStore: StoreCreator<NavigationStore> = set => ({
     set(state => ({
       ...state,
       parseChapterPath: undefined,
+      parseChapterTitle: undefined,
       shouldAutoSubmitChapter: false,
     }));
   },

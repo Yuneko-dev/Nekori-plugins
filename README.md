@@ -83,7 +83,6 @@ Plugins in this repository make use of new API functions that are not available 
 
 ```bash
 npm install
-npm install --prefix electron
 npm run dev
 ```
 

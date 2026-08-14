@@ -9,8 +9,9 @@ Fork of `lnreader/lnreader-plugins` (remote `upstream`), targeting **LNReader-eX
 ## Commands
 
 ```bash
-npm run dev              # Electron playground (main dev loop) — delegates to electron/
-                         # one-time setup: npm install --prefix electron
+npm run dev              # Electron playground (main dev loop)
+npm run lint:electron    # eslint inside electron/ (own flat config)
+npm run type-check:electron
 
 npm run lint             # eslint (lint:fix to autofix)
 npm run type-check       # tsc --noEmit

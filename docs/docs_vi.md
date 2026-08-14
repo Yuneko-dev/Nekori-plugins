@@ -34,7 +34,6 @@ Yêu cầu: kiến thức Git và TypeScript, Node.js >= 20 (khuyến nghị 24)
 
 ```bash
 npm install
-npm install --prefix electron   # chỉ cần một lần, cho Electron Playground
 npm run dev
 ```
 

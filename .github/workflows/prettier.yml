@@ -23,7 +23,9 @@ jobs:
           node-version: '24'
 
       - name: Install Dependencies
-        run: npm install
+        # --ignore-scripts skips Electron's postinstall binary download; the
+        # format check does not need it.
+        run: npm install --ignore-scripts
 
       - name: Check Code Formatting
         run: npx prettier --check "./**/*.{ts,tsx,js,css}"

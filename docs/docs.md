@@ -34,7 +34,6 @@ Requirements: Git, TypeScript basics, Node.js >= 20 (24 recommended).
 
 ```bash
 npm install
-npm install --prefix electron   # one-time, for the Electron playground
 npm run dev
 ```
 

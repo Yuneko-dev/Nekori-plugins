@@ -2,7 +2,7 @@ export const readerMockScript = String.raw`
 <script>
   console.log('[Electron Mock] Initializing WebView Reader JS Context APIs...');
 
-  const ORIGINAL_FETCH = Symbol();
+  const ORIGINAL_FETCH = Symbol('lnreader');
   window[ORIGINAL_FETCH] = window.fetch;
   
   window.ReactNativeWebView = {
@@ -95,8 +95,11 @@ export const readerMockScript = String.raw`
         window.ReactNativeWebView.postMessage(JSON.stringify(obj));
       }
     },
-    refresh: function() {
-      console.log('[Reader] refresh()');
+    refetch: function() {
+      console.log('[Reader] refetch()');
+    },
+    error: function(msg) {
+      console.error('[Reader] error():', msg);
     },
     fetch: async function(url, init = {}) {
       const targetUrl = encodeURIComponent(url);

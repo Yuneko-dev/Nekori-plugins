@@ -1,5 +1,37 @@
 /* core-player.css */
 
+body {
+    padding-top: max(
+        var(--reader-margin-top),
+        var(--tsundoku-safe-top, 0px)
+    );
+}
+
+:root {
+  --reader-margin-right: 0px;
+  --reader-margin-left: 0px;
+}
+
+#LNReader-chapter:has(> .local-video-button) {
+  margin: 0 16px;
+  text-align: center;
+}
+
+#LNReader-chapter:has(> .local-video-button) > h2,
+#LNReader-chapter:has(> .local-video-button) > h4 {
+  margin: 0;
+}
+
+#LNReader-chapter:has(> .local-video-button) > h4 {
+  margin-top: 8px;
+  font-weight: 400;
+  opacity: .72;
+}
+
+#LNReader-chapter:has(> .local-video-button) > .local-video-button {
+  margin-top: 24px;
+}
+
 #lnreader-player-container {
   display: flex;
   justify-content: center;
@@ -25,28 +57,71 @@
 
 #lnreader-debug-overlay {
   position: fixed;
-  top: 0;
+  top: var(--tsundoku-safe-top, 0);
   left: 0;
   width: 100%;
-  max-height: 50vh;
-  background-color: rgba(0, 0, 0, 0.85);
-  color: #00ff00;
-  font-family: monospace;
-  font-size: 12px;
+  max-height: 75vh;
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  color: #00ff00 !important;
+  font: 12px / normal monospace !important;
+  text-align: left !important;
   padding: 10px;
   box-sizing: border-box;
   overflow-y: auto;
   z-index: 9999;
-  pointer-events: none; /* so it doesn't block video interaction */
+  overscroll-behavior: contain;
+  pointer-events: none;
+  touch-action: pan-y;
   display: none;
 }
 
 #lnreader-debug-overlay.active {
   display: block;
+  pointer-events: auto;
 }
 
-.lnreader-debug-msg {
+#lnreader-debug-overlay .lnreader-debug-msg {
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding: 2px 0;
+  color: inherit !important;
+  font: inherit !important;
+  text-align: left !important;
   word-wrap: break-word;
+}
+
+#lnreader-debug-toggle {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border: 1px solid color-mix(in srgb, var(--reader-text-color) 30%, transparent);
+  border-radius: 50%;
+  background: color-mix(
+    in srgb,
+    var(--reader-background-color) 85%,
+    var(--reader-text-color) 15%
+  );
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  color: var(--reader-text-color);
+  opacity: .7;
+}
+
+#lnreader-debug-toggle svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+#lnreader-debug-toggle[aria-expanded="true"] {
+  opacity: 1;
 }

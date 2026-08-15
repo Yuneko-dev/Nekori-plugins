@@ -830,7 +830,10 @@
           // Widevine in a WebView needs the device DRM identifier even at L3, and Kotlin only honours
           // the grant right after this call. It refuses while incognito is on, because that identifier
           // is permanent and unresettable.
-          if (!hostCall(window.Android, 'requestProtectedMediaPlayback')) {
+          if (
+            window.Android &&
+            !hostCall(window.Android, 'requestProtectedMediaPlayback')
+          ) {
             throw new Error(
               'DRM video needs the device media identifier, which is not shared while incognito is on',
             );

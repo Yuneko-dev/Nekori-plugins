@@ -443,9 +443,10 @@ await window.reader.fetch(url, init);       // fetch without WebView restriction
 
 ## Video plugins
 
-LNReader ships a Core Player built on `hls.js` and HTML5 video, supporting
-`m3u8`, `mp4` and `iframe`. You do not need your own player or CSS — return HTML
-with the right `<meta>` tags.
+The app ships a Core Player built on Video.js v10, with `hls.js` for HLS and
+`dash.js` for DASH. It supports `m3u8`, `mpd`, plain video files and `iframe`,
+and brings its own control skin, seek bar and fullscreen. You do not need your
+own player, library or CSS — return HTML with the right `<meta>` tags.
 
 ### Direct mode
 
@@ -457,7 +458,7 @@ async parseChapter(chapterPath: string): Promise<string> {
   return [
     '<meta name="lnreader-chapter-type" content="video">',  // required
     '<meta name="lnreader-video-mode" content="direct">',
-    '<meta name="lnreader-video-type" content="m3u8">',     // m3u8 | video-file | iframe
+    '<meta name="lnreader-video-type" content="m3u8">',
     `<meta name="lnreader-video-url" content="${videoUrl}">`,
   ].join('\n');
 }
@@ -465,10 +466,20 @@ async parseChapter(chapterPath: string): Promise<string> {
 
 The app builds the player and starts playback automatically.
 
+`lnreader-video-type` is named after the manifest extension:
+
+| type | plays with | notes |
+| --- | --- | --- |
+| `m3u8` | hls.js over MSE | Chromium has no native HLS |
+| `mpd` | dash.js | there is no `dash` alias |
+| `video-file` | plain `<video>` | mp4, m4v, mkv, webm, mov, avi, ts |
+| `iframe` | sandboxed iframe | http(s) only, cannot be downloaded |
+
 ### Lazy mode
 
 When the URL can only be resolved by running JS in the WebView (Cloudflare,
-captcha, m3u8 decryption, blob URLs):
+captcha, m3u8 decryption, blob URLs), or when you need to pass engine options —
+meta tags cannot carry them:
 
 ```ts
 async parseChapter(chapterPath: string): Promise<string> {
@@ -476,7 +487,6 @@ async parseChapter(chapterPath: string): Promise<string> {
     '<meta name="lnreader-chapter-type" content="video">',
     '<meta name="lnreader-video-mode" content="lazy">',
     '<meta name="lnreader-debug-mode" content="true">', // on-screen log overlay
-    '<div id="my-player" style="display:none;"></div>',
   ].join('\n');
 }
 ```
@@ -486,25 +496,125 @@ Then hand the URL to the player from `customJS`:
 ```js
 (async function () {
   if (!window.LNReaderPlayer) return;
-  try {
-    const m3u8Url = await fetchVideoUrl();
-    window.LNReaderPlayer.playHls(m3u8Url);
-  } catch (err) {
-    window.LNReaderPlayer.log('Error: ' + err.message);
-  }
+  const m3u8Url = await fetchVideoUrl();
+  window.LNReaderPlayer.playHls(m3u8Url);
 })();
 ```
 
 ### `window.LNReaderPlayer`
 
 - `playDirect(url)` — static files (`.mp4`, `.webm`, …).
-- `playHls(url, customHlsConfig?)` — `.m3u8`. `customHlsConfig` overrides
-  `hls.js` config (e.g. `xhrSetup` to add an Authorization header on `.ts`
-  fragments).
+- `playHls(url, hlsJsConfig?)` — `.m3u8`. The second argument is the `hls.js`
+  config object itself, passed straight to the `Hls` constructor (e.g.
+  `xhrSetup` to add an Authorization header on `.ts` fragments).
+- `playDash(url, { settings?, protectionData? })` — `.mpd`. See below.
 - `playIframe(url)` — embed an iframe.
 - `log(msg)` — console log, shown as an overlay when debug mode is on.
 
+Note the asymmetry: `playHls` takes the raw hls.js config, while `playDash`
+takes a wrapper object. `playHls`'s shape predates the Video.js migration and is
+kept for compatibility.
+
+### Reaching the engine directly
+
+The live engine stays exposed for anything the wrapper does not cover:
+
+- `LNReaderPlayer.hlsInstance` — the `Hls` instance, after `playHls`.
+- `LNReaderPlayer.dashInstance` — the dash.js `MediaPlayer`, after `playDash`.
+
+```js
+await window.LNReaderPlayer.playDash(url, { protectionData });
+window.LNReaderPlayer.dashInstance.updateSettings({
+  streaming: { buffer: { bufferTimeAtTopQuality: 30 } },
+});
+window.LNReaderPlayer.dashInstance.on('qualityChangeRendered', onQuality);
+```
+
+`playDirect` / `playHls` / `playDash` are **async** — the custom elements they
+need may be registered by deferred module scripts — so `await` them before
+touching an instance, or you will read `null` or the previous chapter's engine.
+Both are cleared when the player is torn down.
+
+Calling `updateSettings()` yourself **merges** into the current settings, unlike
+the `settings` option below, which replaces them.
+
+Failures are shown to the user as an inline error banner in the reader — nothing
+is silently swallowed, but nothing is thrown back at your plugin either. While
+developing, read the debug overlay or attach `chrome://inspect`.
+
 Full surface: [`src/lib/core-player.js`](../src/lib/core-player.js).
+
+### Configuring dash.js
+
+`settings` is dash.js's own `MediaPlayerSettingClass`, handed over untouched:
+
+```js
+window.LNReaderPlayer.playDash('https://example.com/manifest.mpd', {
+  settings: {
+    streaming: {
+      abr: { autoSwitchBitrate: { video: true } },
+      buffer: { bufferTimeAtTopQuality: 30 },
+      retryAttempts: { MediaSegment: 5 },
+    },
+  },
+});
+```
+
+Settings are **replaced, not merged**: the player resets dash.js settings before
+applying yours, so a key you drop returns to its default rather than keeping the
+previous value.
+
+### DRM
+
+License servers are not part of dash.js settings — they are a separate
+`protectionData` map, keyed by key system, passed to `setProtectionData()`
+before the manifest is attached. Write standard dash.js field names; dash.js
+**silently ignores unknown keys**, so a config copied from another player will
+simply never send a license request and will die as a vague decode error.
+
+```js
+window.LNReaderPlayer.playDash(
+  'https://media.axprod.net/TestVectors/Cmaf/protected_1080p_h264_cbcs/manifest.mpd',
+  {
+    protectionData: {
+      'com.widevine.alpha': {
+        serverURL: 'https://drm-widevine-licensing.axtest.net/AcquireLicense',
+        httpRequestHeaders: { 'X-AxDRM-Message': '<token>' },
+        priority: 0,
+      },
+    },
+  },
+);
+```
+
+| write this | not this |
+| --- | --- |
+| `serverURL` | `url`, `licenseUrl` |
+| `httpRequestHeaders` | `licenseHeaders`, `headers` |
+
+Other useful fields: `withCredentials`, `httpTimeout`, `serverCertificate`,
+`audioRobustness`, `videoRobustness`, `distinctiveIdentifier`, `persistentState`.
+ClearKey takes inline `clearkeys` instead of a `serverURL`.
+
+Four constraints worth knowing before filing a bug:
+
+- **Do not set a robustness level unless you have measured that it works.**
+  Android WebView is Widevine **L3 only** — it never exposes a TEE decode path
+  to EME, so a device that reports L1 natively still reports L3 inside a
+  WebView. Measured ceilings vary: on one test device an empty robustness and
+  `SW_SECURE_CRYPTO` were accepted while `SW_SECURE_DECODE` was rejected with
+  `NotSupportedError`. Leaving it unset is the safe default.
+- **Content requiring L1 will not play**, no matter how it is configured.
+- **Incognito blocks Widevine.** It needs the device DRM identifier even at L3,
+  and that identifier is permanent and unresettable, so the app refuses to hand
+  it to a plugin site while incognito is on. The user sees a banner explaining
+  it. ClearKey still works.
+- **DASH and DRM chapters cannot be downloaded.** Encrypted fragments are
+  useless to the download sink, so those chapters are rejected up front rather
+  than producing an unplayable file.
+
+If DRM fails, Chromium's `It is recommended that a robustness level be
+specified` warning is *not* the cause — it prints on successful calls too.
 
 ## Special meta tags
 
@@ -514,7 +624,14 @@ Add these to the `parseChapter` output.
 | --- | --- |
 | `<meta id="no-cache-marker" />` | Do not cache this chapter. |
 | `<meta id="no-prefetch-marker" />` | Do not prefetch the next chapter. |
-| `<meta id="lnreader-video-disable-progress" />` | Video chapter without progress saving (e.g. live streams with no end time). Also disables downloading. |
+| `<meta id="lnreader-video-disable-progress" />` | Video chapter without progress saving (e.g. live streams with no end time). Switches the player to the live skin and disables downloading. |
+| `<meta name="lnreader-video-poster" content="…" />` | Still image shown before playback starts. |
+| `<meta name="lnreader-video-thumbnails" content="…" />` | WebVTT storyboard for seek-bar preview images. See the warning below. |
+
+`lnreader-video-thumbnails` forces `crossorigin="anonymous"` on the media
+element. On a `video-file` chapter that **also forces a CORS fetch of the video
+itself**, so a host without `Access-Control-Allow-Origin` stops playing. Use it
+only with sources you know send CORS headers.
 
 ## Captcha and blocked sites
 

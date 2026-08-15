@@ -453,9 +453,10 @@ await window.reader.fetch(url, init);       // fetch bỏ qua giới hạn của
 
 ## Plugin Video (Anime)
 
-LNReader có sẵn Core Player mạnh mẽ dựa trên `hls.js` và HTML5 Video, hỗ trợ
-`m3u8`, `mp4` và cả `iframe`. Bạn **không cần** tự viết CSS hay nhúng thư viện
-ngoài — chỉ cần trả về HTML chứa các thẻ `<meta>` đúng quy chuẩn.
+Ứng dụng có sẵn Core Player dựa trên Video.js v10, dùng `hls.js` cho HLS và
+`dash.js` cho DASH. Hỗ trợ `m3u8`, `mpd`, file video thường và `iframe`, kèm sẵn
+bộ điều khiển, thanh tua và fullscreen. Bạn **không cần** tự viết CSS hay nhúng
+thư viện ngoài — chỉ cần trả về HTML chứa các thẻ `<meta>` đúng quy chuẩn.
 
 ### Phương thức 1: Direct Mode (phát trực tiếp)
 
@@ -467,7 +468,7 @@ async parseChapter(chapterPath: string): Promise<string> {
   return [
     '<meta name="lnreader-chapter-type" content="video">',  // bắt buộc
     '<meta name="lnreader-video-mode" content="direct">',
-    '<meta name="lnreader-video-type" content="m3u8">',     // m3u8 | video-file | iframe
+    '<meta name="lnreader-video-type" content="m3u8">',
     `<meta name="lnreader-video-url" content="${videoUrl}">`,
   ].join('\n');
 }
@@ -475,10 +476,20 @@ async parseChapter(chapterPath: string): Promise<string> {
 
 Ứng dụng sẽ tự khởi tạo Player và phát ngay.
 
+`lnreader-video-type` đặt tên theo đuôi manifest:
+
+| type | phát bằng | ghi chú |
+| --- | --- | --- |
+| `m3u8` | hls.js qua MSE | Chromium không có HLS native |
+| `mpd` | dash.js | không có alias `dash` |
+| `video-file` | `<video>` thường | mp4, m4v, mkv, webm, mov, avi, ts |
+| `iframe` | iframe sandbox | chỉ http(s), không tải xuống được |
+
 ### Phương thức 2: Lazy Mode (phát trì hoãn)
 
 Dành cho trang phức tạp, cần chạy JS trong WebView (bypass Cloudflare, vượt
-captcha, tự giải mã m3u8, tạo blob):
+captcha, tự giải mã m3u8, tạo blob), hoặc khi cần truyền tuỳ chọn cho engine —
+thẻ meta không mang được chúng:
 
 ```ts
 async parseChapter(chapterPath: string): Promise<string> {
@@ -486,7 +497,6 @@ async parseChapter(chapterPath: string): Promise<string> {
     '<meta name="lnreader-chapter-type" content="video">',
     '<meta name="lnreader-video-mode" content="lazy">',
     '<meta name="lnreader-debug-mode" content="true">', // hiện log overlay trên màn hình
-    '<div id="my-player" style="display:none;"></div>',
   ].join('\n');
 }
 ```
@@ -496,25 +506,123 @@ Sau đó truyền link cho player từ `customJS`:
 ```js
 (async function () {
   if (!window.LNReaderPlayer) return;
-  try {
-    const m3u8Url = await fetchVideoUrl();
-    window.LNReaderPlayer.playHls(m3u8Url);
-  } catch (err) {
-    window.LNReaderPlayer.log('Lỗi: ' + err.message);
-  }
+  const m3u8Url = await fetchVideoUrl();
+  window.LNReaderPlayer.playHls(m3u8Url);
 })();
 ```
 
 ### API của `window.LNReaderPlayer`
 
 - `playDirect(url)` — phát file/URL tĩnh như `.mp4`, `.webm`, …
-- `playHls(url, customHlsConfig?)` — phát `.m3u8`. `customHlsConfig` cho phép
-  ghi đè cấu hình `hls.js` (ví dụ dùng `xhrSetup` để chèn header Authorization
-  khi stream các fragment `.ts`).
+- `playHls(url, hlsJsConfig?)` — phát `.m3u8`. Tham số thứ hai **chính là** object
+  cấu hình `hls.js`, truyền thẳng vào constructor `Hls` (ví dụ dùng `xhrSetup` để
+  chèn header Authorization khi stream các fragment `.ts`).
+- `playDash(url, { settings?, protectionData? })` — phát `.mpd`. Xem bên dưới.
 - `playIframe(url)` — nhúng iframe.
 - `log(msg)` — ghi log ra console; nếu bật debug mode thì hiện dạng overlay.
 
+Lưu ý chỗ không đối xứng: `playHls` nhận thẳng config hls.js, còn `playDash`
+nhận object bao ngoài. Hình dạng của `playHls` có từ trước khi chuyển sang
+Video.js và được giữ lại để tương thích.
+
+### Truy cập thẳng engine
+
+Engine đang chạy vẫn được expose cho những thứ lớp bao ngoài không phủ hết:
+
+- `LNReaderPlayer.hlsInstance` — instance `Hls`, sau khi gọi `playHls`.
+- `LNReaderPlayer.dashInstance` — `MediaPlayer` của dash.js, sau khi gọi `playDash`.
+
+```js
+await window.LNReaderPlayer.playDash(url, { protectionData });
+window.LNReaderPlayer.dashInstance.updateSettings({
+  streaming: { buffer: { bufferTimeAtTopQuality: 30 } },
+});
+window.LNReaderPlayer.dashInstance.on('qualityChangeRendered', onQuality);
+```
+
+`playDirect` / `playHls` / `playDash` là **async** — các custom element chúng cần
+có thể được đăng ký bởi script module bị defer — nên phải `await` trước khi chạm
+vào instance, nếu không bạn sẽ đọc phải `null` hoặc engine của chương trước. Cả
+hai được xoá khi player bị huỷ.
+
+Tự gọi `updateSettings()` sẽ **merge** vào settings hiện tại, khác với tuỳ chọn
+`settings` bên dưới — cái đó thay thế toàn bộ.
+
+Lỗi được hiển thị cho người dùng dưới dạng banner ngay trong Reader — không có
+gì bị nuốt im lặng, nhưng cũng không có gì ném ngược về plugin của bạn. Khi phát
+triển, hãy đọc overlay debug hoặc cắm `chrome://inspect`.
+
 Toàn bộ API: [`src/lib/core-player.js`](../src/lib/core-player.js).
+
+### Cấu hình dash.js
+
+`settings` chính là `MediaPlayerSettingClass` của dash.js, truyền nguyên vẹn:
+
+```js
+window.LNReaderPlayer.playDash('https://example.com/manifest.mpd', {
+  settings: {
+    streaming: {
+      abr: { autoSwitchBitrate: { video: true } },
+      buffer: { bufferTimeAtTopQuality: 30 },
+      retryAttempts: { MediaSegment: 5 },
+    },
+  },
+});
+```
+
+Settings bị **thay thế, không merge**: player reset settings của dash.js trước
+khi áp cái của bạn, nên key nào bạn bỏ đi sẽ về mặc định chứ không giữ giá trị cũ.
+
+### DRM
+
+License server **không** thuộc settings của dash.js — nó là map `protectionData`
+riêng, khoá theo key system, được truyền vào `setProtectionData()` trước khi gắn
+manifest. Hãy viết đúng tên field chuẩn của dash.js; dash.js **im lặng bỏ qua**
+key lạ, nên config copy từ player khác sẽ không bao giờ gửi license request và
+chết bằng một lỗi decode mơ hồ.
+
+```js
+window.LNReaderPlayer.playDash(
+  'https://media.axprod.net/TestVectors/Cmaf/protected_1080p_h264_cbcs/manifest.mpd',
+  {
+    protectionData: {
+      'com.widevine.alpha': {
+        serverURL: 'https://drm-widevine-licensing.axtest.net/AcquireLicense',
+        httpRequestHeaders: { 'X-AxDRM-Message': '<token>' },
+        priority: 0,
+      },
+    },
+  },
+);
+```
+
+| viết thế này | không phải |
+| --- | --- |
+| `serverURL` | `url`, `licenseUrl` |
+| `httpRequestHeaders` | `licenseHeaders`, `headers` |
+
+Field hữu ích khác: `withCredentials`, `httpTimeout`, `serverCertificate`,
+`audioRobustness`, `videoRobustness`, `distinctiveIdentifier`, `persistentState`.
+ClearKey dùng `clearkeys` nội tuyến thay cho `serverURL`.
+
+Bốn ràng buộc nên biết trước khi báo lỗi:
+
+- **Đừng đặt robustness trừ khi bạn đã đo được là nó chạy.** Android WebView chỉ
+  có Widevine **L3** — nó không expose đường giải mã trong TEE cho EME, nên máy
+  báo L1 ở tầng thiết bị vẫn chỉ là L3 bên trong WebView. Trần chấp nhận được
+  khác nhau tuỳ máy: trên một máy test, robustness rỗng và `SW_SECURE_CRYPTO`
+  được chấp nhận còn `SW_SECURE_DECODE` bị từ chối với `NotSupportedError`. Để
+  trống là mặc định an toàn.
+- **Nội dung đòi L1 sẽ không phát được**, cấu hình kiểu gì cũng vậy.
+- **Incognito chặn Widevine.** Nó cần device DRM identifier ngay cả ở L3, mà
+  định danh đó là vĩnh viễn và không reset được, nên ứng dụng từ chối trao nó
+  cho site plugin khi đang bật incognito. Người dùng thấy banner giải thích.
+  ClearKey vẫn chạy.
+- **Chương DASH và DRM không tải xuống được.** Fragment đã mã hoá thì vô dụng
+  với sink tải về, nên chương đó bị từ chối ngay từ đầu thay vì tạo ra file hỏng.
+
+Nếu DRM lỗi, warning `It is recommended that a robustness level be specified`
+của Chromium **không** phải nguyên nhân — nó in ra cả khi gọi thành công.
 
 ## Các thẻ meta đặc biệt
 
@@ -524,7 +632,14 @@ Thêm vào kết quả trả về của `parseChapter`.
 | --- | --- |
 | `<meta id="no-cache-marker" />` | Không cache chương này. |
 | `<meta id="no-prefetch-marker" />` | Không tải trước chương kế tiếp. |
-| `<meta id="lnreader-video-disable-progress" />` | Chương video không lưu tiến độ (ví dụ Live, không có thời điểm kết thúc). Đồng thời chương này cũng không hỗ trợ tải xuống. |
+| `<meta id="lnreader-video-disable-progress" />` | Chương video không lưu tiến độ (ví dụ Live, không có thời điểm kết thúc). Player chuyển sang skin live, đồng thời chương này cũng không hỗ trợ tải xuống. |
+| `<meta name="lnreader-video-poster" content="…" />` | Ảnh tĩnh hiện trước khi phát. |
+| `<meta name="lnreader-video-thumbnails" content="…" />` | File WebVTT storyboard cho ảnh preview khi tua. Xem cảnh báo bên dưới. |
+
+`lnreader-video-thumbnails` ép `crossorigin="anonymous"` lên media element. Với
+chương `video-file`, điều đó **ép luôn một CORS fetch cho chính video**, nên host
+không trả `Access-Control-Allow-Origin` sẽ ngừng phát. Chỉ dùng với nguồn bạn
+chắc chắn có gửi header CORS.
 
 ## Captcha và các vấn đề bên lề
 

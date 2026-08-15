@@ -67,7 +67,12 @@ export function buildPreviewDocument({
       a { color: #3b82f6; }
       ${video ? corePlayerCss : ''}
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dashjs@5.2.0/dist/legacy/umd/dash.all.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.26/cdn/video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.26/cdn/live-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.26/cdn/media/hlsjs-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.26/cdn/media/dash-video.js"></script>
     ${readerMockScript}
     ${video ? `<script>${corePlayerRaw}</script>` : ''}
     ${customCSS ? `<link rel="stylesheet" href="${staticUrl(customCSS)}">` : ''}

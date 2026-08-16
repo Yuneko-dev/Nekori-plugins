@@ -43,6 +43,7 @@ body:
         - "Tiếng Việt: Yêu Anime"
         - "Tiếng Việt: ZumiNovel"
         - "Multi: M3U Player"
+        - "Multi: OneDrive"
     validations:
       required: true
 

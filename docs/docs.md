@@ -509,11 +509,53 @@ Then hand the URL to the player from `customJS`:
   `xhrSetup` to add an Authorization header on `.ts` fragments).
 - `playDash(url, { settings?, protectionData? })` — `.mpd`. See below.
 - `playIframe(url)` — embed an iframe.
+- `addSubtitles(tracks)` — attach external subtitle tracks. See below.
 - `log(msg)` — console log, shown as an overlay when debug mode is on.
 
 Note the asymmetry: `playHls` takes the raw hls.js config, while `playDash`
 takes a wrapper object. `playHls`'s shape predates the Video.js migration and is
 kept for compatibility.
+
+### Subtitles
+
+`addSubtitles(tracks)` takes one track or an array of them and returns a
+promise.
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `url` | one of the two | Subtitle file to fetch. It goes through the reader's own fetch, so it carries the same `Referer` as the video and CORS does not apply. |
+| `content` | one of the two | Subtitle text you already hold. Skips the fetch. |
+| `label` | no | Name shown in the captions menu. Defaults to `Subtitles`. |
+| `lang` | no | BCP-47 code (`vi`, `en`). Defaults to empty. |
+| `default` | no | `true` turns this track on straight away. |
+
+```js
+await window.LNReaderPlayer.playHls(m3u8Url);
+await window.LNReaderPlayer.addSubtitles([
+  { label: 'Tiếng Việt', lang: 'vi', url: subUrl, default: true },
+  { label: 'English', lang: 'en', url: enUrl },
+]);
+```
+
+Call it whenever the urls turn up — before the `play*` call, after it, or in the
+middle of playback. Tracks are remembered rather than attached once, so they
+survive a remount: switching engine or replaying re-attaches everything you
+added.
+
+WebVTT is used as-is. SubRip is converted for you: the `WEBVTT` header is added
+and the comma in cue timestamps becomes a point, while commas inside dialogue
+are left alone. Anything else — ASS/SSA in particular — has to be converted by
+the plugin and handed over through `content`.
+
+Each track is isolated. A fetch that 404s, or a file that will not parse, is
+logged to the debug overlay and skipped; the other tracks and the video itself
+carry on. Losing subtitles must never cost the user the episode.
+
+Subtitles already inside an HLS playlist (`#EXT-X-MEDIA:TYPE=SUBTITLES`) are
+handled by hls.js on its own and need no call.
+
+Downloaded chapters do not keep external subtitles yet — they are not written
+into the saved file.
 
 ### Reaching the engine directly
 

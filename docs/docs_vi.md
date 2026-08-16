@@ -519,11 +519,50 @@ Sau đó truyền link cho player từ `customJS`:
   chèn header Authorization khi stream các fragment `.ts`).
 - `playDash(url, { settings?, protectionData? })` — phát `.mpd`. Xem bên dưới.
 - `playIframe(url)` — nhúng iframe.
+- `addSubtitles(tracks)` — gắn phụ đề rời. Xem bên dưới.
 - `log(msg)` — ghi log ra console; nếu bật debug mode thì hiện dạng overlay.
 
 Lưu ý chỗ không đối xứng: `playHls` nhận thẳng config hls.js, còn `playDash`
 nhận object bao ngoài. Hình dạng của `playHls` có từ trước khi chuyển sang
 Video.js và được giữ lại để tương thích.
+
+### Phụ đề rời
+
+`addSubtitles(tracks)` nhận một track hoặc một mảng track, trả về promise.
+
+| Field | Bắt buộc | Ý nghĩa |
+| --- | --- | --- |
+| `url` | một trong hai | File phụ đề cần tải. Đi qua fetch riêng của reader nên mang sẵn `Referer` giống video và không dính CORS. |
+| `content` | một trong hai | Text phụ đề bạn đã có sẵn. Có cái này thì bỏ qua bước tải. |
+| `label` | không | Tên hiện trong menu phụ đề. Mặc định `Subtitles`. |
+| `lang` | không | Mã BCP-47 (`vi`, `en`). Mặc định rỗng. |
+| `default` | không | `true` là bật track này ngay. |
+
+```js
+await window.LNReaderPlayer.playHls(m3u8Url);
+await window.LNReaderPlayer.addSubtitles([
+  { label: 'Tiếng Việt', lang: 'vi', url: subUrl, default: true },
+  { label: 'English', lang: 'en', url: enUrl },
+]);
+```
+
+Gọi lúc nào cũng được — trước lời gọi `play*`, sau nó, hay giữa lúc đang phát.
+Track được **nhớ lại** chứ không chỉ gắn một lần, nên nó sống qua remount: đổi
+engine hay phát lại thì mọi track bạn thêm đều được gắn lại.
+
+WebVTT dùng thẳng. SubRip được tự chuyển đổi: thêm header `WEBVTT` và đổi dấu
+phẩy trong timestamp thành dấu chấm, còn dấu phẩy trong lời thoại giữ nguyên.
+Định dạng khác — nhất là ASS/SSA — plugin phải tự chuyển rồi truyền qua
+`content`.
+
+Mỗi track được cô lập riêng. Tải lỗi 404, hay file không parse được, thì ghi log
+ra debug overlay rồi bỏ qua; các track còn lại và bản thân video vẫn chạy. Mất
+phụ đề không bao giờ được kéo theo mất luôn tập phim.
+
+Phụ đề đã nằm sẵn trong playlist HLS (`#EXT-X-MEDIA:TYPE=SUBTITLES`) do hls.js
+tự xử lý, không cần gọi gì.
+
+Chương đã tải về chưa giữ được phụ đề rời — chúng không được ghi vào file lưu.
 
 ### Truy cập thẳng engine
 

@@ -33,10 +33,10 @@ type GraphChildrenResponse = {
 };
 
 type GraphThumbnailsResponse = {
-  value?: Array<{
+  value?: {
     large?: { url?: string };
     medium?: { url?: string };
-  }>;
+  }[];
 };
 
 type TokenResponse = {

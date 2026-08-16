@@ -85,7 +85,9 @@ class OneDrivePlugin implements Plugin.PluginBase {
   };
 
   private setting(name: string): string {
-    return (storage.get(name) || this.pluginSettings[name]?.value || '') as string;
+    return (storage.get(name) ||
+      this.pluginSettings[name]?.value ||
+      '') as string;
   }
 
   private get folder(): string {
@@ -107,7 +109,8 @@ class OneDrivePlugin implements Plugin.PluginBase {
 
   private async requestToken(refreshToken: string): Promise<string> {
     const clientId = this.setting('clientId').trim();
-    if (!clientId) throw new Error('Configure the Microsoft Entra client ID first.');
+    if (!clientId)
+      throw new Error('Configure the Microsoft Entra client ID first.');
     const response = await fetchApi(
       'https://login.microsoftonline.com/common/oauth2/v2.0/token',
       {
@@ -123,7 +126,9 @@ class OneDrivePlugin implements Plugin.PluginBase {
     );
     const data = (await response.json()) as TokenResponse;
     if (!response.ok || !data.access_token) {
-      throw new Error(data.error_description || data.error || 'Microsoft Graph login failed.');
+      throw new Error(
+        data.error_description || data.error || 'Microsoft Graph login failed.',
+      );
     }
     if (data.refresh_token) storage.set('refreshToken', data.refresh_token);
     storage.set('accessToken', data.access_token);
@@ -132,7 +137,8 @@ class OneDrivePlugin implements Plugin.PluginBase {
 
   private async deviceLogin(): Promise<string> {
     const clientId = this.setting('clientId').trim();
-    if (!clientId) throw new Error('Configure the Microsoft Entra client ID first.');
+    if (!clientId)
+      throw new Error('Configure the Microsoft Entra client ID first.');
 
     let deviceCode = this.setting('deviceCode').trim();
     if (!deviceCode) {
@@ -148,8 +154,17 @@ class OneDrivePlugin implements Plugin.PluginBase {
         },
       );
       const data = (await response.json()) as DeviceCodeResponse;
-      if (!response.ok || !data.device_code || !data.user_code || !data.verification_uri) {
-        throw new Error(data.error_description || data.error || 'Unable to start Microsoft login.');
+      if (
+        !response.ok ||
+        !data.device_code ||
+        !data.user_code ||
+        !data.verification_uri
+      ) {
+        throw new Error(
+          data.error_description ||
+            data.error ||
+            'Unable to start Microsoft login.',
+        );
       }
       deviceCode = data.device_code;
       storage.set('deviceCode', deviceCode);
@@ -173,10 +188,14 @@ class OneDrivePlugin implements Plugin.PluginBase {
     const data = (await response.json()) as TokenResponse;
     if (!response.ok || !data.access_token) {
       if (data.error === 'authorization_pending') {
-        throw new Error('Microsoft login is not finished. Complete it, then retry the plugin.');
+        throw new Error(
+          'Microsoft login is not finished. Complete it, then retry the plugin.',
+        );
       }
       if (data.error === 'expired_token') storage.delete('deviceCode');
-      throw new Error(data.error_description || data.error || 'Microsoft login failed.');
+      throw new Error(
+        data.error_description || data.error || 'Microsoft login failed.',
+      );
     }
     storage.delete('deviceCode');
     if (data.refresh_token) storage.set('refreshToken', data.refresh_token);
@@ -187,7 +206,9 @@ class OneDrivePlugin implements Plugin.PluginBase {
   private async accessToken(): Promise<string> {
     if (storage.get('logout') === true) {
       this.clearAuthentication();
-      throw new Error('Microsoft tokens cleared. Retry the plugin to sign in again.');
+      throw new Error(
+        'Microsoft tokens cleared. Retry the plugin to sign in again.',
+      );
     }
     const accessToken = this.setting('accessToken').trim();
     if (accessToken) return accessToken;
@@ -205,12 +226,21 @@ class OneDrivePlugin implements Plugin.PluginBase {
       await this.requestToken(this.setting('refreshToken'));
       return this.graph<T>(url, false);
     }
-    const data = (await response.json()) as T & { error?: { message?: string } };
-    if (!response.ok) throw new Error(data.error?.message || `Graph request failed (${response.status}).`);
+    const data = (await response.json()) as T & {
+      error?: { message?: string };
+    };
+    if (!response.ok)
+      throw new Error(
+        data.error?.message || `Graph request failed (${response.status}).`,
+      );
     return data;
   }
 
-  private pathFor(item: GraphItem, path: string, type: 'video' | 'folder'): string {
+  private pathFor(
+    item: GraphItem,
+    path: string,
+    type: 'video' | 'folder',
+  ): string {
     const params = new URLSearchParams();
     params.set('type', type);
     params.set('id', item.id);
@@ -222,7 +252,8 @@ class OneDrivePlugin implements Plugin.PluginBase {
   private async children(url: string): Promise<GraphItem[]> {
     const result = await this.graph<GraphChildrenResponse>(url);
     const items = [...result.value];
-    if (result['@odata.nextLink']) items.push(...(await this.children(result['@odata.nextLink'])));
+    if (result['@odata.nextLink'])
+      items.push(...(await this.children(result['@odata.nextLink'])));
     return items;
   }
 
@@ -313,7 +344,9 @@ class OneDrivePlugin implements Plugin.PluginBase {
     return details['@microsoft.graph.downloadUrl'];
   }
 
-  private async videoThumbnailUrl(item: GraphItem): Promise<string | undefined> {
+  private async videoThumbnailUrl(
+    item: GraphItem,
+  ): Promise<string | undefined> {
     const result = await this.graph<GraphThumbnailsResponse>(
       `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(item.id)}/thumbnails`,
     );
@@ -329,12 +362,15 @@ class OneDrivePlugin implements Plugin.PluginBase {
       `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(folder.item.id)}/children`,
       folder.path,
     );
-    const cover = (await this.children(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(folder.item.id)}/children`,
-    )).find(item => /^cover\.(png|jpe?g|webp)$/i.test(item.name));
+    const cover = (
+      await this.children(
+        `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(folder.item.id)}/children`,
+      )
+    ).find(item => /^cover\.(png|jpe?g|webp)$/i.test(item.name));
     if (cover) return (await this.itemDownloadUrl(cover)) || defaultCover;
     const firstVideo = contents.videos[0];
-    if (firstVideo) return (await this.videoThumbnailUrl(firstVideo.item)) || defaultCover;
+    if (firstVideo)
+      return (await this.videoThumbnailUrl(firstVideo.item)) || defaultCover;
     return defaultCover;
   }
 
@@ -388,7 +424,10 @@ class OneDrivePlugin implements Plugin.PluginBase {
     ];
   }
 
-  async searchNovels(searchTerm: string, pageNo: number): Promise<Plugin.NovelItem[]> {
+  async searchNovels(
+    searchTerm: string,
+    pageNo: number,
+  ): Promise<Plugin.NovelItem[]> {
     if (pageNo > 1) return [];
     const query = searchTerm.toLowerCase();
     return (await this.popularNovels(1)).filter(item =>
@@ -448,7 +487,10 @@ class OneDrivePlugin implements Plugin.PluginBase {
       `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(id)}`,
     );
     const url = result['@microsoft.graph.downloadUrl'];
-    if (!url) throw new Error('Microsoft Graph did not return a playable download URL.');
+    if (!url)
+      throw new Error(
+        'Microsoft Graph did not return a playable download URL.',
+      );
 
     return [
       '<meta name="lnreader-chapter-type" content="video">',

@@ -31,17 +31,6 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
         { label: 'Embed (iframe)', value: 'embed' },
       ],
     },
-    /*
-    playerType: {
-      value: 'html',
-      label: 'Trình phát Video',
-      type: 'Select',
-      options: [
-        { label: 'Video HTML', value: 'html' },
-        { label: 'Artplayer', value: 'artplayer' },
-      ],
-    },
-    */
     enableDebug: {
       value: false,
       label: 'Bật debug',
@@ -52,12 +41,6 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   get playMode(): string {
     return (storage.get('playMode') as string) || 'm3u8';
   }
-
-  /*
-  get playerType(): string {
-    return (storage.get('playerType') as string) || 'html';
-  }
-  */
 
   get enableDebug(): boolean {
     return storage.get('enableDebug') as boolean;
@@ -480,7 +463,6 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     if (opts.referer) attrs.push(`data-referer="${esc(opts.referer)}"`);
     if (opts.site) attrs.push(`data-site="${esc(opts.site)}"`);
     attrs.push(`data-mode="${opts.embedOnly ? 'embed' : this.playMode}"`);
-    // attrs.push(`data-player-type="${this.playerType}"`);
 
     return [
       ...base,

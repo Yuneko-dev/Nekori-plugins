@@ -16,10 +16,11 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.15';
+  version = '1.2.16';
   filters = filters;
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
+  customJS = 'src/vi/hakolightnovel/custom.js';
 
   pluginSettings: Plugin.PluginSettings = {
     domain: {
@@ -510,7 +511,7 @@ class HakoPlugin implements Plugin.PluginBase {
       // Edit comment
       commentSection.find('.ln-comment-toolkit').parent().remove();
 
-      output = `${output}\n\n${commentSection.prop('outerHTML')}`;
+      output = `${output}\n<div id="shadow-host"></div>\n${commentSection.prop('outerHTML')}`;
     }
 
     if (this.showTitleInfo) {

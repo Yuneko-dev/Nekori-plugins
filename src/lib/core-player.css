@@ -8,19 +8,19 @@
    reader.css still owns padding-bottom: that one reserves the bottom bar strip, a real obstruction
    rather than a preference, so content centers in the box above it. */
 body {
-    box-sizing: border-box;
-    min-height: 100vh;
-    min-height: 100dvh;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    /* Plain `center` pushes overflow off the top where it cannot be scrolled to. `safe` degrades to
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Plain `center` pushes overflow off the top where it cannot be scrolled to. `safe` degrades to
        flex-start in that case; engines without it keep the `center` above. */
-    justify-content: safe center;
+  justify-content: safe center;
 }
 
 :root {
@@ -41,7 +41,7 @@ body {
 #LNReader-chapter:has(> .local-video-button) > h4 {
   margin-top: 8px;
   font-weight: 400;
-  opacity: .72;
+  opacity: 0.72;
 }
 
 #LNReader-chapter:has(> .local-video-button) > .local-video-button {
@@ -133,7 +133,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 7px;
-  border: 1px solid color-mix(in srgb, var(--reader-text-color) 30%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--reader-text-color) 30%, transparent);
   border-radius: 50%;
   background: color-mix(
     in srgb,
@@ -142,7 +143,7 @@ body {
   );
   box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
   color: var(--reader-text-color);
-  opacity: .7;
+  opacity: 0.7;
 }
 
 #lnreader-debug-toggle svg {
@@ -155,6 +156,6 @@ body {
   stroke-width: 2;
 }
 
-#lnreader-debug-toggle[aria-expanded="true"] {
+#lnreader-debug-toggle[aria-expanded='true'] {
   opacity: 1;
 }

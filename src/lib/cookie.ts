@@ -1,5 +1,5 @@
 // Placeholder for cookie management functions. These functions are not implemented yet,
-// but they can be used in the LNReader-Extended application.
+// but they can be used in the LNReader-eXtended / Nekori application.
 
 type Cookie = {
   name: string;

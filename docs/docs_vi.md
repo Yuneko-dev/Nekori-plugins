@@ -10,7 +10,7 @@ Tài liệu tham chiếu để viết plugin trong repository này. Nguồn chí
 `plugins/vietnamese/Template/index.ts` (`PluginBase`) và
 `plugins/vietnamese/Template2/index.ts` (`PagePlugin`).
 
-> Fork này hướng tới [LNReader-eXtended](https://github.com/Yuneko-dev/lnreader-extended).
+> Fork này hướng tới [Nekori](https://github.com/Yuneko-dev/Nekori).
 > Một số API bên dưới không tồn tại trong LNReader gốc và được đánh dấu
 > **chỉ eXtended**.
 

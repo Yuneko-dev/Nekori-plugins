@@ -3,7 +3,7 @@
 This is a fork of the original repository, containing only my custom plugins and hotfixes.
 
 > [!WARNING]  
-> I highly recommend using this plugin collection with my modified version of LNReader-eXtended. Most of the plugins here are not compatible with the original LNReader or other apps that support JS plugins (such as Tsundoku, IReader, Kototoro, etc.), as these plugins rely heavily on modern JavaScript libraries.
+> I highly recommend using this plugin collection with my modified version of Nekori. Most of the plugins here are not compatible with the original LNReader or other apps that support JS plugins (such as Tsundoku, IReader, Kototoro, etc.), as these plugins rely heavily on modern JavaScript libraries.
 
 <p>
 <img alt="Total number of available plugins" src="https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/plugins/v3.0.0/total.svg">
@@ -58,7 +58,7 @@ This is a fork of the original repository, containing only my custom plugins and
 - [BaoMoi](https://baomoi.com)
 </details>
 
-[^1]: This plugin is incompatible with the original LNReader as it utilizes new APIs introduced in [LNReader-Extended](https://github.com/Yuneko-dev/lnreader-extended)
+[^1]: This plugin is incompatible with the original LNReader as it utilizes new APIs introduced in [Nekori](https://github.com/Yuneko-dev/Nekori)
 [^2]: This plugin has been discontinued and removed due to the poor quality of the website.
 
 ### Install URL

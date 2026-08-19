@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Context
 
-Fork of `lnreader/lnreader-plugins` (remote `upstream`), targeting **LNReader-eXtended**, not vanilla LNReader. Plugins here use APIs the original app lacks (`@libs/cookie`, extended `@libs/aes` ciphers, `@libs/utils` Node shims, `node-html-markdown`). ESLint warns when those are imported — the warning is a compatibility note, not an error to "fix".
+Fork of `lnreader/lnreader-plugins` (remote `upstream`), targeting **Nekori**, not vanilla LNReader. Plugins here use APIs the original app lacks (`@libs/cookie`, extended `@libs/aes` ciphers, `@libs/utils` Node shims, `node-html-markdown`). ESLint warns when those are imported — the warning is a compatibility note, not an error to "fix".
 
 ## Commands
 
@@ -48,7 +48,7 @@ Consequences:
 - Plugin code imports `@libs/…`, never `@/lib/…` (ESLint blocks the latter).
 - ESLint restricts plugin imports to an allowlist: `@libs/*`, `@/types/plugin`, `cheerio`, `htmlparser2`, `dayjs`, `urlencode`, `node-html-markdown`. Anything else is an error.
 - Plugin sources are linted with Hermes/RN globals at `ecmaVersion: 5`, and compiled to ES5 CJS. Browser-only APIs will lint clean in the web app but break on device.
-- Adding a new `@libs` export means: implement in `src/lib/`, re-export from `src/libs/`, allowlist it in `eslint.config.js`, and confirm LNReader-eXtended actually provides it.
+- Adding a new `@libs` export means: implement in `src/lib/`, re-export from `src/libs/`, allowlist it in `eslint.config.js`, and confirm Nekori actually provides it.
 
 ## Build pipeline
 

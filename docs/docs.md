@@ -10,7 +10,7 @@ Reference for writing plugins in this repository. The authoritative contract is
 `plugins/vietnamese/Template/index.ts` (`PluginBase`) and
 `plugins/vietnamese/Template2/index.ts` (`PagePlugin`).
 
-> This fork targets [LNReader-eXtended](https://github.com/Yuneko-dev/lnreader-extended).
+> This fork targets [Nekori](https://github.com/Yuneko-dev/Nekori).
 > Several APIs below do not exist in the original LNReader and are marked
 > **eXtended only**.
 

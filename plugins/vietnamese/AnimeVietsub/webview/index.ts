@@ -1,6 +1,4 @@
 /* eslint-disable */
-/// <reference path="./typings/global.d.ts" />
-/// <reference types="webview" />
 
 /**
  * AnimeVietsub - WebView Video Player (customJS)

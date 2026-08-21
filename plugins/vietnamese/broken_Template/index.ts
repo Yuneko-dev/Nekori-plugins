@@ -9,7 +9,7 @@ import { utf8ToBytes, bytesToUtf8, Buffer } from '@libs/utils';
 import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 import test from './utils';
 
-// Thêm file "BROKEN" vào folder để tránh ext này được build
+// Đổi tên folder thành broken_<PluginName> để plugin không được build.
 class TemplatePlugin implements Plugin.PluginBase {
   // Là một ID duy nhất để nhận diện Plugin
   id = 'template.id';

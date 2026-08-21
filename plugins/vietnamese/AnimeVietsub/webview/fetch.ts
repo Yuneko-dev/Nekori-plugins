@@ -1,5 +1,3 @@
-/// <reference types="webview" />
-
 export async function nativeFetch(
   url: string,
   headers?: Record<string, string>,

@@ -11,7 +11,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 // not served to a plain browser, so there is no dev server or CORS proxy here.
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [tailwindcss(), nodePolyfills(), react({ devTarget: 'es5' })],
+  plugins: [tailwindcss(), nodePolyfills(), react({ devTarget: 'es2020' })],
   resolve: {
     alias: {
       '@': path.resolve(dirname, './src'),

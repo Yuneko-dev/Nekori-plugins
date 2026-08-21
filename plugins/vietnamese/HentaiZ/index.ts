@@ -344,7 +344,7 @@ class HentaiZPlugin implements Plugin.PluginBase {
   name = 'HentaiZ';
   icon = 'src/vi/hentaiz/icon.png';
   site = SITE;
-  version = '1.1.0';
+  version = '1.1.1';
   contentType = ContentType.VIDEO;
   contentWarning = ContentWarning.NSFW;
 

@@ -10,7 +10,7 @@ class YeuAnimePlugin implements Plugin.PluginBase {
   name = 'Yêu Anime';
   icon = 'src/vi/yeuanime/icon.png';
   site = 'https://yeuanime.xyz';
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {

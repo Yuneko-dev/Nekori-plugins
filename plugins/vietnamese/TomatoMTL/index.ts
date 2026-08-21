@@ -51,7 +51,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
   name = 'TomatoMTL';
   icon = 'src/vi/tomatomtl/icon.png';
   site = SITE;
-  version = '1.0.7';
+  version = '1.0.8';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {

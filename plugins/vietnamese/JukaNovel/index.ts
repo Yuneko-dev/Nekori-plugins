@@ -13,7 +13,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
   icon = 'src/vi/jukanovel/icon.png';
   site = 'https://sangtacviet.online';
   // 'https://jukaza.site';
-  version = '1.0.10';
+  version = '1.0.11';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {
@@ -195,7 +195,6 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     let regex: RegExp | null = null;
     try {
       regex =
-        // @ts-expect-error
         /<span class="ann-marker"[^>]*>.*?<span class="ann-bubble">(.*?)<\/span><\/span>/gs;
     } catch {
       regex =

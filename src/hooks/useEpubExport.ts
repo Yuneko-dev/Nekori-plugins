@@ -4,7 +4,7 @@ import { Plugin } from '@/types/plugin';
 import { createEpub, downloadBlob } from '@/lib/epub';
 
 type UseEpubExportOptions = {
-  plugin: Plugin.PluginBase | null;
+  plugin: Plugin.PluginSource | null;
   sourceNovel: (Plugin.SourceNovel & { totalPages?: number }) | undefined;
   chapters: Plugin.ChapterItem[];
   novelPath: string;

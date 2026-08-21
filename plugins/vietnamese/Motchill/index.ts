@@ -10,7 +10,7 @@ class MotchillPlugin implements Plugin.PluginBase {
   name = 'Motchill';
   icon = 'src/vi/motchill/icon.png';
   site = 'https://envasion.net';
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {

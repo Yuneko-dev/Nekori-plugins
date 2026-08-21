@@ -15,7 +15,7 @@ type UsePluginCustomAssetsReturn = {
  * @returns Object containing loading states for CSS and JS
  */
 export function usePluginCustomAssets(
-  plugin: Plugin.PluginBase | undefined,
+  plugin: Plugin.PluginSource | undefined,
   chapterText: string,
 ): UsePluginCustomAssetsReturn {
   const [customCSSLoaded, setCustomCSSLoaded] = useState(false);

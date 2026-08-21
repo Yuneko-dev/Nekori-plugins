@@ -4,125 +4,131 @@ import eslint from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
+import customRules from './eslint/rules.js';
 
+// Dump of globals that are available in the Hermes runtime, which is used by React Native.
+// hermes@250829098.0.16 - React Native 0.87
 const globalsHermes = [
-  //hermes@0.72
+  // ECMAScript globals newer than ES2020,
+  // but available in the target Hermes runtime.
   'AggregateError',
-  'Array',
-  'ArrayBuffer',
-  'BigInt',
-  'BigInt64Array',
-  'BigUint64Array',
-  'Boolean',
-  'DataView',
-  'Date',
-  'DebuggerInternal',
-  'Error',
-  'EvalError',
-  'Float32Array',
-  'Float64Array',
-  'Function',
+  'WeakRef',
+
+  // Hermes
   'HermesInternal',
-  'Infinity',
-  'Int16Array',
-  'Int32Array',
-  'Int8Array',
-  'JSON',
-  'Map',
-  'Math',
-  'NaN',
-  'Number',
-  'Object',
-  'Promise',
-  'Proxy',
+  'DebuggerInternal',
   'QuitError',
-  'RangeError',
-  'ReferenceError',
-  'Reflect',
-  'RegExp',
-  'Set',
-  'String',
-  'Symbol',
-  'SyntaxError',
   'TimeoutError',
-  'TypeError',
-  'URIError',
-  'Uint16Array',
-  'Uint32Array',
-  'Uint8Array',
-  'Uint8ClampedArray',
-  'WeakMap',
-  'WeakSet',
-  '__defineGetter__',
-  '__defineSetter__',
-  '__lookupGetter__',
-  '__lookupSetter__',
-  '__proto__',
-  'clearTimeout',
-  'constructor',
-  'createHeapSnapshot',
-  'decodeURI',
-  'decodeURIComponent',
-  'encodeURI',
-  'encodeURIComponent',
-  'escape',
   'gc',
-  'globalThis',
-  'hasOwnProperty',
-  'isFinite',
-  'isNaN',
-  'isPrototypeOf',
-  'loadSegment',
-  'parseFloat',
-  'parseInt',
   'print',
-  'propertyIsEnumerable',
-  'setImmediate',
-  'setTimeout',
-  'toLocaleString',
-  'toString',
-  'undefined',
-  'unescape',
-  'valueOf',
-  //react-native
+
+  // Intl globals exposed directly by Hermes
+  'Collator',
+  'DateTimeFormat',
+  'NumberFormat',
+
+  // Web / React Native globals
   'AbortController',
+  'AbortSignal',
   'Blob',
-  'ErrorUtils',
+  'ByteLengthQueuingStrategy',
+  'CountQueuingStrategy',
+  'CustomEvent',
+  'DOMException',
   'Event',
   'EventTarget',
   'File',
   'FileReader',
   'FormData',
   'Headers',
-  'Intl',
+  'Request',
+  'Response',
+
+  // Encoding
   'TextDecoder',
-  'TextEncoder', // ?
+  'TextDecoderStream',
+  'TextEncoder',
+  'TextEncoderStream',
+
+  // URL
   'URL',
   'URLSearchParams',
+
+  // Streams
+  'ReadableByteStreamController',
+  'ReadableStream',
+  'ReadableStreamBYOBReader',
+  'ReadableStreamBYOBRequest',
+  'ReadableStreamDefaultController',
+  'ReadableStreamDefaultReader',
+  'TransformStream',
+  'TransformStreamDefaultController',
+  'WritableStream',
+  'WritableStreamDefaultController',
+  'WritableStreamDefaultWriter',
+
+  // DOM-like APIs exposed by React Native
+  'CharacterData',
+  'Document',
+  'Element',
+  'HTMLCollection',
+  'HTMLElement',
+  'Node',
+  'NodeList',
+  'Text',
+  'DOMRect',
+  'DOMRectList',
+  'DOMRectReadOnly',
+
+  // Performance APIs
+  'Performance',
+  'PerformanceEntry',
+  'PerformanceEventTiming',
+  'PerformanceLongTaskTiming',
+  'PerformanceMark',
+  'PerformanceMeasure',
+  'PerformanceObserver',
+  'PerformanceObserverEntryList',
+  'PerformanceResourceTiming',
+  'performance',
+
+  // Networking
   'WebSocket',
   'XMLHttpRequest',
-  '__DEV__',
-  '__dirname',
-  '__fbBatchedBridgeConfig',
-  'alert',
+  'fetch',
+
+  // Encoding helpers
+  'atob',
+  'btoa',
+
+  // Scheduling
   'cancelAnimationFrame',
   'cancelIdleCallback',
   'clearImmediate',
   'clearInterval',
-  'console',
-  'document',
-  'exports',
-  'fetch',
-  'global',
-  'module',
-  'navigator',
-  'process',
+  'clearTimeout',
   'queueMicrotask',
   'requestAnimationFrame',
   'requestIdleCallback',
-  'require',
+  'setImmediate',
   'setInterval',
+  'setTimeout',
+
+  // Other runtime globals
+  'alert',
+  'console',
+  'ErrorUtils',
+  'navigator',
+  'process',
+  'self',
+  'structuredClone',
   'window',
+
+  // Plugin host
+  'exports',
+  'module',
+  'require',
+  '__DEV__',
 ].map(key => ({ [key]: 'readonly' }));
 
 export default tseslint.config(
@@ -133,16 +139,20 @@ export default tseslint.config(
   {
     ignores: [
       '.js',
-      '.tsc-out',
       'public/static',
       'docs',
+      'extra',
       'proxy_server.js',
       'plugins/*/*\\[*\\]*.ts', // Files with square brackets in their names
       'electron',
+      'plugins/*/broken_*/**',
     ],
   },
   {
-    files: ['plugins/*/*.ts', 'plugins/multisrc/*/template.ts'],
+    files: ['plugins/*/*/*.ts', 'plugins/multisrc/*/template.ts'],
+    plugins: {
+      custom: customRules,
+    },
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
@@ -156,65 +166,24 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: [
-                '*',
-                '**/*',
-                '!@libs/',
-                '!@/',
-                '!@/types/',
-                '!htmlparser2',
-                '!cheerio',
-                '!dayjs',
-                '!urlencode',
-                '!node-html-markdown',
-                '!@libs/novelStatus',
-                '!@libs/fetch',
-                '!@libs/isAbsoluteUrl',
-                '!@libs/filterInputs',
-                '!@libs/defaultCover',
-                '!@libs/pluginMetadata',
-                '!@libs/aes',
-                '!@libs/utils',
-                '!@libs/cookie',
-                '!@libs/storage',
-                '!@/types/plugin',
-              ],
-              message:
-                'Importing external modules is restricted here. Use only the approved dependencies.',
+              group: ['@/lib/fetch*'],
+              message: 'Use @libs/fetch instead of @/lib/fetch',
             },
           ],
         },
       ],
-      'no-restricted-syntax': [
-        'warn',
-        {
-          'selector':
-            "ImportDeclaration[source.value='@libs/aes'] ImportSpecifier[imported.name=/^(ctr|ecb|cbc|cfb|gcmsiv|aeskw|aeskwp|cmac|aessiv)$/]",
-          'message':
-            'WARNING: Plugins using this AES function will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
-        },
-        {
-          'selector':
-            "ImportDeclaration[source.value='@libs/utils'] ImportSpecifier[imported.name=/^(Buffer|encodeHtmlEntities|decodeHtmlEntities|NodeCrypto|getUserAgent)$/]",
-          'message':
-            'WARNING: Plugins using this utility function/variable will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
-        },
-        {
-          'selector': "ImportDeclaration[source.value='@libs/cookie']",
-          'message':
-            "WARNING: Plugins using the '@libs/cookie' library will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.",
-        },
-      ],
+      'custom/approved-imports': 'error',
+      'custom/no-lnreader-incompatible-imports': 'warn',
     },
     languageOptions: {
-      ecmaVersion: 5,
+      ecmaVersion: 2020,
       sourceType: 'module',
       globals: Object.assign({}, ...globalsHermes),
     },
   },
   {
     files: ['**/*.{ts,tsx,mts,cts,js}'],
-    ignores: ['plugins/*/*.ts', 'plugins/multisrc/*/template.ts'],
+    ignores: ['plugins/*/*/*.ts', 'plugins/multisrc/*/template.ts'],
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',

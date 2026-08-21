@@ -1,5 +1,3 @@
-/// <reference types="webview" />
-
 const SITE = 'https://cosplaytele.com';
 
 type EmbedPlayerWindow = Window & {
@@ -181,7 +179,6 @@ async function playMediaPlaylist(
   // hls.js loads keys through its own internal loader (not fLoader),
   // so we must replace key URIs with blob URLs to avoid CORS.
   const keyBlobMap = new Map<string, string>();
-  // @ts-expect-error
   for (const [, rawUri] of playlistText.matchAll(/URI="([^"]+)"/gi)) {
     if (keyBlobMap.has(rawUri)) continue;
     const absoluteKeyUrl = /^https?:\/\//i.test(rawUri)
@@ -204,7 +201,6 @@ async function playMediaPlaylist(
 
   // Step 2: Replace key URIs with blob URLs in playlist text
   let rewritten = playlistText;
-  // @ts-expect-error
   for (const [rawUri, blobUrl] of keyBlobMap) {
     rewritten = rewritten.replace(rawUri, blobUrl);
   }

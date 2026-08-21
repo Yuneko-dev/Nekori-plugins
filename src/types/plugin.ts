@@ -159,6 +159,8 @@ export namespace Plugin {
     ): Promise<SourceNovel & { totalPages: number }>;
     parsePage(novelPath: string, page: string): Promise<SourcePage>;
   };
+
+  export type PluginSource = PluginBase | PagePlugin;
 }
 
 export namespace HTMLParser2Util {

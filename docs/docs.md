@@ -45,7 +45,6 @@ One plugin is one **folder**, not a single file:
 plugins/<language>/<PluginName>/
 ├── index.ts          # entry point, default-exports a plugin instance
 ├── utils.ts          # optional: split code across as many files as you like
-├── BROKEN            # optional: presence disables the plugin everywhere
 └── webview/
     └── index.ts      # optional: source of customJS, bundled separately
 ```
@@ -54,9 +53,8 @@ plugins/<language>/<PluginName>/
   (`vietnamese`, `english`, `japanese`, `korean`, `multi`, …).
 - `<PluginName>` is PascalCase without spaces.
 - `index.ts` must `export default new YourPlugin()` — an **instance**, not the class.
-- An empty file named `BROKEN` in the folder excludes the plugin from the dev
-  registry, the build, the webview build, and the manifest. This replaces the
-  old `.broken.ts` filename suffix.
+- Rename the folder to `broken_<PluginName>` to exclude it from the dev registry,
+  plugin build, webview build, type checks, and manifest. No marker file is used.
 - There is no registration step and no `plugins/index.ts`. The dev UI discovers
   plugins with `import.meta.glob` over `plugins/*/*/index.ts`.
 
@@ -373,13 +371,16 @@ note the incompatibility in your README:
   `decodeHtmlEntities`.
 - `@libs/cookie` (any import).
 
-Plugins compile to ES5 for Hermes. Browser-only APIs may lint clean in the
-playground and still break on device.
+Plugins and webviews are bundled directly from TypeScript to ES2020 for Nekori's
+Hermes runtime. Browser-only APIs may still break on device.
 
 ## Testing
 
 > Custom JS (the `webview/` bundle) is **not** covered by Vite hot reload. Run
 > `npm run build:full` after each change.
+
+Build and type-check are separate. Use `npm run type-check` for all scopes, or
+`npm run type-check:plugins` / `npm run type-check:webviews` while iterating.
 
 ### Electron playground
 

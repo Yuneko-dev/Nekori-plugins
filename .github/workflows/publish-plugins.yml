@@ -8,6 +8,11 @@ on:
     paths:
       - 'plugins/**'
       - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/build-plugin-manifest.js'
+      - 'scripts/build-plugins.js'
+      - 'scripts/build-webviews.js'
       - 'scripts/publish-plugins.sh'
       - '.github/workflows/publish-plugins.yml'
 

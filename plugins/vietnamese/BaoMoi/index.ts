@@ -13,7 +13,7 @@ class BaoMoiPlugin implements Plugin.PluginBase {
   name = 'Báo Mới';
   icon = 'src/vi/baomoi/icon.png';
   site = 'https://baomoi.com';
-  version = '1.0.11';
+  version = '1.0.12';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {

@@ -106,7 +106,7 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
   name = 'MeTruyenCV';
   icon = 'src/vi/metruyencv/icon.png';
   site = 'https://metruyencv.com';
-  version = '1.0.4';
+  version = '1.0.5';
 
   async popularNovels(
     pageNo: number,

@@ -9,7 +9,7 @@ class OPhimPlugin implements Plugin.PluginBase {
   name = 'OPhim';
   icon = 'src/vi/ophim/icon.png';
   site = 'https://ophim17.cc';
-  version = '1.0.1';
+  version = '1.0.2';
   apiUrl = 'https://ophim1.com/v1/api';
   contentType = ContentType.VIDEO;
 

@@ -4,7 +4,6 @@ import process from 'process';
 import isValidFilename from 'valid-filename';
 import languages from './languages.js';
 import { execSync } from 'child_process';
-import { minify } from './terser.js';
 
 const REMOTE = execSync('git remote get-url origin')
   .toString()
@@ -127,7 +126,6 @@ for (let language in languages) {
   plugins.forEach(plugin => {
     if (plugin.startsWith('.')) return;
 
-    minify(path.join(langPath, plugin));
     const rawCode = fs.readFileSync(
       `${COMPILED_PLUGIN_DIR}/${language.toLowerCase()}/${plugin}`,
       'utf-8',
@@ -135,8 +133,8 @@ for (let language in languages) {
     const instance = Function(
       'require',
       'module',
-      `const exports = module.exports = {}; 
-      ${rawCode}; 
+      `const exports = module.exports = {};
+      ${rawCode};
       return exports.default`,
     )(_require, {});
     const {
@@ -243,14 +241,13 @@ if (!ONLY_NEW)
     `,
   );
 
-// check for broken plugins
+// List disabled plugins in build logs.
 for (let language in languages) {
   const langPath = path.join('./plugins', language.toLocaleLowerCase());
   if (!fs.existsSync(langPath)) continue;
   fs.readdirSync(langPath).forEach(fn => {
-    if (fs.existsSync(path.join(langPath, fn, 'BROKEN'))) {
-      console.error(language.toLocaleLowerCase() + '/' + fn + ' ❌');
-    }
+    if (fn.startsWith('broken_'))
+      console.error(language.toLocaleLowerCase() + '/' + fn.slice(7) + ' ❌');
   });
 }
 

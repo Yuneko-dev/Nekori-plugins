@@ -45,7 +45,6 @@ Mỗi plugin là một **thư mục**, không phải một tệp đơn lẻ:
 plugins/<ngôn-ngữ>/<TenPlugin>/
 ├── index.ts          # entry point, export default một instance plugin
 ├── utils.ts          # tuỳ chọn: tách mã ra nhiều tệp cho dễ đọc
-├── BROKEN            # tuỳ chọn: có tệp này là plugin bị vô hiệu hoá
 └── webview/
     └── index.ts      # tuỳ chọn: mã nguồn của customJS, được build riêng
 ```
@@ -56,8 +55,8 @@ plugins/<ngôn-ngữ>/<TenPlugin>/
 - `<TenPlugin>` viết theo PascalCase, không có dấu cách.
 - `index.ts` phải `export default new YourPlugin()` — một **instance**, không
   phải class.
-- Tệp rỗng tên `BROKEN` trong thư mục sẽ loại plugin khỏi dev UI, khỏi build,
-  khỏi build webview và khỏi manifest. Cách này thay cho hậu tố `.broken.ts` cũ.
+- Đổi tên thư mục thành `broken_<TenPlugin>` để loại plugin khỏi dev UI, build
+  plugin, build webview, kiểm tra kiểu và manifest. Không dùng tệp marker.
 - **Không cần đăng ký plugin.** Không có tệp `plugins/index.ts` và không có mảng
   `PLUGINS`. Dev UI tự quét bằng `import.meta.glob` trên `plugins/*/*/index.ts`.
 
@@ -375,13 +374,17 @@ nhắc ghi chú điều đó vào README của plugin:
   `decodeHtmlEntities`.
 - `@libs/cookie` (mọi import).
 
-Plugin được biên dịch xuống ES5 cho Hermes. API chỉ có trên trình duyệt có thể
-qua được lint trong Playground nhưng vẫn lỗi trên thiết bị.
+Plugin và webview được bundle trực tiếp từ TypeScript sang ES2020 cho Hermes của
+Nekori. API chỉ có trên trình duyệt vẫn có thể lỗi trên thiết bị.
 
 ## Gỡ lỗi (Debug)
 
 > Mã webview (Custom JS) **không** hỗ trợ hot-reload của Vite. Chạy
 > `npm run build:full` mỗi khi thay đổi.
+
+Build và kiểm tra TypeScript chạy độc lập. Dùng `npm run type-check` để kiểm tra
+mọi phạm vi, hoặc `npm run type-check:plugins` / `npm run type-check:webviews`
+khi đang sửa riêng plugin.
 
 ### 1. Electron Playground
 

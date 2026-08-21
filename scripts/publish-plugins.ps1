@@ -19,13 +19,7 @@ if(-Not $?){
 
 git reset
 rm -r -fo .js
-npm run clean:multisrc
-npm run build:multisrc
-echo "Compiling TypeScript..."
-npm run build:compile
-echo "Building Webviews..."
-npm run build:webviews
-npm run build:manifest
+npm run build:full
 
 if (-not (Test-Path .dist) -or -not (Get-ChildItem -Path .dist -Force)) {
     echo "❌ ERROR: Manifest generation failed - .dist is missing or empty"

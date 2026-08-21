@@ -9,7 +9,7 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
   name = 'Valvrareteam';
   icon = 'src/vi/valvrareteam/icon.png';
   site = 'https://valvrareteam.net';
-  version = '1.0.13';
+  version = '1.0.14';
 
   api = 'https://val-ssr-2kzit.ondigitalocean.app/api';
 

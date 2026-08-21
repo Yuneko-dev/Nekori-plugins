@@ -1,18 +1,10 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
     "lib": ["DOM", "ES2020"],
-    "moduleResolution": "node",
-    "strict": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "types": ["webview"],
+    "strict": false
   },
-  "include": [
-    "plugins/**/webview/**/*.ts",
-    "plugins/**/webview/**/*.js",
-    "./src/webview.d.ts"
-  ]
+  "include": ["plugins/*/*/webview/**/*"],
+  "exclude": ["plugins/*/broken_*/**"]
 }

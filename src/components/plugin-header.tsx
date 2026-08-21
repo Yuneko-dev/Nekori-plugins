@@ -10,7 +10,7 @@ import {
 } from '@/lib/plugin-metadata';
 
 type PluginHeaderProps = {
-  selectedPlugin?: Plugin.PluginBase;
+  selectedPlugin?: Plugin.PluginSource;
 };
 
 export default function PluginHeader({ selectedPlugin }: PluginHeaderProps) {

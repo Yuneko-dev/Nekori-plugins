@@ -1,5 +1,4 @@
 /* eslint-disable */
-/// <reference types="webview" />
 
 /**
  * NguonC - WebView Video Player
@@ -27,8 +26,8 @@ const b64Decode = (b64: string) => {
 };
 
 async function decryptM3u8(
-  encryptedBytes: Uint8Array,
-  ivBytes: Uint8Array,
+  encryptedBytes: Uint8Array<ArrayBuffer>,
+  ivBytes: Uint8Array<ArrayBuffer>,
   videoHash: string,
 ): Promise<string | null> {
   try {

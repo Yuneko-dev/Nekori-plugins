@@ -9,7 +9,7 @@ class DocTruyenLNPlugin implements Plugin.PagePlugin {
   name = 'DocTruyenLN';
   icon = 'src/vi/doctruyenln/icon.png';
   site = 'https://quykiep.com';
-  version = '1.0.7';
+  version = '1.0.8';
 
   imageRequestInit = {
     headers: {

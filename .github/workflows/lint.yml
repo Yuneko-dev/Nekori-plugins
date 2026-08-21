@@ -29,3 +29,15 @@ jobs:
 
       - name: Check Code Linting
         run: npm run lint
+
+      - name: Check App TypeScript
+        run: npm run type-check:app
+
+      - name: Check Plugin TypeScript
+        run: npm run type-check:plugins
+
+      - name: Check Plugin WebView TypeScript
+        run: npm run type-check:webviews
+
+      - name: Check Electron TypeScript
+        run: npm run type-check:electron

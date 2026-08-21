@@ -22,7 +22,7 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
   name = 'Tiểu Thuyết Mạng';
   icon = 'src/vi/tieuthuyetmang/icon.png';
   site = 'https://tieuthuyetmang.com';
-  version = '1.0.8';
+  version = '1.0.9';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -106,10 +106,8 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
     novelPath: string,
   ): Plugin.ChapterItem[] {
     const escapedMatch = html.match(
-      // @ts-expect-error
       /\\"chapters\\":\[(.*?)\],\\"contentDescription\\"/s,
     );
-    // @ts-expect-error
     const plainMatch = html.match(/"chapters":\[(.*?)\],"contentDescription"/s);
 
     let rawArray = null;

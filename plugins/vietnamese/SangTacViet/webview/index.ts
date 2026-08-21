@@ -1,5 +1,3 @@
-/// <reference types="webview" />
-
 import { createProviders } from './providers';
 import type { ProviderName } from './providers';
 import { createCaptchaView } from './ui';
@@ -140,7 +138,10 @@ function initializeCaptcha(placeholder: HTMLElement) {
 
 function bootstrap() {
   const placeholder = document.getElementById('captcha-placeholder');
-  if (placeholder) initializeCaptcha(placeholder);
+  if (placeholder) {
+    document.getElementById('removed')?.remove();
+    initializeCaptcha(placeholder);
+  }
 }
 
 if (document.readyState === 'loading') {

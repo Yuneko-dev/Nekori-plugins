@@ -4,8 +4,8 @@ import plugins from '@/provider/plugin-registry';
 
 export type PluginStore = {
   pluginItem?: Plugin.PluginItem;
-  plugin?: Plugin.PluginBase;
-  selectPlugin(plugin: Plugin.PluginBase, updateURL?: boolean): void;
+  plugin?: Plugin.PluginSource;
+  selectPlugin(plugin: Plugin.PluginSource, updateURL?: boolean): void;
 };
 
 const loadPluginFromURL = () => {

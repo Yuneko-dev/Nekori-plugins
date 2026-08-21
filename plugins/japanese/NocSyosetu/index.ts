@@ -16,7 +16,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.1.21';
+  version = '1.1.22';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.NSFW;
 

@@ -10,7 +10,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
   name = 'LNKuro';
   icon = 'src/vi/lnkuro/icon.png';
   site = 'https://lnkuro.top';
-  version = '1.0.6';
+  version = '1.0.7';
   filters = {
     genre: {
       label: 'Thể loại',

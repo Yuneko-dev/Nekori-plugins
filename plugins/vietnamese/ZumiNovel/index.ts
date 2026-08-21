@@ -127,7 +127,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
   name = 'ZumiNovel';
   icon = 'src/vi/zuminovel/icon.png';
   site = SITE;
-  version = '1.0.8';
+  version = '1.0.9';
 
   pluginSettings: Plugin.PluginSettings = {
     showRaw: {

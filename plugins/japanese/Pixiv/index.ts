@@ -11,7 +11,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
   name = 'Pixiv Novel';
   icon = 'src/jp/pixivnovel/icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.0.13';
+  version = '1.0.14';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 

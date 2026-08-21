@@ -66,7 +66,7 @@ class TruyenCV implements Plugin.PagePlugin {
   name = 'TruyenCV';
   icon = 'src/vi/truyencv/icon.png';
   site = 'https://truyencv.io';
-  version = '1.0.2';
+  version = '1.0.3';
 
   private mangaIdCache = new Map<string, string>();
 

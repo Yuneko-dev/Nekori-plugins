@@ -7,7 +7,7 @@ import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 class AkayTruyenPlugin implements Plugin.PagePlugin {
   id = 'akaytruyen.com';
   name = 'AkayTruyen';
-  version = '1.0.4';
+  version = '1.0.5';
   icon = 'src/vi/akaytruyen/favicon.png';
   site = 'https://akaytruyen.com';
 

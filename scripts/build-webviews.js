@@ -28,10 +28,6 @@ async function buildWebviews() {
     const lang = parts[2];
     const name = parts[3].replace('.js', '');
 
-    if (fs.existsSync(path.join('plugins', lang, name, 'BROKEN'))) {
-      continue;
-    }
-
     const webviewTs = path.join('plugins', lang, name, 'webview', 'index.ts');
     const webviewJs = path.join('plugins', lang, name, 'webview', 'index.js');
 
@@ -40,29 +36,26 @@ async function buildWebviews() {
     else if (fs.existsSync(webviewJs)) webviewEntry = webviewJs;
 
     if (webviewEntry) {
-      try {
-        const rawCode = fs.readFileSync(pf, 'utf-8');
-        const plugin = Function(
-          'require',
-          'module',
-          `const exports = module.exports = {}; 
-          ${rawCode}; 
-          return exports.default`,
-        )(proxyRequire, {});
+      const rawCode = fs.readFileSync(pf, 'utf-8');
+      const plugin = Function(
+        'require',
+        'module',
+        `const exports = module.exports = {};
+        ${rawCode};
+        return exports.default`,
+      )(proxyRequire, {});
 
-        if (plugin.customJS) {
-          console.log(`[Webview] ${name} -> public/static/${plugin.customJS}`);
-          await esbuild.build({
-            entryPoints: [webviewEntry],
-            bundle: true,
-            minify: true,
-            outfile: path.join('public', 'static', plugin.customJS),
-            format: 'iife',
-            target: 'es2020',
-          });
-        }
-      } catch (err) {
-        console.error(`Failed to build webview for ${name}:`, err);
+      if (plugin.customJS) {
+        console.log(`[Webview] ${name} -> public/static/${plugin.customJS}`);
+        await esbuild.build({
+          entryPoints: [webviewEntry],
+          bundle: true,
+          minify: true,
+          charset: 'utf8',
+          outfile: path.join('public', 'static', plugin.customJS),
+          format: 'iife',
+          target: 'es2020',
+        });
       }
     }
   }

@@ -63,7 +63,7 @@ class OneDrivePlugin implements Plugin.PluginBase {
   name = 'OneDrive';
   icon = 'src/multi/onedrive/icon.png';
   site = 'https://onedrive.live.com';
-  version = '8.0.0';
+  version = '1.0.1';
   contentType = ContentType.VIDEO;
 
   pluginSettings: Plugin.PluginSettings = {

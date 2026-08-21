@@ -19,7 +19,6 @@ total.svg
 .history
 broken-sites-report.json
 electron/dist-electron
-.tsc-out
 
 # LLM
 .agent/

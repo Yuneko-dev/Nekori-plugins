@@ -14,7 +14,7 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
   name = 'AnimeVsub';
   icon = 'src/vi/animevsub/icon.png';
   site = SITE;
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.VIDEO;
 
   filters = {

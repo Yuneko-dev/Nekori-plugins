@@ -1,5 +1,4 @@
 node_modules
 .js
-.tsc-out
 public/static
 plugins/multisrc/fictioneer/custom

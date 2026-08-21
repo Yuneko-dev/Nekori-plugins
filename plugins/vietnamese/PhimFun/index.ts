@@ -10,7 +10,7 @@ class PhimFunPlugin implements Plugin.PluginBase {
   name = 'PhimFun';
   icon = 'src/vi/phimfun/icon.png';
   site = 'https://phimfun.net';
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["plugins/*/*/**/*.ts"],
+  "exclude": [
+    "plugins/*/broken_*/**",
+    "plugins/*/*/webview/**",
+    "plugins/multisrc/**"
+  ]
+}

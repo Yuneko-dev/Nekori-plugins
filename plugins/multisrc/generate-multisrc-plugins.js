@@ -48,7 +48,7 @@ const run = async () => {
     .filter(
       name =>
         fs.lstatSync(path.join(MULTISRC_DIR, name)).isDirectory() &&
-        !name.endsWith('.broken'),
+        !name.startsWith('broken_'),
     );
 
   for (let name of sources) {

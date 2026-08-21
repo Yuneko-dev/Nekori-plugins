@@ -17,7 +17,7 @@ class KKPhimPlugin implements Plugin.PluginBase {
   name = 'KKPhim';
   icon = 'src/vi/kkphim/icon.png';
   site = SITE;
-  version = '1.0.3';
+  version = '1.0.4';
   customJS = 'src/vi/kkphim/player.js';
   contentType = ContentType.VIDEO;
 

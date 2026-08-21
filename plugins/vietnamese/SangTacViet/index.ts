@@ -237,7 +237,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.37';
+  version = '1.0.38';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -728,7 +728,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       console.warn('Unexpected chapter API response', data);
       switch (String(data.code)) {
         case '21': {
-          return "<meta id='no-cache-marker'/><meta id='no-prefetch-marker'/><div id='captcha-placeholder'></div>";
+          return "<meta id='no-cache-marker'/><meta id='no-prefetch-marker'/><div id='captcha-placeholder'><p id='removed'>Bạn đã gặp captcha! Đây là placeholder, nếu captcha không xuất hiện, bạn cần tải lại trang để hiện captcha!</p></div>";
         }
         default: {
           throw new STVChapterError(Number(data.code), data);

@@ -2,8 +2,12 @@
 
 This is a fork of the original repository, containing only my custom plugins and hotfixes.
 
-> [!WARNING]  
+> [!WARNING]
 > I highly recommend using this plugin collection with my modified version of Nekori. Most of the plugins here are not compatible with the original LNReader or other apps that support JS plugins (such as Tsundoku, IReader, Kototoro, etc.), as these plugins rely heavily on modern JavaScript libraries.
+
+> [!WARNING]
+> Plugins are built for ES2020 and Nekori on React Native 0.86+. They are not compatible with older LNReader releases, including LNReader-eXtended v2.0.3.
+
 
 <p>
 <img alt="Total number of available plugins" src="https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/plugins/v3.0.0/total.svg">
@@ -84,6 +88,15 @@ Plugins in this repository make use of new API functions that are not available 
 ```bash
 npm install
 npm run dev
+```
+
+Build and type-check are independent:
+
+```bash
+npm run build:full             # build ES2020 plugins, webviews, and manifest
+npm run type-check             # check app, plugins, webviews, and Electron
+npm run type-check:plugins     # plugin sources only
+npm run type-check:webviews    # plugin webviews only
 ```
 
 Plugins are tested in the Electron playground only — the browser/localhost mode

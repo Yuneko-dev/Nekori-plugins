@@ -204,7 +204,7 @@ class MotTruyenPlugin implements Plugin.PluginBase {
   name = 'Mọt Truyện';
   icon = 'src/vi/mottruyen/icon.png';
   site = WEB_HOST;
-  version = '1.0.2';
+  version = '1.0.3';
 
   async popularNovels(
     pageNo: number,

@@ -16,7 +16,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.18';
+  version = '1.2.19';
   filters = filters;
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
@@ -473,6 +473,8 @@ class HakoPlugin implements Plugin.PluginBase {
       // .replace(/\[note\d+]/gi, '')
       .replace(/&nbsp;/g, '')
       // .replace(/\[Lên trên\]/gi, '🔼')
+      // Fix mixed content for images
+      .replace(/(<img\b[^>]*\bsrc\s*=\s*["'])http:\/\//gi, '$1https://')
       .trim();
 
     if (!chapterText) {

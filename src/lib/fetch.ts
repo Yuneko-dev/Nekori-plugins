@@ -71,11 +71,12 @@ export const fetchText = async function (
   console.log(url, init);
   try {
     const res = await fetch(url, init as RequestInit);
-    if (!res.ok) return '';
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const arrayBuffer = await res.arrayBuffer();
     const decoder = new TextDecoder(encoding);
     return decoder.decode(arrayBuffer);
   } catch (e) {
+    console.error(`fetchText failed for ${url}:`, e);
     return '';
   }
 };

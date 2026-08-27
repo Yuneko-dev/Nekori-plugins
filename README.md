@@ -27,7 +27,6 @@ Plugins in this repository make use of new API functions that are not available 
 - `node-html-markdown`
 - `@libs/aes`: added `ctr`, `ecb`, `cbc`, `cfb`, `gcmsiv`, `aeskw`, `aeskwp`, `cmac` and `aessiv`
 - `@libs/utils`: added `utf8ToBytes`, `bytesToUtf8`, `getUserAgent`, `Buffer`, `NodeCrypto` (Used similarly to `import NodeCrypto from "node:crypto"`), `encodeHtmlEntities` and `decodeHtmlEntities`
-- `@libs/fetch`: removed `fetchFile`
 - `@libs/cookie`
 - `@libs/pluginMetadata`
 

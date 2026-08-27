@@ -15,56 +15,6 @@ This is a fork of the original repository, containing only my custom plugins and
 <img alt="Open bug reports" src="https://img.shields.io/github/issues/Yuneko-dev/lnreader-plugins/Bug?color=red&label=bugs">
 </p>
 
-### Included sources:
-
-<details>
-<summary><b>📖 Novel (19 sources)</b></summary>
-
-- [Akaytruyen](https://akaytruyen.com)
-- [DocTruyenLN](https://quykiep.com)
-- [Hako Novel](https://ln.hako.vn)[^1]
-- [JukaNovel](https://sangtacviet.online)[^1]
-- [LNKuro](https://lnkuro.top)[^1]
-- [Luvevaland](https://luvevaland.co)
-- [MeTruyenCV](https://metruyencv.com)[^1]
-- [Mọt Truyện](https://mottruyen.com.vn)[^1]
-- [Newtoki](https://sbxh1.com)[^1]
-- [NocSyosetu](https://noc.syosetu.com)[^1]
-- [PixivNovel](https://pixiv.net)[^1]
-- [Sáng Tác Việt](https://sangtacviet.app/)[^1]
-- [tieuthuyetmang](https://tieuthuyetmang.com)
-- [TomatoMTL](https://tomatomtl.com)[^1]
-- [truyenfull](https://truyenfull.vision)
-- [TruyenCV](https://truyencv.io)
-- [Valvrareteam](https://valvrareteam.net)[^1]
-- ~~[WanwanSekai](https://wanwansekai.com)~~
-- [ZumiNovel](https://zuminovel.com)[^1]
-</details>
-
-<details>
-<summary><b>🎬 Streaming (10 sources)</b></summary>
-
-- [AnimeVietsub](https://animevietsub.bz)[^1]
-- [AnimeVsub](https://animevsub.app)[^1]
-- ~~[AnimeHay](https://animehay.fm)[^1][^2]~~
-- [HentaiZ](https://hentaiz.hot)[^1]
-- [KKPhim](https://kkphim.com)[^1]
-- [Motchill](https://envasion.net)[^1]
-- [NguonC](https://phim.nguonc.com)[^1]
-- [OPhim](https://ophim17.cc)[^1]
-- [PhimFun](https://phimfun.net)[^1]
-- [Yêu Anime](https://yeuanime.org)[^1]
-</details>
-
-<details>
-<summary><b>📰 News (1 source)</b></summary>
-
-- [BaoMoi](https://baomoi.com)
-</details>
-
-[^1]: This plugin is incompatible with the original LNReader as it utilizes new APIs introduced in [Nekori](https://github.com/Yuneko-dev/Nekori)
-[^2]: This plugin has been discontinued and removed due to the poor quality of the website.
-
 ### Install URL
 ```sh
 https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json

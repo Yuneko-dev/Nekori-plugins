@@ -7,15 +7,19 @@ import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import { ContentType } from '@libs/pluginMetadata';
+import { get, set } from '@libs/cookie';
 
 const SEARCH_SITE = 'https://timkiem.vnexpress.net';
+
+const UserAgent =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
 
 class VnExpressPlugin implements Plugin.PluginBase {
   id = 'vnexpress.net';
   name = 'VNExpress';
   icon = 'src/vi/vnexpress/icon.png';
   site = 'https://vnexpress.net';
-  version = '1.0.0';
+  version = '1.0.1';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {
@@ -46,6 +50,41 @@ class VnExpressPlugin implements Plugin.PluginBase {
   };
   cacheSet = new Set<string>();
 
+  private async fixCookie(url: string) {
+    const urlObj = new URL(url);
+    // check device_env cookie
+    const cookies = await get(urlObj.origin);
+    if (!cookies.device_env || cookies.device_env.value !== '4') {
+      await set(urlObj.origin, {
+        name: 'device_env',
+        value: '4',
+        domain: `.${urlObj.host}`,
+      });
+    }
+    // check device_env_real cookie
+    if (!cookies.device_env_real || cookies.device_env_real.value !== '4') {
+      await set(urlObj.origin, {
+        name: 'device_env_real',
+        value: '4',
+        domain: `.${urlObj.host}`,
+      });
+    }
+  }
+
+  /**
+   * VNExpress checks the User-Agent to serve RSS feeds.
+   * An Android UA yields empty responses and sets the device_env and device_env_real cookies to 1.
+   * Changing to a desktop UA and setting these cookies to 4 resolves the issue and returns the expected data.
+   */
+  async fetchTextWithUA(url: string) {
+    await this.fixCookie(url);
+    return fetchText(url, {
+      headers: {
+        'User-Agent': UserAgent,
+      },
+    });
+  }
+
   /**
    * RSS chỉ trả ~30 bài mới nhất và không có phân trang,
    * nên danh sách chỉ được lấy ở trang 1.
@@ -59,7 +98,7 @@ class VnExpressPlugin implements Plugin.PluginBase {
     }
     const novels: Plugin.NovelItem[] = [];
     this.cacheSet.clear();
-    const response = await fetchText(
+    const response = await this.fetchTextWithUA(
       `${this.site}/${filters.page?.value || 'rss/tin-moi-nhat.rss'}`,
     );
     const $ = loadCheerio(response, { xmlMode: true });
@@ -120,7 +159,7 @@ class VnExpressPlugin implements Plugin.PluginBase {
       content: string;
     }
   > {
-    const text = await fetchText(`${this.site}${novelPath}`);
+    const text = await this.fetchTextWithUA(`${this.site}${novelPath}`);
     const $ = loadCheerio(text);
 
     const novel: Plugin.SourceNovel & {
@@ -230,7 +269,7 @@ class VnExpressPlugin implements Plugin.PluginBase {
       `${SEARCH_SITE}/?q=${encodeURIComponent(searchTerm)}` +
       `&media_type=all&fromdate=0&todate=0&latest=&cate_code=` +
       `&search_f=title,tag_list&date_format=all&page=${pageNo}`;
-    const response = await fetchText(url);
+    const response = await this.fetchTextWithUA(url);
     const $ = loadCheerio(response);
     $('article.item-news').each((_, element) => {
       const item = $(element);

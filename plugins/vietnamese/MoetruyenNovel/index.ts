@@ -154,7 +154,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
   name = 'Moetruyen Novel';
   icon = 'src/vi/moetruyen/icon.png';
   site = SITE;
-  version = '1.0.1';
+  version = '1.0.2';
   filters = filters;
 
   async popularNovels(
@@ -283,31 +283,37 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     const assets = new Map(
       config.assets.map(asset => [Number(asset.id), asset]),
     );
-    const html: string[] = [];
+    const html: (string | Promise<string>)[] = [];
+
     let orderedListNumber = 0;
+
     for (const rawBlock of document.blocks) {
       if (!rawBlock || typeof rawBlock !== 'object') {
         throw new Error('Block chương không hợp lệ.');
       }
 
       const block = rawBlock;
+
       switch (block.type) {
         case 'paragraph':
           orderedListNumber = 0;
           html.push(`<p>${renderRuns(block, annotations)}</p>`);
           break;
+
         case 'heading': {
           orderedListNumber = 0;
           const level = Number(block.level) === 3 ? 3 : 2;
           html.push(`<h${level}>${renderRuns(block, annotations)}</h${level}>`);
           break;
         }
+
         case 'quote':
           orderedListNumber = 0;
           html.push(
             `<blockquote>${renderRuns(block, annotations)}</blockquote>`,
           );
           break;
+
         case 'list_item': {
           const ordered = block.listStyle === 'ordered';
           orderedListNumber = ordered ? orderedListNumber + 1 : 0;
@@ -317,26 +323,36 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
           );
           break;
         }
+
         case 'scene_break':
           orderedListNumber = 0;
           html.push(
             '<p class="scene-break" style="text-align: center">* * *</p>',
           );
           break;
+
         case 'image': {
+          orderedListNumber = 0;
           const asset = assets.get(Number(block.assetId));
-          if (!asset) throw new Error('Không tìm thấy ảnh của chương.');
-          const image = await decryptImage(this.site, config, asset);
+          if (!asset) {
+            throw new Error('Không tìm thấy ảnh của chương.');
+          }
           html.push(
-            `<img src="data:image/webp;base64,${image}" alt="Minh họa trong chương" />`,
+            decryptImage(this.site, config, asset).then(
+              image =>
+                `<img src="data:image/webp;base64,${image}" alt="Minh họa trong chương" />`,
+            ),
           );
+
           break;
         }
+
         default:
           throw new Error('Loại block chương không được hỗ trợ.');
       }
     }
-    return html.join('\n');
+
+    return (await Promise.all(html)).join('\n');
   }
 }
 

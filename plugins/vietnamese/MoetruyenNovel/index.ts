@@ -1,4 +1,4 @@
-import { fetchApi, fetchText } from '@libs/fetch';
+import { fetchText } from '@libs/fetch';
 import { load, type Cheerio, type CheerioAPI } from 'cheerio';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
@@ -146,7 +146,7 @@ function parseChapters($: CheerioAPI): Plugin.ChapterItem[] {
   } else {
     parseChapterList($('.novel-loose-chapters .chapter-list').first());
   }
-  return chapters;
+  return chapters.reverse();
 }
 
 class MoetruyenNovelPlugin implements Plugin.PluginBase {
@@ -154,7 +154,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
   name = 'Moetruyen Novel';
   icon = 'src/vi/moetruyen/icon.png';
   site = SITE;
-  version = '1.0.0';
+  version = '1.0.1';
   filters = filters;
 
   async popularNovels(
@@ -170,20 +170,18 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     if (status) params.set('status', status);
     const genres = options.filters?.genre?.value;
     if (genres?.length) params.set('include', genres.join(','));
-    return parseItems(
-      load(await (await fetchApi(`${this.site}/novel?${params}`)).text()),
-    );
+    return parseItems(load(await fetchText(`${this.site}/novel?${params}`)));
   }
 
   async searchNovels(searchTerm: string, pageNo: number) {
     if (pageNo > 1) return [];
     const url = new URL('/novel', this.site);
     url.searchParams.set('q', searchTerm);
-    return parseItems(load(await (await fetchApi(url.toString())).text()));
+    return parseItems(load(await fetchText(url.toString())));
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
-    const html = await (await fetchApi(`${this.site}${novelPath}`)).text();
+    const html = await fetchText(`${this.site}${novelPath}`);
     const $ = load(html);
     const title = $('.manga-detail-title').first().text().trim();
     const author = $('.manga-detail-meta-line')
@@ -248,9 +246,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
   }
 
   async parseChapter(chapterPath: string): Promise<string> {
-    const chapterHtml = await (
-      await fetchApi(`${this.site}${chapterPath}`)
-    ).text();
+    const chapterHtml = await fetchText(`${this.site}${chapterPath}`);
     const $ = load(chapterHtml);
     const configNode = $('#novel-reader-config');
     if (!configNode.length) {
@@ -332,7 +328,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
           if (!asset) throw new Error('Không tìm thấy ảnh của chương.');
           const image = await decryptImage(this.site, config, asset);
           html.push(
-            `<figure><img src="data:image/webp;base64,${image}" alt="Minh họa trong chương" /></figure>`,
+            `<img src="data:image/webp;base64,${image}" alt="Minh họa trong chương" />`,
           );
           break;
         }

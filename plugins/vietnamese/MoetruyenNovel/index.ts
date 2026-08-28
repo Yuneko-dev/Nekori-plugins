@@ -1,10 +1,10 @@
-import { fetchApi } from '@libs/fetch';
+import { fetchApi, fetchText } from '@libs/fetch';
 import { load, type Cheerio, type CheerioAPI } from 'cheerio';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import filters from './filters';
 import { decryptImage, openChapter } from './NovelDecryptor';
-import { NovelReaderConfig } from './interface';
+import { ChapterBlock, NovelReaderConfig } from './interface';
 
 const SITE = 'https://moetruyen.net';
 
@@ -26,6 +26,40 @@ function statusOf(value: string): string {
     return NovelStatus.Ongoing;
   }
   return NovelStatus.Unknown;
+}
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+function renderRuns(block: ChapterBlock, annotations: Map<string, string>) {
+  const runs =
+    Array.isArray(block.runs) && block.runs.length
+      ? block.runs
+      : [{ text: block.text ?? '' }];
+
+  return runs
+    .map(rawRun => {
+      const run = rawRun && typeof rawRun === 'object' ? rawRun : {};
+      if (run.annotationId) {
+        const note = annotations.get(String(run.annotationId));
+        return note ? `<sup title="${escapeHtml(note)}">(*)</sup>` : '';
+      }
+
+      let text = escapeHtml(run.text)
+        .replace(/\r\n?/g, '\n')
+        .replace(/\n/g, '<br>');
+      if (run.bold) text = `<strong>${text}</strong>`;
+      if (run.italic) text = `<em>${text}</em>`;
+      if (run.underline) text = `<u>${text}</u>`;
+      if (run.strikethrough) text = `<s>${text}</s>`;
+      return text;
+    })
+    .join('');
 }
 
 function releaseDateOf(item: Cheerio<any>): string | undefined {
@@ -176,7 +210,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     for (let page = 2; page <= totalPages; page++) {
       const url = new URL(novelPath, this.site);
       url.searchParams.set('chapterPage', String(page));
-      const pageHtml = await (await fetchApi(url.toString())).text();
+      const pageHtml = await fetchText(url.toString());
       chapters.push(...parseChapters(load(pageHtml)));
     }
     const siteDescription = $('[data-description-content]').text().trim();
@@ -239,37 +273,74 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     if (document.version !== 1 || !Array.isArray(document.blocks)) {
       throw new Error('Document chương không hợp lệ.');
     }
+    const annotations = new Map(
+      (Array.isArray(document.annotations) ? document.annotations : [])
+        .map(
+          annotation =>
+            [String(annotation.id), String(annotation.text)] as [
+              string,
+              string,
+            ],
+        )
+        .filter(([id, text]) => id && text),
+    );
     const assets = new Map(
       config.assets.map(asset => [Number(asset.id), asset]),
     );
-    const escape = (value: string) =>
-      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const renderRuns = (block: (typeof document.blocks)[number]) =>
-      (block.runs?.length ? block.runs : [{ text: block.text || '' }])
-        .map(run => escape(run.text || ''))
-        .join('');
-    const rendered: string[] = [];
-    for (const block of document.blocks) {
-      if (block.type === 'image') {
-        const asset = assets.get(Number(block.assetId));
-        if (!asset) throw new Error('Không tìm thấy ảnh của chương.');
-        const image = await decryptImage(this.site, config, asset);
-        rendered.push(
-          `<figure><img src="data:image/webp;base64,${image}" alt="Minh họa trong chương"></figure>`,
-        );
-      } else if (block.type === 'heading') {
-        rendered.push(`<h2>${renderRuns(block)}</h2>`);
-      } else if (block.type === 'quote') {
-        rendered.push(`<blockquote>${renderRuns(block)}</blockquote>`);
-      } else if (block.type === 'scene_break') {
-        rendered.push(
-          '<p class="scene-break" style="text-align: center">* * *</p>',
-        );
-      } else {
-        rendered.push(`<p>${renderRuns(block)}</p>`);
+    const html: string[] = [];
+    let orderedListNumber = 0;
+    for (const rawBlock of document.blocks) {
+      if (!rawBlock || typeof rawBlock !== 'object') {
+        throw new Error('Block chương không hợp lệ.');
+      }
+
+      const block = rawBlock;
+      switch (block.type) {
+        case 'paragraph':
+          orderedListNumber = 0;
+          html.push(`<p>${renderRuns(block, annotations)}</p>`);
+          break;
+        case 'heading': {
+          orderedListNumber = 0;
+          const level = Number(block.level) === 3 ? 3 : 2;
+          html.push(`<h${level}>${renderRuns(block, annotations)}</h${level}>`);
+          break;
+        }
+        case 'quote':
+          orderedListNumber = 0;
+          html.push(
+            `<blockquote>${renderRuns(block, annotations)}</blockquote>`,
+          );
+          break;
+        case 'list_item': {
+          const ordered = block.listStyle === 'ordered';
+          orderedListNumber = ordered ? orderedListNumber + 1 : 0;
+          const prefix = ordered ? `${orderedListNumber}. ` : '• ';
+          html.push(
+            `<p>${escapeHtml(prefix)}${renderRuns(block, annotations)}</p>`,
+          );
+          break;
+        }
+        case 'scene_break':
+          orderedListNumber = 0;
+          html.push(
+            '<p class="scene-break" style="text-align: center">* * *</p>',
+          );
+          break;
+        case 'image': {
+          const asset = assets.get(Number(block.assetId));
+          if (!asset) throw new Error('Không tìm thấy ảnh của chương.');
+          const image = await decryptImage(this.site, config, asset);
+          html.push(
+            `<figure><img src="data:image/webp;base64,${image}" alt="Minh họa trong chương" /></figure>`,
+          );
+          break;
+        }
+        default:
+          throw new Error('Loại block chương không được hỗ trợ.');
       }
     }
-    return rendered.join('\n');
+    return html.join('\n');
   }
 }
 

@@ -58,6 +58,7 @@ class TruyenTranhPhapBiPlugin implements Plugin.PluginBase {
   id = 'truyentranhphapbi.blogspot.com';
   name = 'Truyện Tranh Pháp Bỉ';
   icon = 'src/vi/truyentranhphapbi/icon.jpg';
+  customCSS = 'src/vi/truyentranhphapbi/reader.css';
   site = SITE;
   version = '1.0.0';
   contentType = ContentType.IMAGE;

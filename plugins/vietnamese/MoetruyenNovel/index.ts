@@ -263,7 +263,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
           .text()
           .trim();
         if (title && description) {
-          return `<h2>${title}</h2>\n<p>${description}</p>`;
+          return `<meta id='no-cache-marker'/><meta id='no-prefetch-marker'/><h2>${title}</h2>\n<p>${description}</p>`;
         }
       }
       throw new Error('Không tìm thấy nội dung chương.');

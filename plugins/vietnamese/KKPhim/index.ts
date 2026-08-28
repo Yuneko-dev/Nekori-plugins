@@ -193,7 +193,7 @@ class KKPhimPlugin implements Plugin.PluginBase {
 
   async parseChapter(chapterPath: string): Promise<string> {
     if (!chapterPath.startsWith('http')) {
-      return '<p style="color:#ff4444;font-size:14px;font-family:sans-serif;text-align:center;padding:16px;">Không tìm thấy nguồn video cho tập phim này.</p>';
+      return '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/><p style="color:#ff4444;font-size:14px;font-family:sans-serif;text-align:center;padding:16px;">Không tìm thấy nguồn video cho tập phim này.</p>';
     }
     const escapedUrl = encodeHtmlEntities(chapterPath);
     return [

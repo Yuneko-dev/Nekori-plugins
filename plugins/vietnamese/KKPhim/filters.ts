@@ -29,6 +29,7 @@ export default {
       { label: 'Tài Liệu', value: 'tai-lieu' },
       { label: 'Bí Ẩn', value: 'bi-an' },
       { label: 'Phim 18+', value: 'phim-18' },
+      { label: 'Phim Ngắn', value: 'phim-ngan' },
       { label: 'Tình Cảm', value: 'tinh-cam' },
       { label: 'Tâm Lý', value: 'tam-ly' },
       { label: 'Thể Thao', value: 'the-thao' },
@@ -99,6 +100,7 @@ export default {
       { label: 'Phim Bộ', value: 'phim-bo' },
       { label: 'TV Shows', value: 'tv-shows' },
       { label: 'Hoạt Hình', value: 'hoat-hinh' },
+      { label: 'Phim Chiếu Rạp', value: 'phim-chieu-rap' },
     ],
   },
   year: {

@@ -1,5 +1,5 @@
 name: Request Plugin
-description: Request a new plugin for LNReader
+description: Request a new plugin for Nekori
 labels: [Plugin Request]
 body:
   - type: input
@@ -50,7 +50,7 @@ body:
           required: true
         - label: I have used the plugin name as the issue title.
           required: true
-        - label: I have verified this plugin does not already exist in the [repository](https://github.com/Yuneko-dev/lnreader-plugins).
+        - label: I have verified this plugin does not already exist in the [repository](https://github.com/Yuneko-dev/Nekori-plugins).
           required: true
         - label: I have provided all requested information in this form.
           required: true

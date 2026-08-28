@@ -36,7 +36,7 @@ jobs:
               },
               {
                 "type": "body",
-                "regex": ".*\\* (LNReader version|Android version|Device): \\?.*",
+                "regex": ".*\\* (Nekori version|Android version|Device): \\?.*",
                 "message": "Requested information in the template was not filled out."
               },
               {

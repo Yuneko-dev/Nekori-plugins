@@ -1,4 +1,4 @@
-# Tài liệu phát triển LNReader Plugins
+# Tài liệu phát triển Nekori Plugins
 
 > [!NOTE]
 > Tài liệu này được tạo bởi AI dựa trên mã nguồn của repository. Nội dung đã
@@ -425,7 +425,7 @@ npm run serve:dev
 ```
 
 - Server chạy ở cổng 3000. Điện thoại và máy tính phải chung mạng Wi-Fi.
-- Trong LNReader, vào **Cài đặt → Repositories**, thêm URL
+- Trong Nekori, vào **Cài đặt → Repositories**, thêm URL
   `http://<IP-máy-tính>:3000/.dist/plugins.min.json` rồi cập nhật.
 - Đây là cách kiểm tra chính xác nhất hành vi Custom JS/CSS trong Reader, nhưng
   không có console để xem log nếu không debug Application.

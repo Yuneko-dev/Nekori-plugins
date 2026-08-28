@@ -112,7 +112,7 @@ app.whenReady().then(async () => {
     .replace(/Electron\/[\d\.]+/gi, '')
     .replace(/ {2,}/g, ' ');
 
-  customSession = session.fromPartition('persist:lnreader_plugins');
+  customSession = session.fromPartition('persist:nekori_plugins');
 
   app.configureHostResolver({
     enableBuiltInResolver: true,

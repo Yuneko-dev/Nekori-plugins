@@ -3,7 +3,7 @@
 # Any changes made here will be overwritten when plugins are published.
 
 name: Report Issue
-description: Report a plugin issue in LNReader
+description: Report a plugin issue in Nekori
 labels: [Bug]
 body:
   - type: dropdown
@@ -70,9 +70,9 @@ body:
       required: true
 
   - type: input
-    id: lnreader-version
+    id: nekori-version
     attributes:
-      label: LNReader Version
+      label: Nekori Version
       description: Find this in **More → About**.
       placeholder: |
         Example: "2.0.0"
@@ -117,9 +117,9 @@ body:
           required: true
         - label: I have written a clear and descriptive title.
           required: true
-        - label: I have updated the app to the latest version **[2.0.0](https://github.com/LNReader/lnreader/releases/tag/v2.0.0-beta.3)**.
+        - label: I have updated the app to the latest version **[2.0.0](https://github.com/Yuneko-dev/Nekori/releases/tag/v2.0.0-beta.3)**.
           required: true
         - label: I have updated all installed plugins to the latest version.
           required: true
-        - label: I understand that app-specific issues should be reported in the [app repository](https://github.com/LNReader/lnreader/issues/new/choose).
+        - label: I understand that app-specific issues should be reported in the [app repository](https://github.com/Yuneko-dev/Nekori/issues/new/choose).
           required: true

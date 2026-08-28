@@ -13,7 +13,7 @@ const __dirname = dirname(__filename);
 const TIMEOUT = 10000;
 const CONCURRENT_REQUESTS = 10;
 const PLUGINS_JSON_URL =
-  'https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/refs/heads/plugins/v3.0.0/.dist/plugins.json';
+  'https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/refs/heads/plugins/v3.0.0/.dist/plugins.json';
 
 const results = {
   accessible: [],

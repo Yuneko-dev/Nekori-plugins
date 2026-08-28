@@ -1,7 +1,7 @@
 {
-  "name": "lnreader-plugins",
+  "name": "nekori-plugins",
   "version": "3.0.0",
-  "description": "Plugins repo for LNReader",
+  "description": "Plugins repo for Nekori",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -30,7 +30,7 @@
     "check:sites": "node scripts/check-plugin-sites.js",
     "prepare": "husky"
   },
-  "author": "LNReader",
+  "author": "aiko-chan-ai",
   "license": "MIT",
   "dependencies": {
     "@fontsource/geist-mono": "^5.2.7",

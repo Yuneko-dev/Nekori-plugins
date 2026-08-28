@@ -1,4 +1,4 @@
-# LNReader Plugins
+# Nekori Plugins
 
 This is a fork of the original repository, containing only my custom plugins and hotfixes.
 
@@ -10,14 +10,14 @@ This is a fork of the original repository, containing only my custom plugins and
 
 
 <p>
-<img alt="Total number of available plugins" src="https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/plugins/v3.0.0/total.svg">
-<img alt="Open plugin requests" src="https://img.shields.io/github/issues/Yuneko-dev/lnreader-plugins/Plugin%20Request?color=success&label=plugin%20requests">
-<img alt="Open bug reports" src="https://img.shields.io/github/issues/Yuneko-dev/lnreader-plugins/Bug?color=red&label=bugs">
+<img alt="Total number of available plugins" src="https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/plugins/v3.0.0/total.svg">
+<img alt="Open plugin requests" src="https://img.shields.io/github/issues/Yuneko-dev/Nekori-plugins/Plugin%20Request?color=success&label=plugin%20requests">
+<img alt="Open bug reports" src="https://img.shields.io/github/issues/Yuneko-dev/Nekori-plugins/Bug?color=red&label=bugs">
 </p>
 
 ### Install URL
 ```sh
-https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json
+https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/plugins/v3.0.0/.dist/plugins.min.json
 ```
 
 ### Additional APIs

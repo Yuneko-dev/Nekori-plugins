@@ -30,4 +30,4 @@ export const ContentType = {
 export type ContentType = (typeof ContentType)[keyof typeof ContentType];
 
 export const defaultCover =
-  'https://github.com/Yuneko-dev/lnreader-plugins/blob/main/icons/src/coverNotAvailable.jpg?raw=true';
+  'https://github.com/Yuneko-dev/Nekori-plugins/blob/master/public/static/coverNotAvailable.webp?raw=true';

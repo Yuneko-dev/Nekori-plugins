@@ -14,7 +14,7 @@ async function main() {
 
   try {
     const response = await fetch(
-      `https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/${dist}/.dist/plugins.min.json`,
+      `https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/${dist}/.dist/plugins.min.json`,
     );
 
     if (!response.ok) {

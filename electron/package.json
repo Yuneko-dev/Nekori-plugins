@@ -1,8 +1,8 @@
 {
-  "name": "lnreader-plugins-electron",
+  "name": "nekori-plugins-electron",
   "version": "1.0.0",
   "private": true,
-  "description": "Electron Playground for LNReader Plugin Development",
+  "description": "Electron Playground for Nekori Plugin Development",
   "type": "module",
   "main": "dist-electron/main/main.js"
 }

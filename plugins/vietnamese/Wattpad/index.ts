@@ -204,7 +204,7 @@ class WattpadPlugin implements Plugin.PluginBase {
   name = 'Wattpad';
   icon = 'src/vi/wattpad/icon.png';
   site = SITE;
-  version = '1.1.0';
+  version = '1.0.0';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 

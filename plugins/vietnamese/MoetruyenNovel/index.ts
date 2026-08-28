@@ -1,6 +1,5 @@
 import { fetchApi } from '@libs/fetch';
 import { load, type Cheerio, type CheerioAPI } from 'cheerio';
-import type { Element } from 'domhandler';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import filters from './filters';
@@ -29,17 +28,21 @@ function statusOf(value: string): string {
   return NovelStatus.Unknown;
 }
 
-function releaseDateOf(item: Cheerio<Element>): string | undefined {
+function releaseDateOf(item: Cheerio<any>): string | undefined {
   const time = item.find('.chapter-time, time').first();
   const datetime = time.attr('datetime');
   if (datetime) {
     const date = new Date(datetime);
     if (!Number.isNaN(date.getTime())) return date.toISOString();
   }
-  const title = time.attr('title')?.match(/(\d{1,2}:\d{2}:\d{2})\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  const title = time
+    .attr('title')
+    ?.match(/(\d{1,2}:\d{2}:\d{2})\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (title) {
     const [, clock, day, month, year] = title;
-    const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${clock}`);
+    const date = new Date(
+      `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${clock}`,
+    );
     if (!Number.isNaN(date.getTime())) return date.toISOString();
   }
   return undefined;
@@ -50,9 +53,15 @@ function parseItems($: CheerioAPI): Plugin.NovelItem[] {
   $('article.manga-card a[href^="/novel/"]').each((_, element) => {
     const link = $(element);
     const path = link.attr('href');
-    const name = link.find('h3[title]').attr('title')?.trim() ||
-      link.text().replace(/Bìa|Thông tin truyện chữ|Còn tiếp|Tạm dừng/gi, '').trim();
-    const cover = link.find('img').first().attr('src') || link.find('img').first().attr('data-src');
+    const name =
+      link.find('h3[title]').attr('title')?.trim() ||
+      link
+        .text()
+        .replace(/Bìa|Thông tin truyện chữ|Còn tiếp|Tạm dừng/gi, '')
+        .trim();
+    const cover =
+      link.find('img').first().attr('src') ||
+      link.find('img').first().attr('data-src');
     if (path && name && !items.some(item => item.path === path)) {
       items.push({ name, path, cover });
     }
@@ -62,7 +71,7 @@ function parseItems($: CheerioAPI): Plugin.NovelItem[] {
 
 function parseChapters($: CheerioAPI): Plugin.ChapterItem[] {
   const chapters: Plugin.ChapterItem[] = [];
-  const parseChapterList = (list: Cheerio<Element>, volume?: string) => {
+  const parseChapterList = (list: Cheerio<any>, volume?: string) => {
     list.find('li').each((__, element) => {
       const item = $(element);
       const link = item.find('a.chapter-link').first();
@@ -70,7 +79,10 @@ function parseChapters($: CheerioAPI): Plugin.ChapterItem[] {
       const number = Number(link.attr('data-chapter-number'));
       const title = item.find('.chapter-title').text().trim();
       const chapterLabel = item.find('.chapter-num').text().trim();
-      const baseName = title && chapterLabel ? `${chapterLabel} - ${title}` : title || chapterLabel;
+      const baseName =
+        title && chapterLabel
+          ? `${chapterLabel} - ${title}`
+          : title || chapterLabel;
       const requiresComment = item.find('.chapter-lock-icon').length > 0;
       const name = requiresComment ? `🔒 ${baseName}` : baseName;
       if (path && name && !chapters.some(chapter => chapter.path === path)) {
@@ -111,15 +123,22 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
   version = '1.0.0';
   filters = filters;
 
-  async popularNovels(pageNo: number, options: Plugin.PopularNovelsOptions<typeof this.filters>) {
+  async popularNovels(
+    pageNo: number,
+    options: Plugin.PopularNovelsOptions<typeof this.filters>,
+  ) {
     const params = new URLSearchParams({ page: String(pageNo) });
-    const sort = options.showLatestNovels ? 'updated_desc' : options.filters?.sort?.value || 'views_desc';
+    const sort = options.showLatestNovels
+      ? 'updated_desc'
+      : options.filters?.sort?.value || 'views_desc';
     if (sort) params.set('sort', sort);
     const status = options.filters?.status?.value;
     if (status) params.set('status', status);
     const genres = options.filters?.genre?.value;
     if (genres?.length) params.set('include', genres.join(','));
-    return parseItems(load(await (await fetchApi(`${this.site}/novel?${params}`)).text()));
+    return parseItems(
+      load(await (await fetchApi(`${this.site}/novel?${params}`)).text()),
+    );
   }
 
   async searchNovels(searchTerm: string, pageNo: number) {
@@ -133,10 +152,23 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     const html = await (await fetchApi(`${this.site}${novelPath}`)).text();
     const $ = load(html);
     const title = $('.manga-detail-title').first().text().trim();
-    const author = $('.manga-detail-meta-line').filter((_, el) => $(el).text().includes('Tác giả')).find('a').map((_, el) => $(el).text().trim()).get().join(', ');
-    const statusText = $('.manga-detail-meta-line').filter((_, el) => $(el).text().includes('Trạng thái')).text();
+    const author = $('.manga-detail-meta-line')
+      .filter((_, el) => $(el).text().includes('Tác giả'))
+      .find('a')
+      .map((_, el) => $(el).text().trim())
+      .get()
+      .join(', ');
+    const statusText = $('.manga-detail-meta-line')
+      .filter((_, el) => $(el).text().includes('Trạng thái'))
+      .text();
     const pages = $('a[href*="chapterPage="]')
-      .map((_, el) => Number($(el).attr('href')?.match(/chapterPage=(\d+)/)?.[1]))
+      .map((_, el) =>
+        Number(
+          $(el)
+            .attr('href')
+            ?.match(/chapterPage=(\d+)/)?.[1],
+        ),
+      )
       .get()
       .filter(Number.isFinite);
     const chapters = parseChapters($);
@@ -149,18 +181,42 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     }
     const siteDescription = $('[data-description-content]').text().trim();
     const alternateTitleValue = $('.manga-detail-meta-line')
-      .filter((_, element) => $(element).find('.manga-detail-meta-label').text().trim().startsWith('Tên khác'))
+      .filter((_, element) =>
+        $(element)
+          .find('.manga-detail-meta-label')
+          .text()
+          .trim()
+          .startsWith('Tên khác'),
+      )
       .find('.manga-detail-meta-value')
       .first()
       .text()
       .trim();
-    const alternateTitle = alternateTitleValue ? `Tên khác: ${alternateTitleValue}` : '';
-    const summary = [alternateTitle, siteDescription].filter(Boolean).join('\n\n');
-    return { path: novelPath, name: title, author, cover: $('meta[property="og:image"]').attr('content'), genres: $('.manga-detail-tags a').map((_, el) => $(el).text().trim()).get().join(','), summary, status: statusOf(statusText || $('body').text()), chapters };
+    const alternateTitle = alternateTitleValue
+      ? `Tên khác: ${alternateTitleValue}`
+      : '';
+    const summary = [alternateTitle, siteDescription]
+      .filter(Boolean)
+      .join('\n\n');
+    return {
+      path: novelPath,
+      name: title,
+      author,
+      cover: $('meta[property="og:image"]').attr('content'),
+      genres: $('.manga-detail-tags a')
+        .map((_, el) => $(el).text().trim())
+        .get()
+        .join(','),
+      summary,
+      status: statusOf(statusText || $('body').text()),
+      chapters,
+    };
   }
 
   async parseChapter(chapterPath: string): Promise<string> {
-    const chapterHtml = await (await fetchApi(`${this.site}${chapterPath}`)).text();
+    const chapterHtml = await (
+      await fetchApi(`${this.site}${chapterPath}`)
+    ).text();
     const $ = load(chapterHtml);
     const configNode = $('#novel-reader-config');
     if (!configNode.length) {
@@ -183,11 +239,11 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     if (document.version !== 1 || !Array.isArray(document.blocks)) {
       throw new Error('Document chương không hợp lệ.');
     }
-    const assets = new Map(config.assets.map(asset => [Number(asset.id), asset]));
-    const escape = (value: string) => value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    const assets = new Map(
+      config.assets.map(asset => [Number(asset.id), asset]),
+    );
+    const escape = (value: string) =>
+      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const renderRuns = (block: (typeof document.blocks)[number]) =>
       (block.runs?.length ? block.runs : [{ text: block.text || '' }])
         .map(run => escape(run.text || ''))
@@ -198,13 +254,17 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
         const asset = assets.get(Number(block.assetId));
         if (!asset) throw new Error('Không tìm thấy ảnh của chương.');
         const image = await decryptImage(this.site, config, asset);
-        rendered.push(`<figure><img src="data:image/webp;base64,${image}" alt="Minh họa trong chương"></figure>`);
+        rendered.push(
+          `<figure><img src="data:image/webp;base64,${image}" alt="Minh họa trong chương"></figure>`,
+        );
       } else if (block.type === 'heading') {
         rendered.push(`<h2>${renderRuns(block)}</h2>`);
       } else if (block.type === 'quote') {
         rendered.push(`<blockquote>${renderRuns(block)}</blockquote>`);
       } else if (block.type === 'scene_break') {
-        rendered.push('<p class="scene-break" style="text-align: center">* * *</p>');
+        rendered.push(
+          '<p class="scene-break" style="text-align: center">* * *</p>',
+        );
       } else {
         rendered.push(`<p>${renderRuns(block)}</p>`);
       }

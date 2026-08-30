@@ -146,7 +146,7 @@ function parseChapters($: CheerioAPI): Plugin.ChapterItem[] {
   } else {
     parseChapterList($('.novel-loose-chapters .chapter-list').first());
   }
-  return chapters.reverse();
+  return chapters;
 }
 
 class MoetruyenNovelPlugin implements Plugin.PluginBase {
@@ -154,7 +154,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
   name = 'Moetruyen Novel';
   icon = 'src/vi/moetruyen/icon.png';
   site = SITE;
-  version = '1.0.2';
+  version = '1.0.3';
   filters = filters;
 
   async popularNovels(
@@ -241,7 +241,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
         .join(','),
       summary,
       status: statusOf(statusText || $('body').text()),
-      chapters,
+      chapters: chapters.reverse(),
     };
   }
 

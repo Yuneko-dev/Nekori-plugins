@@ -8,7 +8,10 @@ if (chapterComments && host) {
   shadow.appendChild(chapterComments);
   shadow.addEventListener('click', event => {
     const target = event.target;
-    if (!(target instanceof HTMLElement) || !target.matches('.comment-spoiler-reveal')) {
+    if (
+      !(target instanceof HTMLElement) ||
+      !target.matches('.comment-spoiler-reveal')
+    ) {
       return;
     }
 

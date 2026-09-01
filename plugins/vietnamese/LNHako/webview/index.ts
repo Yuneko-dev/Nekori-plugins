@@ -6,5 +6,24 @@ if (chapterComments && host) {
     shadow.appendChild(node.cloneNode(true));
   });
   shadow.appendChild(chapterComments);
+  shadow.addEventListener('click', event => {
+    const target = event.target;
+    if (
+      !(target instanceof HTMLElement) ||
+      !target.matches('.comment-spoiler-reveal')
+    ) {
+      return;
+    }
+
+    const spoiler = target.closest('[data-comment-spoiler]');
+    const content = spoiler?.querySelector('[data-comment-content]');
+    if (!spoiler || !content) {
+      return;
+    }
+
+    content.removeAttribute('aria-hidden');
+    target.setAttribute('aria-expanded', 'true');
+    target.remove();
+  });
   host.setAttribute('id', 'chapter-comments');
 }

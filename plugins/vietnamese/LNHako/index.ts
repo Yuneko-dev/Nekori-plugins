@@ -16,7 +16,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.19';
+  version = '1.2.20';
   filters = filters;
 
   customCSS = 'src/vi/hakolightnovel/custom.css';

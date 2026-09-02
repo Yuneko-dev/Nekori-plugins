@@ -230,8 +230,7 @@ export default function ParseNovelSection({
                   >
                     <img
                       src={
-                        (sourceNovel.cover ? '/' : '') + sourceNovel.cover ||
-                        '/static/coverNotAvailable.webp'
+                        sourceNovel.cover || '/static/coverNotAvailable.webp'
                       }
                       alt={sourceNovel.name}
                       className="w-32 h-48 rounded-lg object-cover hover:opacity-80 transition-opacity"

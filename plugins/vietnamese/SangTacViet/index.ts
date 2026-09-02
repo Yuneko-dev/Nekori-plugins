@@ -237,7 +237,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.38';
+  version = '1.0.39';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -359,7 +359,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     $('a.booksearch').each((_, el) => {
       const href = $(el).attr('href') || '';
       const name = $(el).find('.searchbooktitle').text().trim();
-      const cover = $(el).find('img').attr('src') || defaultCover;
+      const cover = this.fixCoverUrl($(el).find('img').attr('src'));
       if (href && name) {
         novels.push({ name, cover, path: href });
       }
@@ -405,6 +405,13 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     return this.parseNovelsFromHTML(html);
   }
 
+  fixCoverUrl(url: any): string {
+    if (!url) return defaultCover;
+    if (typeof url === 'string' && url.startsWith('http://'))
+      return url.replace(/^http:/, 'https:');
+    return url as string;
+  }
+
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     // Extract host and bookid from path: /truyen/{host}/{sty}/{bookid}/
     const pathParts = novelPath.replace(/^\/|\/$/g, '').split('/');
@@ -442,11 +449,11 @@ class SangTacVietPlugin implements Plugin.PluginBase {
           .replace(/\n{3,}/g, '\n\n')
           .trim();
         novel.genres = (book.category || '').trim();
-        novel.cover = book.thumb
-          ? book.thumb.startsWith('http')
+        novel.cover = this.fixCoverUrl(
+          book.thumb && book.thumb.startsWith('http')
             ? book.thumb
-            : `${this.site}${book.thumb}`
-          : defaultCover;
+            : `${this.site}${book.thumb}`,
+        );
 
         const st = String(book.status || '')
           .trim()
@@ -467,8 +474,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
           $('meta[property="og:novel:book_name"]').attr('content') ||
           $('#book_name2').text().trim() ||
           'Không có tiêu đề';
-        novel.cover =
-          $('meta[property="og:image"]').attr('content') || defaultCover;
+        novel.cover = this.fixCoverUrl(
+          $('meta[property="og:image"]').attr('content'),
+        );
         novel.author =
           $('meta[property="og:novel:author"]').attr('content') ||
           $('h2').first().text().trim();
@@ -793,9 +801,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
             const b = infoJson.book;
             name = (b.tname || b.name || name).trim();
             if (b.thumb) {
-              cover = b.thumb.startsWith('http')
-                ? b.thumb
-                : `${this.site}${b.thumb}`;
+              cover = this.fixCoverUrl(
+                b.thumb.startsWith('http') ? b.thumb : `${this.site}${b.thumb}`,
+              );
             }
           }
         } catch {

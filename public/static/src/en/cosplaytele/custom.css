@@ -1,0 +1,31 @@
+:root {
+  --reader-margin-right: 0px;
+  --reader-margin-left: 0px;
+}
+
+#LNReader-chapter p:has(img),
+#LNReader-chapter div:has(img):not(#LNReader-chapter),
+#LNReader-chapter figure {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+  display: block !important;
+}
+
+#LNReader-chapter figure {
+  width: calc(100% + (var(--readerSettings-padding) * 2)) !important;
+  max-width: none !important;
+  margin-left: calc(-1 * var(--readerSettings-padding)) !important;
+  margin-right: calc(-1 * var(--readerSettings-padding)) !important;
+  overflow: hidden;
+}
+
+#LNReader-chapter figure img,
+#LNReader-chapter img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}

@@ -3,6 +3,7 @@ import { load } from 'cheerio';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
+import css from './css';
 import filters from './filters';
 import {
   decodeProtectedContent,
@@ -16,11 +17,11 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.20';
+  version = '1.2.21';
   filters = filters;
 
-  customCSS = 'src/vi/hakolightnovel/custom.css';
-  customJS = 'src/vi/hakolightnovel/custom.js';
+  // customCSS = 'src/vi/hakolightnovel/custom.css';
+  // customJS = 'src/vi/hakolightnovel/custom.js';
 
   pluginSettings: Plugin.PluginSettings = {
     domain: {
@@ -513,7 +514,7 @@ class HakoPlugin implements Plugin.PluginBase {
       // Edit comment
       commentSection.find('.ln-comment-toolkit').parent().remove();
 
-      output = `${output}\n<div id="shadow-host"></div>\n${commentSection.prop('outerHTML')}`;
+      output = `${output}<div id="chapter-comments"><template shadowrootmode="open"><style>${css}</style>${commentSection.prop('outerHTML')}</template></div>`;
     }
 
     if (this.showTitleInfo) {

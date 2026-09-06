@@ -1,6 +1,3 @@
-// Placeholder for cookie management functions. These functions are not implemented yet,
-// but they can be used in the LNReader-eXtended / Nekori application.
-
 type Cookie = {
   name: string;
   value: string;
@@ -11,27 +8,20 @@ type Cookie = {
   secure?: boolean;
   httpOnly?: boolean;
 };
-
 type Cookies = Record<string, Cookie>;
 
-function set(url: string, cookie: Cookie) {
-  return Promise.resolve(true);
+export function set(url: string, cookie: Cookie): Promise<boolean> {
+  return window.electronAPI!.invoke('cookie:set', url, cookie);
 }
-
-function get(url: string): Promise<Cookies> {
-  return Promise.resolve({});
+export function get(url: string): Promise<Cookies> {
+  return window.electronAPI!.invoke('cookie:get', url);
 }
-
-function setFromResponse(url: string, cookie: string) {
-  return Promise.resolve(true);
+export function setFromResponse(url: string, cookie: string): Promise<boolean> {
+  return window.electronAPI!.invoke('cookie:set-from-response', url, cookie);
 }
-
-function flush() {
-  return Promise.resolve();
+export function flush(): Promise<void> {
+  return window.electronAPI!.invoke('cookie:flush');
 }
-
-function removeSessionCookies() {
-  return Promise.resolve(true);
+export function removeSessionCookies(): Promise<boolean> {
+  return window.electronAPI!.invoke('cookie:remove-session');
 }
-
-export { set, get, setFromResponse, flush, removeSessionCookies };

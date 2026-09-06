@@ -1,102 +1,116 @@
-class Storage {
-  private db: Record<string, { created: Date; value: any; expires?: number }>;
+const PLUGIN_STORAGE = '_DB_';
+const WEBVIEW_LOCAL_STORAGE = '_LocalStorage';
+const WEBVIEW_SESSION_STORAGE = '_SessionStorage';
 
-  /**
-   * Initializes a new instance of the Storage class.
-   */
-  constructor() {
-    this.db = {};
+type StoredItem = {
+  created: Date;
+  value: any;
+  expires?: number;
+};
+
+function getPluginId() {
+  if (typeof window === 'undefined') return '__global__';
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('plugin') || '__global__';
+}
+
+class Storage {
+  #pluginID?: string;
+  constructor(pluginID?: string) {
+    this.#pluginID = pluginID;
   }
 
-  /**
-   * Sets a key-value pair in storage.
-   *
-   * @param {string} key - The key to set.
-   * @param {any} value - The value to set.
-   * @param {Date | number} [expires] - Optional expiry date or time in milliseconds.
-   */
+  private get pid() {
+    return this.#pluginID || getPluginId();
+  }
+
   set(key: string, value: any, expires?: Date | number): void {
-    this.db[key] = {
+    const item: StoredItem = {
       created: new Date(),
       value,
       expires: expires instanceof Date ? expires.getTime() : expires,
     };
+    window.localStorage.setItem(
+      this.pid + PLUGIN_STORAGE + key,
+      JSON.stringify(item),
+    );
   }
 
-  /**
-   * Retrieves the value for a given key from storage.
-   *
-   * @param {string} key - The key to retrieve the value for.
-   * @param {boolean} [raw] - Optional flag to return the raw stored item.
-   * @returns {any} The stored value or undefined if key is not found.
-   */
   get(key: string, raw?: boolean): any {
-    const item = this.db[key];
-    if (item?.expires && Date.now() > item.expires) {
-      this.delete(key);
-      return undefined;
+    const storedItem = window.localStorage.getItem(
+      this.pid + PLUGIN_STORAGE + key,
+    );
+    if (storedItem) {
+      const item: StoredItem = JSON.parse(storedItem);
+      if (item.expires) {
+        if (Date.now() > item.expires) {
+          this.delete(key);
+          return undefined;
+        }
+        if (raw) {
+          item.expires = new Date(item.expires).getTime();
+        }
+      }
+      return raw ? item : item.value;
     }
-    return raw ? item : item?.value;
+    return undefined;
   }
 
-  /**
-   * Retrieves all keys set by the `set` method.
-   *
-   * @returns {string[]} An array of keys.
-   */
-  getAllKeys(): string[] {
-    return Object.keys(this.db);
-  }
-
-  /**
-   * Deletes a key from the storage.
-   *
-   * @param key - The key to delete.
-   */
   delete(key: string): void {
-    delete this.db[key];
+    window.localStorage.removeItem(this.pid + PLUGIN_STORAGE + key);
   }
 
-  /**
-   * Clears all stored items from storage.
-   */
   clearAll(): void {
-    this.db = {};
+    const keysToRemove = this.getAllKeys();
+    keysToRemove.forEach(key => this.delete(key));
+  }
+
+  getAllKeys(): string[] {
+    const prefix = this.pid + PLUGIN_STORAGE;
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        keys.push(key.replace(prefix, ''));
+      }
+    }
+    return keys;
   }
 }
 
-// Export a singleton instance of the Storage class
-export const storage = new Storage();
-
-/*
-These parameters cannot be implemented in `test-web`. 
-They are generated in the browser when js-scripts are executed
-Read more
-
-https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
-https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
-*/
-
-/**
- * Represents the structure of a storage object with string keys and values.
- */
-type StorageObject = Record<string, any>;
-
-/**
- * Represents a simplified version of the browser's localStorage.
- */
 class LocalStorage {
-  private db: StorageObject;
-
-  constructor() {
-    this.db = {};
+  #pluginID?: string;
+  constructor(pluginID?: string) {
+    this.#pluginID = pluginID;
+  }
+  private get pid() {
+    return this.#pluginID || getPluginId();
   }
 
-  get(): StorageObject | undefined {
-    return this.db;
+  get(): StoredItem['value'] | undefined {
+    const data = window.localStorage.getItem(this.pid + WEBVIEW_LOCAL_STORAGE);
+    return data ? JSON.parse(data) : undefined;
   }
 }
 
-// Export singleton instances of LocalStorage and sessionStorage
+class SessionStorage {
+  #pluginID?: string;
+  constructor(pluginID?: string) {
+    this.#pluginID = pluginID;
+  }
+  private get pid() {
+    return this.#pluginID || getPluginId();
+  }
+
+  get(): StoredItem['value'] | undefined {
+    const data = window.localStorage.getItem(
+      this.pid + WEBVIEW_SESSION_STORAGE,
+    );
+    return data ? JSON.parse(data) : undefined;
+  }
+}
+
+export const storage = new Storage();
 export const localStorage = new LocalStorage();
-export const sessionStorage = new LocalStorage();
+export const sessionStorage = new SessionStorage();
+export { Storage, LocalStorage, SessionStorage };

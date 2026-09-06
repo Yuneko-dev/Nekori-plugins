@@ -47,9 +47,13 @@ npm run build:full             # prepare plus manifest
 npm run build:assets           # copy/bundle plugin-local assets
 npm run build:webviews         # compatibility alias for build:assets
 npm run type-check             # check app, plugins, webviews, and Electron
-npm run type-check:plugins     # plugin sources only
+npm run type-check:plugins     # plugin sources + Electron declarations
 npm run type-check:webviews    # plugin webviews only
 ```
+
+The playground uses one implementation of fetch, cookie, storage, and utils in
+`src/lib/`; `src/libs/` keeps the `@libs/*` compatibility facades used by
+plugins. Nekori supplies these modules separately on the device.
 
 Plugin assets are kept with their plugin. Put the icon at the plugin root using
 the basename from `metadata.icon`, put CSS in `webview/style.css`, and put the

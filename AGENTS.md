@@ -16,7 +16,7 @@ npm run lint:electron          # Electron ESLint
 
 npm run type-check             # all TypeScript scopes below
 npm run type-check:app         # src/ + Vite config
-npm run type-check:plugins     # active plugin sources, excluding webviews
+npm run type-check:plugins     # active plugin sources + Electron declarations, excluding webviews
 npm run type-check:webviews    # active plugin webviews only
 npm run type-check:electron    # Electron main/preload/libs
 
@@ -63,8 +63,9 @@ current methods are `popularNovels`, `parseNovel`, `parseChapter`,
 ## Runtime boundary
 
 Plugins run in Nekori's Hermes runtime. Plugin source imports `@libs/*`, never
-`@/lib/*`. Root shims in `src/libs/*` re-export browser implementations from
-`src/lib/*` for development; Nekori provides the real modules at runtime.
+`@/lib/*`. Root facades in `src/libs/*` re-export the shared implementations
+from `src/lib/*` for development and plugin compatibility; Nekori provides the
+real modules at runtime.
 
 Allowed package imports are defined in `eslint.config.js`. Keep all other
 package imports external in plugin bundles. Do not bundle host-provided modules.
@@ -125,16 +126,17 @@ icons and fallback files; it does not sweep or delete unrelated static files.
 ## Electron playground
 
 The project has one React UI in `src/`. `electron/vite.config.ts` points Vite at
-the repository root and overrides selected `@libs` aliases with IPC-backed
-Electron implementations. There is no browser/localhost development mode.
+the repository root and consumes the shared `src/lib/*` implementations through
+the root aliases; there are no per-module Electron alias overrides. There is no
+browser/localhost development mode.
 
 `src/provider/plugin-registry.ts` discovers active plugins using
 `import.meta.glob`; there is no registry file to edit. Keep aliases synchronized
 between `vite.config.ts`, Electron Vite config, and TypeScript configs.
 
-`src/lib/{fetch,cookie,storage,utils}.ts` remain the type-level source even when
-Electron overrides them at runtime. Renderer code may assume
-`window.electronAPI` exists.
+`src/lib/{fetch,cookie,storage,utils}.ts` are the shared renderer/Electron
+implementations, while `src/libs/*` preserves the `@libs/*` facades used by
+plugins. Renderer code may assume `window.electronAPI` exists.
 
 ## Verification
 

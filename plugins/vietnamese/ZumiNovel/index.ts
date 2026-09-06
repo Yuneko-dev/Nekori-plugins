@@ -125,9 +125,9 @@ function compareZumiVolumes(a: string, b: string): number {
 class ZumiNovelPlugin implements Plugin.PluginBase {
   id = 'zuminovel';
   name = 'ZumiNovel';
-  icon = 'src/vi/zuminovel/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.9';
+  version = '1.0.10';
 
   pluginSettings: Plugin.PluginSettings = {
     showRaw: {

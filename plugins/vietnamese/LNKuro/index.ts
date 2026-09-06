@@ -8,9 +8,9 @@ import { NovelStatus } from '@libs/novelStatus';
 class LNKuroPlugin implements Plugin.PluginBase {
   id = 'lnkuro';
   name = 'LNKuro';
-  icon = 'src/vi/lnkuro/icon.png';
+  icon = 'icon.png';
   site = 'https://lnkuro.top';
-  version = '1.0.7';
+  version = '1.0.8';
   filters = {
     genre: {
       label: 'Thể loại',

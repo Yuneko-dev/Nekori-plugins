@@ -45,8 +45,10 @@ One plugin is one **folder**, not a single file:
 plugins/<language>/<PluginName>/
 ├── index.ts          # entry point, default-exports a plugin instance
 ├── utils.ts          # optional: split code across as many files as you like
+├── icon.<ext>         # optional: local icon; basename matches metadata.icon
 └── webview/
-    └── index.ts      # optional: source of customJS, bundled separately
+    ├── style.css      # optional: source of customCSS, copied byte-for-byte
+    └── index.ts       # optional: source of customJS, bundled separately
 ```
 
 - `<language>` must match a key in `scripts/languages.js`, lowercased on disk
@@ -60,15 +62,35 @@ plugins/<language>/<PluginName>/
 
 ### Icons and assets
 
-Assets live under `public/static/`, and the plugin fields hold the path
-**relative to `public/static/`**:
+Source assets live beside the plugin. The icon filename is the basename in the
+`icon` metadata field, CSS is `webview/style.css`, and Custom JS is
+`webview/index.ts` or `webview/index.js`:
 
 ```ts
-icon = 'src/vi/myplugin/icon.png'; // -> public/static/src/vi/myplugin/icon.png
+icon = 'icon.png';
+customCSS = 'style.css';
+customJS = 'player.js';
 ```
 
+Short filenames are normalized to `src/<plugin.id>/<filename>` and emitted
+under `public/static/`. A metadata value containing `/` preserves its legacy
+full path. This plugin ID namespace means new plugins do not need a language
+prefix or folder path in asset metadata. Run `npm run build:assets` to copy
+icons and CSS byte-for-byte and bundle Custom JS to the normalized paths.
+`npm run build:webviews` is a compatibility alias. Missing declared local
+assets or duplicate destinations fail the build. CSS files are copied as
+standalone files; relative resources they reference are not copied
+automatically. There is no watch mode, so rerun the asset build after edits and
+rebuild plugin bundles when metadata changes. Because the emitted path changes
+when migrating to a short filename, bump the plugin patch version.
+
 Language segments in the asset path are short codes (`vi`, `en`, `jp`, `kr`,
-`multi`). Icons should be 96x96 px.
+`multi`). Icons should be 96x96 px. Generated files under `public/static/` are
+build output and are not plugin source files. In particular,
+`public/static/src/` is generated output; fallback images directly under
+`public/static/` remain source files. The icon downloader fills only missing
+local icons, preserves existing icons and fallback files, and does not delete
+unrelated static files.
 
 ## Plugin types
 
@@ -122,7 +144,7 @@ import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 class MyPlugin implements Plugin.PluginBase {
   id = 'myplugin.id';
   name = 'My Plugin';
-  icon = 'src/vi/myplugin/icon.png';
+  icon = 'icon.png';
   site = 'https://example.com';
   version = '1.0.0';
   contentType = ContentType.NOVEL;
@@ -377,10 +399,20 @@ Hermes runtime. Browser-only APIs may still break on device.
 ## Testing
 
 > Custom JS (the `webview/` bundle) is **not** covered by Vite hot reload. Run
-> `npm run build:full` after each change.
+> `npm run build:assets` after each asset change. Rebuild plugin bundles when
+> metadata changes.
 
 Build and type-check are separate. Use `npm run type-check` for all scopes, or
 `npm run type-check:plugins` / `npm run type-check:webviews` while iterating.
+
+`npm run build:prepare` runs the clean multisrc, multisrc generation, plugin
+bundle, and asset steps. `npm run build:full` adds the manifest. `npm run dev`
+uses the preparation pipeline before starting Electron; `npm run serve:dev`
+prepares the repository before its development manifest.
+
+After `npm run build:full`, run `npm run test:build` to validate the emitted
+plugin assets. `build:assets` must follow `build:plugins` because it reads the
+compiled plugin metadata.
 
 ### Electron playground
 
@@ -423,7 +455,9 @@ console unless you attach a debugger.
 
 `customJS` is written in the plugin's `webview/` folder (entry `index.ts` or
 `index.js`) and bundled to the path in the `customJS` field by
-`npm run build:webviews`. `customCSS` is a plain file under `public/static/`.
+`npm run build:assets`. `customCSS` is `webview/style.css`, copied byte-for-byte
+to the path in the `customCSS` field. Short paths resolve under
+`public/static/src/<plugin.id>/`; legacy paths containing `/` remain unchanged.
 
 Notes on the reader environment:
 

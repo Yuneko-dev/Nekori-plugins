@@ -18,9 +18,9 @@ const SITE = 'https://toki31.com';
 class NewtokiPlugin implements Plugin.PluginBase {
   id = 'newtoki.novel';
   name = 'Newtoki';
-  icon = 'src/kr/newtoki/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.10';
+  version = '1.0.11';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {

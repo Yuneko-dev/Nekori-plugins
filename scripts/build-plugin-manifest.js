@@ -4,6 +4,7 @@ import process from 'process';
 import isValidFilename from 'valid-filename';
 import languages from './languages.js';
 import { execSync } from 'child_process';
+import { readPlugin } from './plugin-build-utils.js';
 
 const REMOTE = execSync('git remote get-url origin')
   .toString()
@@ -68,45 +69,6 @@ function compareVersions(a, b) {
   return 0;
 }
 
-const createRecursiveProxy = () => {
-  const target = {};
-  const handler = {
-    get(target, prop) {
-      if (prop === 'get') {
-        return a => a;
-      }
-      if (!target[prop]) {
-        target[prop] = createRecursiveProxy();
-      }
-      return target[prop];
-    },
-  };
-  return new Proxy(target, handler);
-};
-
-const proxy = createRecursiveProxy();
-
-const ContentWarning = {
-  UNSPECIFIED: 0,
-  SAFE: 1,
-  MIXED: 2,
-  NSFW: 3,
-};
-
-const ContentType = {
-  NOVEL: 'novel',
-  IMAGE: 'image',
-  VIDEO: 'video',
-  MIXED: 'mixed',
-};
-
-const _require = packageName => {
-  if (packageName === '@libs/pluginMetadata') {
-    return { ContentWarning, ContentType };
-  }
-  return proxy;
-};
-
 const COMPILED_PLUGIN_DIR = './.js/plugins';
 
 for (let language in languages) {
@@ -126,17 +88,9 @@ for (let language in languages) {
   plugins.forEach(plugin => {
     if (plugin.startsWith('.')) return;
 
-    const rawCode = fs.readFileSync(
-      `${COMPILED_PLUGIN_DIR}/${language.toLowerCase()}/${plugin}`,
-      'utf-8',
+    const instance = readPlugin(
+      path.join(COMPILED_PLUGIN_DIR, language.toLowerCase(), plugin),
     );
-    const instance = Function(
-      'require',
-      'module',
-      `const exports = module.exports = {};
-      ${rawCode};
-      return exports.default`,
-    )(_require, {});
     const {
       id,
       name,

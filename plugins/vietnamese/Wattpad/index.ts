@@ -202,9 +202,9 @@ function parseBrowseStories(html: string): WattpadStory[] {
 class WattpadPlugin implements Plugin.PluginBase {
   id = 'wattpad';
   name = 'Wattpad';
-  icon = 'src/vi/wattpad/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.0';
+  version = '1.0.1';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 

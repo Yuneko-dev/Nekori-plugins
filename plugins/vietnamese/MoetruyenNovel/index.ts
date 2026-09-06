@@ -152,9 +152,9 @@ function parseChapters($: CheerioAPI): Plugin.ChapterItem[] {
 class MoetruyenNovelPlugin implements Plugin.PluginBase {
   id = 'moetruyen.novel';
   name = 'Moetruyen Novel';
-  icon = 'src/vi/moetruyen/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.3';
+  version = '1.0.4';
   filters = filters;
 
   async popularNovels(

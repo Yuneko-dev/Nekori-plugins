@@ -8,9 +8,9 @@ import { NovelStatus } from '@libs/novelStatus';
 class LuvevalandPlugin implements Plugin.PluginBase {
   id = 'luvevaland.co';
   name = 'Luvevaland';
-  icon = 'src/vi/luvevaland/icon.png';
+  icon = 'icon.png';
   site = 'https://luvevalandn1.co';
-  version = '1.0.6';
+  version = '1.0.7';
   filters: Filters | undefined = undefined;
 
   async popularNovels(

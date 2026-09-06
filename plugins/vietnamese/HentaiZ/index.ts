@@ -342,13 +342,13 @@ async function callRemoteWithRetry(
 class HentaiZPlugin implements Plugin.PluginBase {
   id = 'hentaiz';
   name = 'HentaiZ';
-  icon = 'src/vi/hentaiz/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.1.1';
+  version = '1.1.2';
   contentType = ContentType.VIDEO;
   contentWarning = ContentWarning.NSFW;
 
-  customJS = 'src/vi/hentaiz/player.js';
+  customJS = 'player.js';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {

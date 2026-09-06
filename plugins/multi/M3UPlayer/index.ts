@@ -129,8 +129,8 @@ const iptvPlaylistParser = {
 class M3UPlayerPlugin implements Plugin.PluginBase {
   id = 'yuneko.m3uplayer';
   name = 'M3U Player';
-  icon = 'src/multi/m3uplayer/icon.png';
-  version = '1.0.4';
+  icon = 'icon.png';
+  version = '1.0.5';
   contentType = ContentType.VIDEO;
 
   pluginSettings: Plugin.PluginSettings = {

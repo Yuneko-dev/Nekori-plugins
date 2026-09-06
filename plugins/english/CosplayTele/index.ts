@@ -169,14 +169,14 @@ function collectVideoEmbeds($: ReturnType<typeof loadCheerio>): string[] {
 class CosplayTelePlugin implements Plugin.PluginBase {
   id = 'cosplaytele';
   name = 'CosplayTele';
-  icon = 'src/en/cosplaytele/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.5';
+  version = '1.0.6';
   contentType = ContentType.MIXED;
   contentWarning = ContentWarning.NSFW;
 
-  customJS = 'src/en/cosplaytele/custom.js';
-  customCSS = 'src/en/cosplaytele/custom.css';
+  customJS = 'custom.js';
+  customCSS = 'custom.css';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {

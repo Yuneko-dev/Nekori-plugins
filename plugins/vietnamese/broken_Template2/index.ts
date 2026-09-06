@@ -13,7 +13,7 @@ import { utf8ToBytes, bytesToUtf8, Buffer } from '@libs/utils';
 class TemplatePlugin implements Plugin.PagePlugin {
   id = 'template2.id';
   name = 'Template Plugin 2';
-  icon = 'src/vi/template2/icon.png';
+  icon = 'icon.png';
   site = 'https://example.com';
   version = '1.0.0';
   filters: Filters | undefined = undefined;

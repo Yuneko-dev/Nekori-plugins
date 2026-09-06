@@ -2,12 +2,10 @@ import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
-import fastGlob from 'fast-glob';
-const globSync = fastGlob.globSync;
+import { pluginEntries } from './plugin-build-utils.js';
+import { resolvePluginAssets } from '../src/lib/plugin-asset-paths.js';
 
-const entryPointsFiles = globSync('plugins/*/*/index.ts', {
-  ignore: ['plugins/*/broken_*/**', 'plugins/multisrc/**'],
-});
+const entryPointsFiles = pluginEntries();
 
 const entryPoints = entryPointsFiles.map(input => {
   const [, language, name] = input.split('/');
@@ -27,7 +25,7 @@ async function build() {
     format: 'cjs',
     target: 'es2020',
     footer: {
-      js: ';if(module.exports.default)exports.default=module.exports.default;',
+      js: `;if(module.exports.default)exports.default=(${resolvePluginAssets.toString()})(module.exports.default);`,
     },
     plugins: [
       {

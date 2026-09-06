@@ -7,8 +7,8 @@ config.json
 # generated multisrc .ts files
 plugins/*/*\[*\]*.ts
 
-# generated custom .js files
-public/static/src/**/*.js
+# generated plugin assets
+public/static/src/
 
 # ignore dist stuffs
 .js

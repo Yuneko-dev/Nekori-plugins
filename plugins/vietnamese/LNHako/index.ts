@@ -16,8 +16,8 @@ import {
 class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
-  icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.21';
+  icon = 'icon.png';
+  version = '1.2.22';
   filters = filters;
 
   // customCSS = 'src/vi/hakolightnovel/custom.css';

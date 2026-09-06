@@ -7,9 +7,9 @@ import { FilterTypes, Filters } from '@libs/filterInputs';
 class TruyenFull implements Plugin.PagePlugin {
   id = 'truyenfull';
   name = 'Truyện Full';
-  icon = 'src/vi/truyenfull/icon.png';
+  icon = 'icon.png';
   site = 'https://truyenfull.live';
-  version = '1.0.6';
+  version = '1.0.7';
 
   parseNovels(loadedCheerio: CheerioAPI) {
     const novels: Plugin.NovelItem[] = [];

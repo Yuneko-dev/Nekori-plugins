@@ -7,9 +7,9 @@ import { FilterTypes, Filters } from '@libs/filterInputs';
 class DocTruyenLNPlugin implements Plugin.PagePlugin {
   id = 'doctruyenln';
   name = 'DocTruyenLN';
-  icon = 'src/vi/doctruyenln/icon.png';
+  icon = 'icon.png';
   site = 'https://quykiep.com';
-  version = '1.0.8';
+  version = '1.0.9';
 
   imageRequestInit = {
     headers: {

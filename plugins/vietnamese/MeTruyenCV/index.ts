@@ -104,9 +104,9 @@ type ApiListResponse<T> = {
 class MeTruyenCVPlugin implements Plugin.PluginBase {
   id = 'metruyencv';
   name = 'MeTruyenCV';
-  icon = 'src/vi/metruyencv/icon.png';
+  icon = 'icon.png';
   site = 'https://metruyencv.com';
-  version = '1.0.5';
+  version = '1.0.6';
 
   async popularNovels(
     pageNo: number,

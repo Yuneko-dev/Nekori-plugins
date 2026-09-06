@@ -8,9 +8,9 @@ import { ContentType } from '@libs/pluginMetadata';
 class MotchillPlugin implements Plugin.PluginBase {
   id = 'yuneko.motchill';
   name = 'Motchill';
-  icon = 'src/vi/motchill/icon.png';
+  icon = 'icon.png';
   site = 'https://envasion.net';
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {

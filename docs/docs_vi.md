@@ -45,8 +45,10 @@ Mỗi plugin là một **thư mục**, không phải một tệp đơn lẻ:
 plugins/<ngôn-ngữ>/<TenPlugin>/
 ├── index.ts          # entry point, export default một instance plugin
 ├── utils.ts          # tuỳ chọn: tách mã ra nhiều tệp cho dễ đọc
+├── icon.<ext>        # tuỳ chọn: icon local, basename khớp metadata.icon
 └── webview/
-    └── index.ts      # tuỳ chọn: mã nguồn của customJS, được build riêng
+    ├── style.css      # tuỳ chọn: nguồn customCSS, copy nguyên byte
+    └── index.ts       # tuỳ chọn: nguồn customJS, được bundle riêng
 ```
 
 - `<ngôn-ngữ>` phải khớp một khoá trong `scripts/languages.js`, viết thường trên
@@ -64,15 +66,34 @@ Xem `plugins/vietnamese/AnimeVietsub` để tham khảo một plugin nhiều t�
 
 ### Icon và tài nguyên
 
-Tài nguyên nằm trong `public/static/`, còn trường trong plugin ghi đường dẫn
-**tương đối so với `public/static/`**:
+Tài nguyên nguồn nằm cạnh plugin. Tên tệp icon là basename trong metadata
+`icon`, CSS nằm ở `webview/style.css`, còn Custom JS nằm ở
+`webview/index.ts` hoặc `webview/index.js`:
 
 ```ts
-icon = 'src/vi/myplugin/icon.png'; // -> public/static/src/vi/myplugin/icon.png
+icon = 'icon.png';
+customCSS = 'style.css';
+customJS = 'player.js';
 ```
 
+Tên tệp ngắn được chuẩn hoá thành `src/<plugin.id>/<filename>` và sinh dưới
+`public/static/`. Giá trị metadata có chứa `/` giữ nguyên đường dẫn đầy đủ kiểu
+cũ. Namespace theo plugin ID giúp plugin mới không cần thêm tiền tố ngôn ngữ
+hay đường dẫn thư mục vào metadata asset. Chạy `npm run build:assets` để copy
+icon và CSS nguyên byte, đồng thời bundle Custom JS tới đường dẫn đã chuẩn hoá.
+`npm run build:webviews` là alias tương thích. Thiếu tài nguyên local đã khai
+báo hoặc trùng đường dẫn đích sẽ làm build lỗi. CSS được copy độc lập; các tài
+nguyên tương đối mà CSS tham chiếu không được copy tự động. Không có chế độ
+watch, nên chạy lại bước asset sau khi sửa và build lại bundle plugin khi
+metadata thay đổi. Khi đổi sang tên tệp ngắn, đường dẫn output thay đổi nên
+phải tăng patch version của plugin.
+
 Đoạn ngôn ngữ trong đường dẫn tài nguyên dùng mã ngắn (`vi`, `en`, `jp`, `kr`,
-`multi`). Icon nên có kích thước 96x96 px.
+`multi`). Icon nên có kích thước 96x96 px. Tệp sinh trong `public/static/` là
+output của build, không phải mã nguồn plugin. Cụ thể, `public/static/src/` là
+output được sinh; các ảnh fallback nằm trực tiếp trong `public/static/` vẫn là
+tệp nguồn. Trình tải icon chỉ bổ sung icon local còn thiếu, giữ nguyên icon và
+tệp fallback hiện có, không xoá các tệp static không liên quan.
 
 ## Các loại Plugin
 
@@ -126,7 +147,7 @@ import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 class MyPlugin implements Plugin.PluginBase {
   id = 'myplugin.id';
   name = 'My Plugin';
-  icon = 'src/vi/myplugin/icon.png';
+  icon = 'icon.png';
   site = 'https://example.com';
   version = '1.0.0';
   contentType = ContentType.NOVEL;
@@ -380,11 +401,21 @@ Nekori. API chỉ có trên trình duyệt vẫn có thể lỗi trên thiết b
 ## Gỡ lỗi (Debug)
 
 > Mã webview (Custom JS) **không** hỗ trợ hot-reload của Vite. Chạy
-> `npm run build:full` mỗi khi thay đổi.
+> `npm run build:assets` mỗi khi thay đổi asset. Nếu đổi metadata, build lại
+> bundle plugin.
 
 Build và kiểm tra TypeScript chạy độc lập. Dùng `npm run type-check` để kiểm tra
 mọi phạm vi, hoặc `npm run type-check:plugins` / `npm run type-check:webviews`
 khi đang sửa riêng plugin.
+
+`npm run build:prepare` chạy lần lượt clean multisrc, generate multisrc, bundle
+plugin và build asset. `npm run build:full` thêm manifest. `npm run dev` chạy
+pipeline prepare trước khi mở Electron; `npm run serve:dev` prepare trước khi
+tạo manifest development.
+
+Sau `npm run build:full`, chạy `npm run test:build` để kiểm tra asset plugin đã
+sinh. `build:assets` phải chạy sau `build:plugins` vì nó đọc metadata từ bundle
+đã biên dịch.
 
 ### 1. Electron Playground
 
@@ -433,9 +464,11 @@ npm run serve:dev
 ## Custom CSS và JS
 
 `customJS` được viết trong thư mục `webview/` của plugin (entry là `index.ts`
-hoặc `index.js`), rồi `npm run build:webviews` sẽ bundle ra đúng đường dẫn ghi
-trong trường `customJS`. `customCSS` là một tệp thường nằm trong
-`public/static/`.
+hoặc `index.js`), rồi `npm run build:assets` sẽ bundle ra đúng đường dẫn ghi
+trong trường `customJS`. `customCSS` là `webview/style.css`, được copy nguyên
+byte tới đường dẫn trong trường `customCSS`. Cả hai đường dẫn metadata vẫn
+đường dẫn ngắn nằm dưới `public/static/src/<plugin.id>/`, còn đường dẫn cũ có
+chứa `/` vẫn giữ nguyên.
 
 Lưu ý về môi trường Reader:
 

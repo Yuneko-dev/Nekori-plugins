@@ -39,14 +39,31 @@ npm install
 npm run dev
 ```
 
-Build and type-check are independent:
+Build and type-check are independent. The normal preparation pipeline is:
 
 ```bash
-npm run build:full             # build ES2020 plugins, webviews, and manifest
+npm run build:prepare          # multisrc, plugin bundles, and plugin assets
+npm run build:full             # prepare plus manifest
+npm run build:assets           # copy/bundle plugin-local assets
+npm run build:webviews         # compatibility alias for build:assets
 npm run type-check             # check app, plugins, webviews, and Electron
 npm run type-check:plugins     # plugin sources only
 npm run type-check:webviews    # plugin webviews only
 ```
+
+Plugin assets are kept with their plugin. Put the icon at the plugin root using
+the basename from `metadata.icon`, put CSS in `webview/style.css`, and put the
+webview entry in `webview/index.ts` or `webview/index.js`. `build:assets` copies
+icons and CSS byte-for-byte and bundles the webview entry to the declared
+`customJS` path. The metadata paths remain relative to `public/static/`, so
+published short paths use `public/static/src/<plugin.id>/`; values containing
+`/` keep their legacy full path. There is no asset watch mode; rebuild after
+asset edits, and rebuild plugin bundles if metadata changes. Missing declared
+local assets fail the build. CSS dependencies are not copied automatically.
+`build:assets` reads compiled plugin metadata and must follow `build:plugins`;
+`build:prepare` performs both steps in order.
+
+After a full build, `npm run test:build` checks the emitted plugin assets.
 
 Plugins are tested in the Electron playground only — the browser/localhost mode
 has been removed. Plugin requests need to bypass CORS, keep persistent cookies

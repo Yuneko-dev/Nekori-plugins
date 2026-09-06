@@ -8,9 +8,9 @@ import { ContentType } from '@libs/pluginMetadata';
 class PhimFunPlugin implements Plugin.PluginBase {
   id = 'yuneko.phimfun';
   name = 'PhimFun';
-  icon = 'src/vi/phimfun/icon.png';
+  icon = 'icon.png';
   site = 'https://phimfun.net';
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {

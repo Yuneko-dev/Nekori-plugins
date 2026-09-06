@@ -14,10 +14,10 @@ const API_BASE = SITE + '/api';
 class NguonCPlugin implements Plugin.PluginBase {
   id = 'nguonc';
   name = 'NguonC';
-  icon = 'src/vi/nguonc/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.11';
-  customJS = 'src/vi/nguonc/player.js';
+  version = '1.0.12';
+  customJS = 'player.js';
   contentType = ContentType.VIDEO;
 
   filters = {

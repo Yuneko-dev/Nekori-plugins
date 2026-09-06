@@ -9,9 +9,9 @@ import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 class PixivNovelPlugin implements Plugin.PagePlugin {
   id = 'pixiv.novel';
   name = 'Pixiv Novel';
-  icon = 'src/jp/pixivnovel/icon.png';
+  icon = 'icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.0.14';
+  version = '1.0.15';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 

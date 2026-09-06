@@ -21,9 +21,12 @@ npm run type-check:webviews    # active plugin webviews only
 npm run type-check:electron    # Electron main/preload/libs
 
 npm run build:plugins          # direct TypeScript -> ES2020 CJS with esbuild
-npm run build:webviews         # webview TypeScript -> ES2020 IIFE
+npm run build:assets           # copy icons/CSS and bundle webview assets
+npm run build:webviews         # compatibility alias for build:assets
+npm run build:prepare          # clean multisrc + generate + plugins + assets
 npm run build:manifest         # bundles -> manifests and total.svg
-npm run build:full             # multisrc + plugins + webviews + manifest
+npm run build:full             # build:prepare + manifest
+npm run test:build             # validate emitted assets after a full build
 npm run serve:dev              # local repository for a real device
 npm run check:sites            # writes broken-sites-report.json
 ```
@@ -38,9 +41,13 @@ exports a class instance implementing `Plugin.PluginBase` or `Plugin.PagePlugin`
 
 - Disable it by renaming the folder to `broken_<PluginName>`. Never add a marker
   file such as `BROKEN`.
-- Optional webview entry: `plugins/<language>/<PluginName>/webview/index.ts`.
+- Optional webview assets: `icon.<ext>` at the plugin root,
+  `webview/style.css`, and `webview/index.ts` or `webview/index.js`.
 - Language folder must match a lowercased key from `scripts/languages.js`.
-- `icon`, `customJS`, and `customCSS` are relative to `public/static/`.
+- `icon`, `customJS`, and `customCSS` may use short filenames. A bare filename
+  is normalized to `src/<plugin.id>/<filename>`; values containing `/` retain
+  their legacy full path. The icon source uses the metadata basename; CSS is
+  copied from `webview/style.css`; the webview entry is bundled to `customJS`.
 - `id` must be unique and a valid filename.
 - `version` is semver and must increase or `--only-new` publishing skips it.
 - Generated multisrc folders are disposable. Edit their generator, not output.
@@ -75,8 +82,14 @@ Adding an `@libs` export requires:
 3. `build:plugins` sends active `index.ts` entries directly to esbuild, bundles
    relative imports, externalizes packages, minifies once, and writes
    `.js/plugins/<language>/<name>.js` as ES2020 CJS.
-4. `build:webviews` reads plugin metadata from those bundles and writes active
-   webviews to their declared `public/static/<customJS>` paths as ES2020 IIFEs.
+4. `build:assets` (also available as `build:webviews`) requires the compiled
+   plugin bundles from `build:plugins`, then reads plugin metadata
+   from those bundles, copies declared icons and CSS byte-for-byte, and bundles
+   active webview entries to their normalized `public/static/<customJS>` paths
+   as ES2020 IIFEs. Missing declared assets and destination collisions fail the
+   build; CSS-relative resources are not copied automatically. Short paths use
+   the plugin ID as their namespace, so migrating a published path requires a
+   patch version bump.
 5. `build:manifest` evaluates static plugin metadata through the recursive proxy
    `require`, then emits `.dist/plugins.json`, `.dist/plugins.min.json`, and
    `total.svg`.
@@ -98,6 +111,14 @@ during construction receive the proxy, not a runtime value.
 Publishing creates orphan `plugins/v<package version>` branches and copies
 `.js/plugins` to `.js/src/plugins` for legacy repository paths. Never put
 type-checking in the publish build path; CI checks TypeScript separately.
+
+There is no asset watch mode. Re-run `npm run build:assets` after editing an
+icon or CSS file, and rebuild plugin bundles when metadata changes. The
+`build:prepare` pipeline is used before `dev`; `build:full` adds the manifest,
+and `serve:dev` prepares assets before its development manifest.
+
+`download-plugin-icons.js` fills missing local icons while preserving existing
+icons and fallback files; it does not sweep or delete unrelated static files.
 
 ## Electron playground
 
@@ -121,6 +142,7 @@ There is no unit test suite. For build changes run:
 npm run lint
 npm run type-check
 npm run build:full
+npm run test:build
 ```
 
 Then exercise affected plugins in the Electron playground or use

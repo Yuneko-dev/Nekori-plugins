@@ -77,10 +77,10 @@ function parseList(response: ListResponse): Plugin.NovelItem[] {
 class KKPhimPlugin implements Plugin.PluginBase {
   id = 'kkphim';
   name = 'KKPhim';
-  icon = 'src/vi/kkphim/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.5';
-  customJS = 'src/vi/kkphim/player.js';
+  version = '1.0.6';
+  customJS = 'player.js';
   contentType = ContentType.VIDEO;
 
   filters = filters;

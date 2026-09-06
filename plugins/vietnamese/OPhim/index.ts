@@ -7,9 +7,9 @@ import { ContentType } from '@libs/pluginMetadata';
 class OPhimPlugin implements Plugin.PluginBase {
   id = 'yuneko.ophim';
   name = 'OPhim';
-  icon = 'src/vi/ophim/icon.png';
+  icon = 'icon.png';
   site = 'https://ophim17.cc';
-  version = '1.0.2';
+  version = '1.0.3';
   apiUrl = 'https://ophim1.com/v1/api';
   contentType = ContentType.VIDEO;
 

@@ -15,8 +15,8 @@ class TemplatePlugin implements Plugin.PluginBase {
   id = 'template.id';
   // Tên hiển thị của Plugin
   name = 'Template Plugin';
-  // Ví dụ: Icon của Plugin được lưu tại đường dẫn public/static/src/vi/template/icon.png. Kích thước khuyến nghị là 96x96 pixel.
-  icon = 'src/vi/template/icon.png';
+  // Ví dụ: Icon của Plugin được lưu cùng thư mục với index.ts. Kích thước khuyến nghị là 96x96 pixel.
+  icon = 'icon.png';
   // URL của trang web. Đây cũng là URL dùng để mở WebView.
   site = 'https://example.com';
   // Phiên bản của Plugin, được viết theo chuẩn [SemVer 2.0](https://semver.org/) - <major>.<minor>.<patch>
@@ -50,15 +50,15 @@ class TemplatePlugin implements Plugin.PluginBase {
   // localStorage và sessionStorage cũng có thể được sử dụng nếu cần, nhưng cần phải bật flag webStorageUtilized ở trên.
 
   // File CSS tùy chỉnh cho giao diện đọc.
-  // Được lưu cùng thư mục với thư mục chứa icon.png
-  customCSS?: string | undefined = 'src/vi/template/custom.css';
+  // Được lưu trong thư mục webview của plugin.
+  customCSS?: string | undefined = 'custom.css';
 
   // File JS tùy chỉnh cho giao diện đọc.
-  // Được lưu cùng thư mục với thư mục chứa icon.png
+  // Được lưu trong thư mục webview của plugin.
   // Lưu ý: Bạn phải code các file js này trong thư mục webview.
   // Entry point là index.js hoặc index.ts.
   // Sau khi build thì bundle file sẽ được lưu vào đường dẫn customJS
-  customJS?: string | undefined = 'src/vi/template/custom.js';
+  customJS?: string | undefined = 'custom.js';
 
   // Loại nội dung mà plugin này cung cấp
   contentType?: ContentType | undefined = ContentType.NOVEL;

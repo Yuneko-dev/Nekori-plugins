@@ -17,9 +17,9 @@ const UserAgent =
 class VnExpressPlugin implements Plugin.PluginBase {
   id = 'vnexpress.net';
   name = 'VNExpress';
-  icon = 'src/vi/vnexpress/icon.png';
+  icon = 'icon.png';
   site = 'https://vnexpress.net';
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {

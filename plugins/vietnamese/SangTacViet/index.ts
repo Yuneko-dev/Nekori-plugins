@@ -230,14 +230,14 @@ function wrapWithParagraphs(rawText: string): string {
 class SangTacVietPlugin implements Plugin.PluginBase {
   id = 'sangtacviet';
   name = 'Sáng Tác Việt';
-  icon = 'src/vi/sangtacviet/icon.png';
-  customJS = 'src/vi/sangtacviet/custom.js';
+  icon = 'icon.png';
+  customJS = 'custom.js';
   filters = filters;
 
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.39';
+  version = '1.0.40';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {

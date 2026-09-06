@@ -12,9 +12,9 @@ const SITE = 'https://animevsub.app';
 class AnimeVsubPlugin implements Plugin.PluginBase {
   id = 'yuneko.animevsub';
   name = 'AnimeVsub';
-  icon = 'src/vi/animevsub/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.VIDEO;
 
   filters = {

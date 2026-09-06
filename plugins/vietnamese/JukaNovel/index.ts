@@ -10,10 +10,10 @@ import { Buffer, encodeHtmlEntities } from '@libs/utils';
 class JukaNovelPlugin implements Plugin.PluginBase {
   id = 'jukanovel';
   name = 'JukaNovel';
-  icon = 'src/vi/jukanovel/icon.png';
+  icon = 'icon.png';
   site = 'https://sangtacviet.online';
   // 'https://jukaza.site';
-  version = '1.0.11';
+  version = '1.0.12';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {

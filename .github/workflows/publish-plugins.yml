@@ -13,6 +13,8 @@ on:
       - 'scripts/build-plugin-manifest.js'
       - 'scripts/build-plugins.js'
       - 'scripts/build-webviews.js'
+      - 'scripts/plugin-build-utils.js'
+      - 'src/lib/plugin-asset-paths.js'
       - 'scripts/publish-plugins.sh'
       - '.github/workflows/publish-plugins.yml'
 

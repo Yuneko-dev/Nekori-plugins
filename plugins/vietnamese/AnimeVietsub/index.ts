@@ -13,13 +13,13 @@ import filters from './filters';
 class AnimeVietsubPlugin implements Plugin.PluginBase {
   id = 'animevietsub';
   name = 'AnimeVietsub';
-  icon = 'src/vi/animevietsub/icon.png';
+  icon = 'icon.png';
   site = 'https://animevietsub.vc';
-  version = '1.0.45';
+  version = '1.0.46';
   filters = filters;
   contentType = ContentType.VIDEO;
 
-  customJS = 'src/vi/animevietsub/player.js';
+  customJS = 'player.js';
 
   pluginSettings: Plugin.PluginSettings = {
     playMode: {

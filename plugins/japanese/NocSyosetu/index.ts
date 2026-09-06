@@ -14,9 +14,9 @@ const UserAgent =
 class NocSyosetu implements Plugin.PagePlugin {
   id = 'noc.syosetu';
   name = 'NocSyosetu';
-  icon = 'src/jp/nocsyosetu/icon.png';
+  icon = 'icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.1.22';
+  version = '1.1.23';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.NSFW;
 

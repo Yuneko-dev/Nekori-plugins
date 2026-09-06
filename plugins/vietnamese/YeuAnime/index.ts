@@ -8,9 +8,9 @@ import { ContentType } from '@libs/pluginMetadata';
 class YeuAnimePlugin implements Plugin.PluginBase {
   id = 'yuneko.yeuanime';
   name = 'Yêu Anime';
-  icon = 'src/vi/yeuanime/icon.png';
+  icon = 'icon.png';
   site = 'https://yeuanime.xyz';
-  version = '1.0.3';
+  version = '1.0.4';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {

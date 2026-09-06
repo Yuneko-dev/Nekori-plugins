@@ -20,9 +20,9 @@ type TieuThuyetMangSearchResponse = {
 class TieuThuyetMangPlugin implements Plugin.PluginBase {
   id = 'tieuthuyetmang.com';
   name = 'Tiểu Thuyết Mạng';
-  icon = 'src/vi/tieuthuyetmang/icon.png';
+  icon = 'icon.png';
   site = 'https://tieuthuyetmang.com';
-  version = '1.0.9';
+  version = '1.0.10';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {

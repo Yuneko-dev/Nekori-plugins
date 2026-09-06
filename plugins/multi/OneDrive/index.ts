@@ -61,9 +61,9 @@ type DeviceCodeResponse = {
 class OneDrivePlugin implements Plugin.PluginBase {
   id = 'yuneko.onedrive';
   name = 'OneDrive';
-  icon = 'src/multi/onedrive/icon.png';
+  icon = 'icon.png';
   site = 'https://onedrive.live.com';
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.VIDEO;
 
   pluginSettings: Plugin.PluginSettings = {

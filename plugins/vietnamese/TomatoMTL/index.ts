@@ -49,9 +49,9 @@ type EncryptedPayload = {
 class TomatoMTLPlugin implements Plugin.PluginBase {
   id = 'tomatomtl';
   name = 'TomatoMTL';
-  icon = 'src/vi/tomatomtl/icon.png';
+  icon = 'icon.png';
   site = SITE;
-  version = '1.0.8';
+  version = '1.0.9';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {

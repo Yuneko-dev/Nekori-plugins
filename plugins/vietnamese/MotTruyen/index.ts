@@ -202,9 +202,9 @@ type ChapterListItem = {
 class MotTruyenPlugin implements Plugin.PluginBase {
   id = 'mottruyen.com.vn';
   name = 'Mọt Truyện';
-  icon = 'src/vi/mottruyen/icon.png';
+  icon = 'icon.png';
   site = WEB_HOST;
-  version = '1.0.3';
+  version = '1.0.4';
 
   async popularNovels(
     pageNo: number,

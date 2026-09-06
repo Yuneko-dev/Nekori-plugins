@@ -11,9 +11,9 @@ import { ContentType } from '@libs/pluginMetadata';
 class BaoMoiPlugin implements Plugin.PluginBase {
   id = 'baomoi.com';
   name = 'Báo Mới';
-  icon = 'src/vi/baomoi/icon.png';
+  icon = 'icon.png';
   site = 'https://baomoi.com';
-  version = '1.0.12';
+  version = '1.0.13';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {

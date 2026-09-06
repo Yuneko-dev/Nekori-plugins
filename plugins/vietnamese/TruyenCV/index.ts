@@ -64,9 +64,9 @@ type SearchResult = {
 class TruyenCV implements Plugin.PagePlugin {
   id = 'truyencv.io';
   name = 'TruyenCV';
-  icon = 'src/vi/truyencv/icon.png';
+  icon = 'icon.png';
   site = 'https://truyencv.io';
-  version = '1.0.3';
+  version = '1.0.4';
 
   private mangaIdCache = new Map<string, string>();
 

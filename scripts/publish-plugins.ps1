@@ -20,6 +20,10 @@ if(-Not $?){
 git reset
 rm -r -fo .js
 npm run build:full
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Plugin build failed; publishing aborted."
+    exit 1
+}
 
 if (-not (Test-Path .dist) -or -not (Get-ChildItem -Path .dist -Force)) {
     echo "❌ ERROR: Manifest generation failed - .dist is missing or empty"

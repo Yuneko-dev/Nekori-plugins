@@ -7,9 +7,9 @@ import { NovelStatus } from '@libs/novelStatus';
 class ValvrareTeamPlugin implements Plugin.PluginBase {
   id = 'valvrareteam';
   name = 'Valvrareteam';
-  icon = 'src/vi/valvrareteam/icon.png';
+  icon = 'icon.png';
   site = 'https://valvrareteam.net';
-  version = '1.0.14';
+  version = '1.0.15';
 
   api = 'https://val-ssr-2kzit.ondigitalocean.app/api';
 

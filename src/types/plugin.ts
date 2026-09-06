@@ -116,13 +116,16 @@ export namespace Plugin {
     id: string;
     name: string;
     /**
-     * Relative path without static. E.g:
+     * Bare filename, automatically placed under src/<id>/ when loaded. E.g:
      * ```js
-     * "src/vi/hakolightnovel/icon.png"
+     * "icon.png"
      * ```
+     * Legacy paths relative to public/static are also supported.
      */
     icon: string;
+    /** Output filename; source is webview/index.ts or webview/index.js. */
     customJS?: string;
+    /** Output filename; source is webview/style.css. */
     customCSS?: string;
     site: string;
     contentWarning?: ContentWarning;

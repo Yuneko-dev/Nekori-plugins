@@ -9,7 +9,7 @@ class YeuAnimePlugin implements Plugin.PluginBase {
   id = 'yuneko.yeuanime';
   name = 'Yêu Anime';
   icon = 'icon.png';
-  site = 'https://yeuanime.xyz';
+  site = 'https://yeuanime.buzz';
   version = '1.0.4';
   contentType = ContentType.VIDEO;
 

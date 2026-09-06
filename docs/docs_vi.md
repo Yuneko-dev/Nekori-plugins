@@ -375,6 +375,9 @@ sách là **lỗi**:
 
 Các module `@libs` hiện có: `fetch`, `storage`, `filterInputs`, `novelStatus`,
 `defaultCover`, `isAbsoluteUrl`, `utils`, `aes`, `cookie`, `pluginMetadata`.
+`@libs/webview` cố ý không được phép trong mã nguồn plugin đang hoạt động.
+Giữ `src/lib/webview.ts` và re-export `src/libs/webview.ts` cho phần host/browser;
+không thêm import này vào plugin để vượt qua guard.
 
 ```ts
 import { fetchApi, fetchText, fetchProto, type FetchInit } from '@libs/fetch';
@@ -416,6 +419,62 @@ tạo manifest development.
 Sau `npm run build:full`, chạy `npm run test:build` để kiểm tra asset plugin đã
 sinh. `build:assets` phải chạy sau `build:plugins` vì nó đọc metadata từ bundle
 đã biên dịch.
+
+Chạy `npm run test:checks` để kiểm tra hồi quy site-probe cục bộ và validation
+plugin, bao gồm phản hồi M3U hợp lệ, rỗng và sai định dạng.
+
+### Kiểm tra tự động
+
+`npm run check:sites` kiểm tra từng `plugin.site` duy nhất từ metadata plugin
+đã biên dịch cục bộ qua đường request Electron/Chromium bằng GET có giới hạn,
+tự theo redirect, thử lại lỗi tạm thời và ghi `broken-sites-report.json`.
+Cloudflare DoH bảo mật và ECH tùy khả năng được bật mặc định khi server công bố
+record HTTPS/SVCB cần thiết. Dùng `--dns-mode secure|automatic|off`,
+`--doh HTTPS_URL` hoặc `--no-ech` để đổi đường mạng. `--no-ech` tắt cơ chế
+khám phá HTTPS/SVCB `UseDnsHttpsSvcb` và hint ECH của Chromium, nhưng không tắt
+DoH. Kiểm tra Chromium 150 trực tiếp cho thấy mặc định thương lượng TLS 1.3
+với SNI mã hóa, còn `--no-ech` cho SNI plaintext. Các cờ khác gồm `--plugin ID`, `--url URL`, `--timeout MS`,
+`--attempts N`, `--concurrency N` và `--output FILE`. Mỗi mục giữ danh sách
+plugin dùng chung site, URL đầu vào/cuối, mọi hop redirect, chuyển host, trạng
+thái, số lần thử và lý do. Lệnh báo endpoint đã truy cập và không sửa metadata
+site. Trạng thái gồm `accessible`, `blocked`, `http_error`, `network_error`,
+`timeout` và `invalid_url`. `blocked` nghĩa là site đã phản hồi nhưng không thể
+xác minh nội dung nên lệnh thoát 0; các trạng thái không khỏe khác thoát 1.
+
+`npm run check:plugins` chạy các method thật được chọn mẫu trong cửa sổ
+Electron ẩn, dùng profile và kho settings mới, cô lập. Lệnh nhận các cờ lặp
+`--plugin ID`, `--query TEXT`, `--novel PATH`, `--chapter PATH`, `--config FILE`,
+`--timeout MS`, `--output FILE`, `--list`, `--dns-mode secure|automatic|off`,
+`--doh HTTPS_URL` và `--no-ech`. Dùng `--method NAME` với `--args
+JSON` hoặc `--args-file FILE` để gọi đúng một method; report dùng
+`mode: "single_method"` và có preview đối số/kết quả được giới hạn, che thông
+tin nhạy cảm, timeline request và stack đã làm sạch. `--debug` thêm chẩn đoán
+chi tiết cho smoke run. `--inspect` chỉ dùng với một plugin và method, mở
+DevTools hiển thị, dừng trước lời gọi và giữ cửa sổ đến khi đóng. Config dùng
+plugin ID làm khóa:
+
+```json
+{"plugin.id":{"settings":{},"query":"...","novel":"...","chapter":"..."}}
+```
+
+Trên Windows nên dùng args file để tránh lỗi escape của shell:
+
+```json
+["/novel/example"]
+```
+
+```powershell
+npm run check:plugins -- --plugin example --method parseNovel --args-file .\args.json --inspect
+```
+
+Smoke path kiểm tra entity trả về và đi theo dữ liệu qua method popular/search,
+novel, page, chapter và resolve URL khi có. Method bắt buộc bị empty hoặc
+skipped sẽ làm lệnh thất bại; method tùy chọn có thể skipped. Lệnh tự động
+không giải CAPTCHA hay challenge tương tác. Đây là kiểm tra mẫu, không chứng
+minh toàn bộ catalog hoặc đầy đủ tương thích Hermes/thiết bị. Khi tất cả pass,
+lệnh thoát 0; trạng thái method gồm `passed`, `failed`, `empty`, `blocked`,
+`skipped` và `timeout` (correlation request cũng có thể báo `network_error`).
+Kết quả failed, empty, blocked, timeout, network hoặc required skipped thoát 1.
 
 ### 1. Electron Playground
 

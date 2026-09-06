@@ -8,10 +8,27 @@ import {
 } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { registerAllHandlers } from './ipc/index.js';
+import fs from 'node:fs';
+import { runPluginChecks } from './plugin-checks.js';
 import { registerLnproxyProtocol } from './protocols/lnproxy.js';
+import {
+  applyNetworkFeatures,
+  configureNetwork,
+  resolveNetworkOptions,
+} from '../../scripts/check-network.js';
+
+const checkConfig = process.env.NEKORI_PLUGIN_CHECKS;
+const networkConfig = process.env.NEKORI_CHECK_NETWORK
+  ? JSON.parse(process.env.NEKORI_CHECK_NETWORK)
+  : resolveNetworkOptions({});
+if (checkConfig && process.env.NEKORI_CHECK_PROFILE) {
+  fs.mkdirSync(process.env.NEKORI_CHECK_PROFILE, { recursive: true });
+  app.setPath('userData', process.env.NEKORI_CHECK_PROFILE);
+  app.setPath('sessionData', process.env.NEKORI_CHECK_PROFILE);
+}
 
 app.commandLine.appendSwitch('disable-features', 'PartitionedCookies');
+applyNetworkFeatures(app, networkConfig);
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -106,22 +123,35 @@ function buildMenu() {
 }
 
 app.whenReady().then(async () => {
-  await components.whenReady();
-  console.log('Components ready:', components.status());
+  if (!checkConfig) {
+    await components.whenReady();
+    console.log('Components ready:', components.status());
+  }
   app.userAgentFallback = app.userAgentFallback
-    .replace(/Electron\/[\d\.]+/gi, '')
+    .replace(/Electron\/[\d.]+/gi, '')
     .replace(/ {2,}/g, ' ');
 
-  customSession = session.fromPartition('persist:nekori_plugins');
+  customSession = session.fromPartition(
+    checkConfig ? 'nekori_plugin_checks' : 'persist:nekori_plugins',
+  );
 
-  app.configureHostResolver({
-    enableBuiltInResolver: true,
-    secureDnsMode: 'secure',
-    enableAdditionalDnsQueryTypes: true,
-    secureDnsServers: ['https://cloudflare-dns.com/dns-query'],
-  });
+  configureNetwork(app, networkConfig);
 
+  const { registerAllHandlers } = await import('./ipc/index.js');
   registerAllHandlers();
+  if (checkConfig) {
+    try {
+      await runPluginChecks(
+        checkConfig,
+        customSession,
+        path.resolve(__dirname, '../../preload/preload.cjs'),
+      );
+    } catch (error) {
+      console.error('Plugin check startup failed:', error);
+      app.exit(1);
+    }
+    return;
+  }
   registerLnproxyProtocol();
   buildMenu();
   createWindow();
@@ -133,5 +163,5 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (!checkConfig && process.platform !== 'darwin') app.quit();
 });

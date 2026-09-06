@@ -32,6 +32,14 @@ async function build() {
         name: 'external-packages',
         setup(build) {
           build.onResolve({ filter: /.*/ }, args => {
+            if (/^@libs\/webview(?:[/.]|$)/.test(args.path))
+              return {
+                errors: [
+                  {
+                    text: '@libs/webview is reserved for the host and must not be imported by plugins.',
+                  },
+                ],
+              };
             if (args.kind === 'entry-point' || args.path.startsWith('.'))
               return;
             return { path: args.path, external: true };

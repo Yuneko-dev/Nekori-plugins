@@ -27,11 +27,13 @@
     "format": "prettier --write \"./**/*.{ts,tsx,js,css}\"",
     "format:check": "prettier --check \"./**/*.{ts,tsx,js,css}\"",
     "type-check": "npm run type-check:app && npm run type-check:plugins && npm run type-check:webviews && npm run type-check:electron",
-    "check:sites": "node scripts/check-plugin-sites.js",
+    "check:sites": "npm run build:plugins && node scripts/check-plugin-sites.js",
     "prepare": "husky",
     "build:assets": "node scripts/build-webviews.js",
     "build:prepare": "npm run clean:multisrc && npm run build:multisrc && npm run build:plugins && npm run build:assets",
-    "test:build": "node scripts/check-plugin-assets.js"
+    "test:build": "node scripts/check-plugin-assets.js",
+    "check:plugins": "npm run build:prepare && node scripts/check-plugins.js",
+    "test:checks": "node scripts/check-site-probe.js && node scripts/check-plugin-runner.js"
   },
   "author": "aiko-chan-ai",
   "license": "MIT",

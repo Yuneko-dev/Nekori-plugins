@@ -211,4 +211,29 @@ export default tseslint.config(
       },
     },
   },
+  {
+    files: ['plugins/**/*.{ts,js}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/lib/fetch*'],
+              message: 'Use @libs/fetch instead of @/lib/fetch',
+            },
+            {
+              group: ['@libs/webview*'],
+              message: '@libs/webview is reserved for the host, not plugins.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['scripts/*.cjs'],
+    languageOptions: { globals: globals.node },
+    rules: { '@typescript-eslint/no-var-requires': 'off' },
+  },
 );

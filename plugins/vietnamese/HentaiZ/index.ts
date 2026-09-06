@@ -14,7 +14,7 @@ import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 
 import filters from './filters';
 
-const SITE = 'https://hentaiz.bike';
+const SITE = 'https://hentaiz.zone';
 const STORAGE_URL = 'https://storage.haiten.org';
 const MIMIX_API = 'https://x.mimix.cc/watch/';
 const EMBED_ORIGIN = 'https://x.haiten.org';

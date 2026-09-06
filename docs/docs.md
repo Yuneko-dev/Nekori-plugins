@@ -373,6 +373,9 @@ outside it is an ESLint **error**:
 
 Available `@libs` modules: `fetch`, `storage`, `filterInputs`, `novelStatus`,
 `defaultCover`, `isAbsoluteUrl`, `utils`, `aes`, `cookie`, `pluginMetadata`.
+`@libs/webview` is intentionally unavailable to active plugin source files.
+Keep `src/lib/webview.ts` and the `src/libs/webview.ts` re-export for the host
+and browser integration; do not add a plugin import to make the guard pass.
 
 ```ts
 import { fetchApi, fetchText, fetchProto, type FetchInit } from '@libs/fetch';
@@ -413,6 +416,65 @@ prepares the repository before its development manifest.
 After `npm run build:full`, run `npm run test:build` to validate the emitted
 plugin assets. `build:assets` must follow `build:plugins` because it reads the
 compiled plugin metadata.
+
+Run `npm run test:checks` for the localhost site-probe and plugin validation
+regressions, including valid, empty, and malformed M3U responses.
+
+### Automated checks
+
+`npm run check:sites` checks each unique `plugin.site` from local compiled
+metadata through Electron/Chromium with a bounded GET request, follows
+redirects, retries transient failures, and writes `broken-sites-report.json`.
+Secure Cloudflare DoH and opportunistic ECH are enabled by default when the
+server publishes the required HTTPS/SVCB records. Use
+`--dns-mode secure|automatic|off`, `--doh HTTPS_URL`, or `--no-ech` to tune the
+path. `--no-ech` disables Chromium's `UseDnsHttpsSvcb` HTTPS/SVCB discovery and
+ECH hints; it does not disable DoH. A live Chromium 150 check negotiated TLS
+1.3 with encrypted SNI by default and plaintext SNI with `--no-ech`. Flags also
+include `--plugin ID`, `--url URL`, `--timeout MS`,
+`--attempts N`, `--concurrency N`, and `--output FILE`. Each report entry keeps
+the plugin list for duplicate sites, input/final URL, every redirect hop,
+host transitions, status, attempt count, and reason. The check reports what it
+reached and does not edit plugin metadata. Statuses are `accessible`, `blocked`,
+`http_error`, `network_error`, `timeout`, and `invalid_url`. Blocked means the
+site responded but content could not be verified, so it exits 0; the other
+non-healthy statuses exit 1.
+
+`npm run check:plugins` runs sampled real plugin methods in hidden Electron
+windows with a fresh isolated profile and settings store. It accepts repeated
+`--plugin ID`, `--query TEXT`, `--novel PATH`, `--chapter PATH`, `--config FILE`,
+`--timeout MS`, `--output FILE`, `--list`, `--dns-mode secure|automatic|off`,
+`--doh HTTPS_URL`, and `--no-ech`. Use `--method NAME` with
+`--args JSON` or `--args-file FILE` to invoke exactly one method; the report
+uses `mode: "single_method"` and includes bounded/redacted argument and result
+previews, request timing, and a sanitized stack. `--debug` adds verbose smoke
+diagnostics. `--inspect` is restricted to one plugin and method, opens visible
+DevTools, pauses before invocation, and keeps the window until it is closed.
+A config is keyed by plugin ID:
+
+```json
+{"plugin.id":{"settings":{},"query":"...","novel":"...","chapter":"..."}}
+```
+
+On Windows, prefer an args file to avoid shell quoting:
+
+```json
+["/novel/example"]
+```
+
+```powershell
+npm run check:plugins -- --plugin example --method parseNovel --args-file .\args.json --inspect
+```
+
+The smoke path validates returned entities and follows available data through
+popular/search, novel, page, chapter, and URL resolution methods. Required empty
+or skipped methods fail the run; optional methods may be skipped. CAPTCHA and
+interactive challenges are not solved. These checks sample behavior and do not
+prove complete catalog correctness or full Hermes/device compatibility. Method
+statuses include `passed`, `failed`, `empty`, `blocked`, `skipped`, and `timeout`;
+request correlation can also report `network_error`. A
+fully passed run exits 0; failed, empty, blocked, timeout, network, or required
+skipped results exit 1.
 
 ### Electron playground
 

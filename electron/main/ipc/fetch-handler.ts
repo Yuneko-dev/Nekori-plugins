@@ -69,7 +69,20 @@ export async function performNetRequest(url: string, init?: any) {
     headers: Record<string, string>;
     stream: Electron.IncomingMessage;
     finalUrl: string;
+    redirects: {
+      from: string;
+      to: string;
+      statusCode: number;
+      method: string;
+    }[];
   }>((resolve, reject) => {
+    let finalUrl = url;
+    const redirects: {
+      from: string;
+      to: string;
+      statusCode: number;
+      method: string;
+    }[] = [];
     const request = net.request({
       url,
       method: init?.method || 'GET',
@@ -119,7 +132,9 @@ export async function performNetRequest(url: string, init?: any) {
       if (setCookies) {
         const arr = Array.isArray(setCookies) ? setCookies : [setCookies];
         for (const raw of arr) {
-          customSession.cookies.set(parseSetCookie(raw, url)).catch(() => {});
+          customSession.cookies
+            .set(parseSetCookie(raw, finalUrl))
+            .catch(() => {});
         }
       }
 
@@ -128,7 +143,8 @@ export async function performNetRequest(url: string, init?: any) {
         statusMessage: response.statusMessage,
         headers: flatHeaders,
         stream: response,
-        finalUrl: url,
+        finalUrl,
+        redirects,
       });
     });
 
@@ -136,7 +152,12 @@ export async function performNetRequest(url: string, init?: any) {
       clearTimeout(timer);
       reject(err);
     });
-    request.on('redirect', () => request.followRedirect());
+    request.on('redirect', (statusCode, method, redirectUrl) => {
+      const destination = new URL(redirectUrl, finalUrl).href;
+      redirects.push({ from: finalUrl, to: destination, statusCode, method });
+      finalUrl = destination;
+      request.followRedirect();
+    });
 
     if (init?.body) {
       const bodyData =
@@ -165,6 +186,7 @@ ipcMain.handle('fetch:request', async (_e, url: string, init?: any) => {
     headers: responseData.headers,
     body: bodyBuffer.toString('base64'),
     url: responseData.finalUrl,
+    redirects: responseData.redirects,
   };
 });
 

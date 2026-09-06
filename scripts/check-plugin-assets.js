@@ -24,7 +24,11 @@ assert.deepEqual(resolvedBare, {
   customJS: 'src/demo.one/viewer.js',
 });
 const idempotentSnapshot = { ...resolvedBare };
-assert.deepEqual(resolvePluginAssets(resolvedBare), idempotentSnapshot, 'asset resolution is not idempotent');
+assert.deepEqual(
+  resolvePluginAssets(resolvedBare),
+  idempotentSnapshot,
+  'asset resolution is not idempotent',
+);
 assert.equal(
   resolvePluginAssets({ id: 'demo.two', icon: 'icon.png' }).icon,
   'src/demo.two/icon.png',

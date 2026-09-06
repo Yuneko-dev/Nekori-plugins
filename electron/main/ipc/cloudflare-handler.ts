@@ -71,6 +71,11 @@ async function getIframeRectViaCDP(win: BrowserWindow) {
 }
 
 function createCloudflareWindow() {
+  if (process.env.NEKORI_PLUGIN_CHECKS) {
+    throw new Error(
+      'CHECK_BLOCKED: Cloudflare challenge requires an interactive browser session',
+    );
+  }
   return new BrowserWindow({
     width: 800,
     height: 600,
@@ -323,7 +328,9 @@ export async function solveCloudflare(
     if (!win.isDestroyed()) {
       try {
         win.webContents.debugger.detach();
-      } catch (e) {}
+      } catch {
+        /* The debugger may already be detached. */
+      }
       win.close();
     }
     return false;
@@ -408,7 +415,9 @@ export async function solveCloudflareTurnstile(
     if (!win.isDestroyed()) {
       try {
         win.webContents.debugger.detach();
-      } catch (e) {}
+      } catch {
+        /* The debugger may already be detached. */
+      }
       win.close();
     }
     return '';

@@ -27,8 +27,10 @@ npm run build:prepare          # clean multisrc + generate + plugins + assets
 npm run build:manifest         # bundles -> manifests and total.svg
 npm run build:full             # build:prepare + manifest
 npm run test:build             # validate emitted assets after a full build
+npm run test:checks             # localhost site and plugin-check regressions
 npm run serve:dev              # local repository for a real device
 npm run check:sites            # writes broken-sites-report.json
+npm run check:plugins          # hidden Electron plugin method smoke checks
 ```
 
 Build and type-check are intentionally independent. Do not add `tsc` back to a
@@ -147,6 +149,41 @@ npm run test:build
 
 Then exercise affected plugins in the Electron playground or use
 `npm run serve:dev` for a final check in Nekori.
+
+The final verification pass also runs `npm run test:checks`, which covers the
+local HTTP probe and plugin validation regressions, including valid, empty, and
+malformed M3U responses.
+
+`check:sites` reads local compiled plugin metadata and performs bounded GET
+probes through Electron/Chromium. Secure Cloudflare DoH and opportunistic ECH
+are enabled by default when the server publishes HTTPS/SVCB records; use
+`--dns-mode secure|automatic|off`, `--doh HTTPS_URL`, or `--no-ech` to change
+them. `--no-ech` disables Chromium `UseDnsHttpsSvcb` HTTPS/SVCB discovery and
+ECH hints, but leaves DoH enabled. A live Chromium 150 check negotiated TLS 1.3
+with encrypted SNI by default and plaintext SNI with `--no-ech`. It groups
+duplicate sites and reports
+`accessible`, `blocked`, `http_error`, `network_error`, `timeout`, or
+`invalid_url`, including input/final URL, every redirect hop, host transitions,
+attempt count, and reason. It never edits plugin metadata. Blocked is exit 0
+because the site is reachable but content cannot be verified; other non-healthy
+statuses exit 1. Flags are `--plugin ID`, `--url URL`, `--timeout MS`,
+`--attempts N`, `--concurrency N`, and `--output FILE`.
+
+`check:plugins` runs real methods in hidden Electron windows with a fresh
+isolated profile/settings store. It supports repeated `--plugin ID`,
+`--query TEXT`, `--novel PATH`, `--chapter PATH`, `--config FILE`,
+`--timeout MS`, `--output FILE`, `--list`, `--dns-mode secure|automatic|off`,
+`--doh HTTPS_URL`, and `--no-ech`. `--method NAME` plus `--args JSON`
+or `--args-file FILE` invokes one method and reports `mode: "single_method"`.
+`--debug` adds verbose smoke diagnostics; `--inspect` is restricted to one
+plugin/method, opens visible DevTools, pauses before the call, and keeps the
+window until closed. Config is keyed by plugin ID:
+`{"plugin.id":{"settings":{},"query":"...","novel":"...","chapter":"..."}}`.
+Reports include redacted, bounded argument/result previews, request timing, and
+sanitized stacks. Required empty or skipped methods fail the run; optional
+methods may be skipped. Unattended checks do not solve CAPTCHA or interactive
+challenges, and sampled method execution does not establish full Hermes/device
+compatibility.
 
 Preserve unrelated working-tree changes. In particular, do not restore or alter
 the Husky files unless the user explicitly asks.

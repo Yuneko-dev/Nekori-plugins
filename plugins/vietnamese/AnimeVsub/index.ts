@@ -7,7 +7,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { encodeHtmlEntities } from '@libs/utils';
 import { ContentType } from '@libs/pluginMetadata';
 
-const SITE = 'https://animevsub.app';
+const SITE = 'https://animevsub.to';
 
 class AnimeVsubPlugin implements Plugin.PluginBase {
   id = 'yuneko.animevsub';

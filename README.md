@@ -64,6 +64,60 @@ local assets fail the build. CSS dependencies are not copied automatically.
 `build:prepare` performs both steps in order.
 
 After a full build, `npm run test:build` checks the emitted plugin assets.
+`npm run test:checks` runs the localhost site-probe regressions and the real
+plugin-check validation cases, including valid, empty, and malformed M3U
+responses.
+
+### Automated plugin checks
+
+`npm run check:sites` probes each unique `plugin.site` from local compiled
+metadata with bounded GET requests and writes `broken-sites-report.json`.
+Checks use the Electron/Chromium request path with secure Cloudflare DoH and
+opportunistic ECH enabled by default when the server publishes the required
+HTTPS/SVCB records. Use `--dns-mode secure|automatic|off`, `--doh HTTPS_URL`,
+or `--no-ech` to tune network behavior. `--no-ech` disables Chromium's
+`UseDnsHttpsSvcb` HTTPS/SVCB discovery and its ECH hints; it does not disable
+DoH itself. A live Chromium 150 check negotiated TLS 1.3 with encrypted SNI
+by default and plaintext SNI with `--no-ech`, alongside
+`--plugin ID`, `--url URL`, `--timeout MS`, `--attempts N`, `--concurrency N`,
+and `--output FILE`. Reports retain the input URL, final URL, every redirect
+hop, and host transitions; checks report the endpoint reached and never edit
+plugin site metadata. Site statuses are `accessible`, `blocked`, `http_error`,
+`network_error`, `timeout`, and `invalid_url`. A blocked site exits 0 because it
+responded but content access could not be verified; other non-healthy statuses
+exit 1.
+
+`npm run check:plugins` runs real plugin methods in hidden Electron windows,
+using a fresh profile per run and separate settings namespaces per plugin.
+Plugins in one run share the temporary cookie session and the same Chromium
+DNS/ECH options (`--dns-mode secure|automatic|off`, `--doh HTTPS_URL`, and
+`--no-ech`). It accepts repeated `--plugin ID`, `--query TEXT`, `--novel
+PATH`, `--chapter PATH`, `--config FILE`, `--timeout MS`, `--output FILE`, and
+`--list`. For a reproducible single call, select one plugin and use
+`--method NAME` with `--args JSON` or `--args-file FILE`; the report uses
+`mode: "single_method"` and includes bounded, redacted argument/result
+previews, request timing, and a sanitized stack. `--debug` enables verbose
+diagnostics for the smoke run. `--inspect` is available only with one plugin
+and method: it opens visible DevTools, pauses before invocation, and keeps the
+window until it is closed.
+
+For Windows, an args file avoids shell quoting issues:
+
+```json
+["/novel/example"]
+```
+
+```powershell
+npm run check:plugins -- --plugin example --method parseNovel --args-file .\args.json --inspect
+```
+
+JSON config is keyed by plugin ID:
+`{"plugin.id":{"settings":{},"query":"...","novel":"...","chapter":"..."}}`.
+Checks sample methods and validate returned entities; they do not prove full
+Hermes/device compatibility or complete catalog correctness. Required empty or
+skipped methods fail; optional methods may be skipped. CAPTCHA and interactive
+challenges are not solved in unattended runs. A fully passed run exits 0; any
+failed, empty, blocked, timeout, network, or required-skipped result exits 1.
 
 Plugins are tested in the Electron playground only — the browser/localhost mode
 has been removed. Plugin requests need to bypass CORS, keep persistent cookies

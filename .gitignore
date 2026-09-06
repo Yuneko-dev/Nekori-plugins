@@ -25,3 +25,6 @@ electron/dist-electron
 .agents/
 .claude/
 .cursor/
+
+# Automated plugin check reports
+plugin-check-report.json

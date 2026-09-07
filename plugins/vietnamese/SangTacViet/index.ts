@@ -101,6 +101,77 @@ function decodeGlyphs(text: string): string {
 }
 
 // ── Content normalization  ─────────────────
+function preprocess(path: string, str: string, bookhost: string): string {
+  if (str.indexOf('chat-') >= 0) {
+    return str;
+  }
+  if (bookhost === 'sangtac' || bookhost === 'dich') {
+    str = str.replace(/<[^i\/]/g, '&gt;').replace(/[\n]+/g, '<br><br>');
+    str = str.replace(/ ([,\.!\?:”]+)/g, '$1');
+    if (bookhost == 'sangtac') {
+      str = str.replace(/\[\[([^[\]]*)\]\]/g, function (match, encoded) {
+        return `<img src="${encoded
+          .split('-')
+          .map(Number)
+          .map((n: number) => String.fromCharCode(n))
+          .join('')}">`;
+      });
+      return str;
+    }
+  }
+  if (bookhost == 'fanqie') {
+    str = str.replace(/.volumePicture.*?\}[^\w]+\}/s, '');
+  }
+  str = str.replace(/<\/p>\r\n<p>/g, '<br><br>');
+  if (path.indexOf('ciweimao') > 0) {
+    str = str.replace(/<span>.*?<\/span>/g, '');
+    str = str.replace(
+      /<img src="(.*?)".*?>/g,
+      '<img referrerpolicy="no-referrer" src="$1">',
+    );
+  }
+  if (bookhost == 'fanqie') {
+    str = str.replace(/<\/?article>/g, '');
+    str = str.replace(/_i_/g, '~');
+  }
+
+  str = str.replace(/đạo ?<\/i>:/g, 'nói</i>:');
+  str = str.replace(/&nbsp;&nbsp;&nbsp;&nbsp;/g, '<br>');
+  str = str.replace(/\n/g, '<br>');
+  str = str.replace(/(\w) \./g, '$1.');
+  str = str.replace(/((\w\.{1}[ \t])|(\w[!?]+(”|】)?))/g, '$1<br><br>');
+  str = str.replace(/<br( ?\/)?>/gi, '<br><br>');
+  str = str.replace(/(<br>(|\n|\t|\r| )*)+/g, '<br><br>');
+  str = str.replace(/([\w>])“/g, '$1 “');
+  str = str.replace(/(\w)<\/i><br>“/g, '$1</i>.<br>');
+  str = str.replace(/ ”/g, '”');
+  if (path.indexOf('uukanshu') > 0) {
+    str = str.replace(/<div class="ad_content">.*?<\/div>/g, '');
+  }
+  if (path.indexOf('aikanshu') > 0) {
+    str = str.replace(/<img.*?src="\/novel\/images.*?>/g, '');
+  }
+
+  str = str.replace(/<a href=.*?<\/a>/g, '');
+  str = str.replace(/<br><br>([\)” 】!?]+)(<br>|$)/g, '$1$2');
+  str = str.replace(/ ([,’]) /g, '$1 ');
+  str = str.replace(/ ‘ /g, ' ‘');
+  str = str.replace('<a&nbsp;href="http:', '');
+  if (bookhost == 'faloo') {
+    str = str.replace(/<br>/g, '<br>\n');
+    str = str.replace(/<br>\n([^“][^\n“]*?)”<br>/g, '<br>“$1”<br>');
+    str = str.replace(/<br>\n/g, '<br>');
+  }
+  str = str.replace(/<\/p><br><br><p>/g, '<br><br>');
+  str = str.replace(/ ([,\.!\?”]+)/g, '$1');
+  if (bookhost == 'fanqie') {
+    str = str.replace(/src=".*?"/g, function (m) {
+      return m.replace(/<br>/g, '');
+    });
+  }
+  return str.replace('\ufffe', '');
+}
+
 function normalizeChapterHtml(
   host: string,
   raw: string,
@@ -237,7 +308,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.40';
+  version = '1.0.41';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -723,7 +794,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     if (String(data.code) === '0' && data.data) {
       const host = data.bookhost || bookHost;
       const rawData = this.removeSystemMessageFromChapterContent(
-        String(data.data),
+        preprocess(chapterPath, String(data.data), host),
       );
       const applyName = this.autoName && this.translateEnabled;
       const content = normalizeChapterHtml(host, rawData, applyName);

@@ -11,7 +11,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
   name = 'LNKuro';
   icon = 'icon.png';
   site = 'https://lnkuro.top';
-  version = '1.0.9';
+  version = '1.0.10';
   filters = {
     genre: {
       label: 'Thể loại',
@@ -236,7 +236,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
 
     const chapters: Plugin.ChapterItem[] = [];
 
-    const webnovelSection = $('#webnovel_section');
+    const webnovelSection = $('.section_kuro');
 
     $('.kuro-edit-badge').each((i, el) => {
       $(el).remove();

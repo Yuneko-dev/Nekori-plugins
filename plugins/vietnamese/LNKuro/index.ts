@@ -4,13 +4,14 @@ import { Filters, FilterTypes } from '@libs/filterInputs';
 import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
+import { Buffer } from '@libs/utils';
 
 class LNKuroPlugin implements Plugin.PluginBase {
   id = 'lnkuro';
   name = 'LNKuro';
   icon = 'icon.png';
   site = 'https://lnkuro.top';
-  version = '1.0.8';
+  version = '1.0.9';
   filters = {
     genre: {
       label: 'Thể loại',
@@ -21,6 +22,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
         { label: 'Action', value: 'action' },
         { label: 'Adventure', value: 'adventure' },
         { label: 'Comedy', value: 'comedy' },
+        { label: 'Đô Thị Dị Biến', value: 'do-thi' },
         { label: 'Drama', value: 'drama' },
         { label: 'Echi', value: 'echi' },
         { label: 'Fantasy', value: 'fantasy' },
@@ -28,6 +30,8 @@ class LNKuroPlugin implements Plugin.PluginBase {
         { label: 'Harem', value: 'harem' },
         { label: 'Historical', value: 'historical' },
         { label: 'Horror', value: 'horror' },
+        { label: 'Huyền huyễn', value: 'huyen-huyen' },
+        { label: 'Kiếm Hiệp', value: 'wuxia' },
         { label: 'Mature', value: 'mature' },
         { label: 'Mystery', value: 'mystery' },
         { label: 'Psychological', value: 'psychological' },
@@ -41,11 +45,13 @@ class LNKuroPlugin implements Plugin.PluginBase {
         { label: 'Supernatural', value: 'supernatural' },
         { label: 'Thriller', value: 'thriller' },
         { label: 'Tragedy', value: 'tragedy' },
+        { label: 'Truyện Trung', value: 'truyen-trung' },
         { label: 'Võ Hiệp', value: 'vo-hiep' },
         { label: 'Võ thuật', value: 'vo-thuat' },
         { label: 'Web Novel', value: 'web-novel' },
-        { label: 'Wuxia', value: 'wuxia' },
+        { label: 'Xianxia', value: 'xianxia' },
         { label: 'Yandere', value: 'yandere' },
+        { label: 'Yuri', value: 'yuri' },
       ],
     },
     sort: {
@@ -61,38 +67,55 @@ class LNKuroPlugin implements Plugin.PluginBase {
 
   async popularNovels(
     pageNo: number,
-    { filters }: Plugin.PopularNovelsOptions<typeof this.filters>,
+    {
+      filters,
+      showLatestNovels,
+    }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
-    let url = `${this.site}/`;
-    if (filters.genre.value != '') {
-      url = `${this.site}/the-loai/${filters.genre.value}/?krp=${pageNo}&sort=${filters.sort.value}`;
-    }
-
-    const text = await fetchText(url);
-    const $ = loadCheerio(text);
     const novels: Plugin.NovelItem[] = [];
-
-    if (url == `${this.site}/`) {
-      if (pageNo != 1) {
-        return [];
+    if (filters.genre.value != '') {
+      const url = `${this.site}/the-loai/${filters.genre.value}/?krp=${pageNo}&sort=${filters.sort.value}`;
+      let text = await fetchText(url);
+      text = text.replace(
+        /<script\b([^>]*?)\bsrc=["']data:text\/javascript;base64,([^"']+)["']([^>]*)><\/script>/gi,
+        (_, before, base64, after) => {
+          const js = Buffer.from(base64, 'base64').toString('utf8');
+          return `<script${before}${after}>${js}</script>`;
+        },
+      );
+      // Opt
+      const ajaxUrl = text.match(
+        /const\s+AJAX_URL\s*=\s*["']([^"']+)["']/,
+      )?.[1];
+      const nonce = text.match(/const\s+NONCE\s*=\s*["']([^"']+)["']/)?.[1];
+      const loaiId = text.match(/const\s+LOAI_ID\s*=\s*(\d+)/)?.[1];
+      if ((!ajaxUrl || !nonce || !loaiId) && filters.sort.value === 'updated') {
+        throw new Error(
+          'Regex không khớp. Hãy kiểm tra lại trang web hoặc cập nhật plugin.',
+        );
       }
-      $('.truyen-card').each((i, el) => {
-        const card = $(el);
-        const cover = card.find('.truyen-thumb img').attr('data-src');
-        const name = card.find('.truyen-info h3.title').text().trim();
-        const url = card
-          .find('.truyen-tooltip .tooltip-footer a.tooltip-button')
-          .attr('href')!;
-        if (url) {
-          const path = new URL(url).pathname;
-          novels.push({
-            name,
-            cover,
-            path,
-          });
-        }
+      const body = new URLSearchParams({
+        action: 'kr_load_terms',
+        nonce: nonce!,
+        sort: filters.sort.value,
+        page: `${pageNo}`,
+        loai_id: loaiId!,
       });
-    } else {
+      const response = await fetchApi(ajaxUrl!, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body.toString(),
+      });
+      const jsonResponse = await response.json();
+      let $: ReturnType<typeof loadCheerio>;
+      if (response.ok && jsonResponse.success && jsonResponse.data?.html) {
+        $ = loadCheerio(jsonResponse.data.html);
+      } else {
+        $ = loadCheerio(text);
+      }
+
       $('.kr-card').each((i, el) => {
         const card = $(el);
         const cover = card.find('.kr-card__cover img').attr('data-src');
@@ -107,6 +130,74 @@ class LNKuroPlugin implements Plugin.PluginBase {
           });
         }
       });
+    } else if (showLatestNovels) {
+      const data = await fetchApi(
+        `${this.site}/wp-content/uploads/truyen_moi_cap_nhat.json?v=${Date.now()}`,
+      );
+      const json = (await data.json()) as {
+        name: string;
+        link: string;
+        image: string;
+        tom_tat: string;
+        tac_gia: string;
+        tinh_trang: {
+          value: string;
+          label: string;
+        };
+        avg_rating: string;
+        is_r18: boolean;
+        the_loai: {
+          name: string;
+          link: string;
+        }[];
+        chapters: {
+          title: string;
+          link: string;
+          time_str: string;
+        }[];
+        latest_ts: number;
+      }[];
+      json
+        .sort((a, b) => b.latest_ts - a.latest_ts)
+        .forEach(item => {
+          const url = new URL(item.link);
+          novels.push({
+            name: item.name,
+            cover: item.image,
+            path: url.pathname,
+          });
+        });
+    } else {
+      const data = await fetchApi(
+        `${this.site}/wp-content/uploads/bxh_truyen.json?v=${Date.now()}`,
+      );
+      const json = (await data.json()) as {
+        title: string;
+        link: string;
+        real_cover: string;
+        views_week: number;
+        views_month: number;
+        views_all: number;
+        tag_ids: number[];
+        tags_info: {
+          name: string;
+          link: string;
+        }[];
+        status_value: string;
+        status_label: string;
+        avg_rating: string | null;
+        tom_tat: string;
+      }[];
+      json
+        .sort((a, b) => b.views_all - a.views_all)
+        .forEach(item => {
+          const url = new URL(item.link);
+          novels.push({
+            name: item.title,
+            cover: item.real_cover,
+            path: url.pathname,
+          });
+        });
     }
 
     return novels;
@@ -198,9 +289,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
     const response = await fetchText(`${this.site}${chapterPath}`);
     if (!response) throw new Error(`API error: ${this.site}${chapterPath}`);
     const $ = loadCheerio(response);
-    const chapterElementRaw = $('.entry-content.single-page');
-    chapterElementRaw.find('#kuro-chapter-nav-wrapper').remove();
-    chapterElementRaw.find('.post-views_kuro').remove();
+    const chapterElementRaw = $('.kuro-chapter-content');
 
     let isP = false;
     chapterElementRaw.children().each((i, el) => {
@@ -233,7 +322,9 @@ class LNKuroPlugin implements Plugin.PluginBase {
       .remove();
     const chapterContent = chapterElementRaw.html()!.trim()!;
     if (chapterContent.length <= '<p></p>'.length)
-      throw new Error('Chương không có nội dung hoặc bị lỗi');
+      throw new Error(
+        'Chương không có nội dung, yêu cầu VIP / đăng nhập hoặc plugin bị lỗi.',
+      );
     return chapterContent;
   }
   async searchNovels(

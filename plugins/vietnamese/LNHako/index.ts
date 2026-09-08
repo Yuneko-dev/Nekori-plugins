@@ -17,11 +17,11 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'icon.png';
-  version = '1.2.22';
+  version = '1.2.23';
   filters = filters;
 
-  // customCSS = 'src/vi/hakolightnovel/custom.css';
-  // customJS = 'src/vi/hakolightnovel/custom.js';
+  // customCSS = 'style.css';
+  // customJS = 'index.js';
 
   pluginSettings: Plugin.PluginSettings = {
     domain: {

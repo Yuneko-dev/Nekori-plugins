@@ -17,7 +17,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'icon.png';
-  version = '1.2.23';
+  version = '1.2.24';
   filters = filters;
 
   // customCSS = 'style.css';
@@ -504,6 +504,14 @@ class HakoPlugin implements Plugin.PluginBase {
       commentSection.find('.ln-comment-page').remove();
       commentSection.find('.comment_see_more').remove();
       commentSection.find('.leading-tight').remove();
+
+      // Spoiler
+      commentSection
+        .find('.comment-spoiler-reveal')
+        .attr(
+          'onclick',
+          "this.closest('[data-comment-spoiler]').querySelector('[data-comment-content]').removeAttribute('aria-hidden'),this.remove()",
+        );
 
       // Remove loading svg
       commentSection.find('.loading').remove();

@@ -204,7 +204,7 @@ class WattpadPlugin implements Plugin.PluginBase {
   name = 'Wattpad';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 
@@ -230,19 +230,25 @@ class WattpadPlugin implements Plugin.PluginBase {
     return response.json();
   }
 
-  private getStoriesUrl(
-    pageNo: number,
-    query?: string,
-    language?: string,
-  ): string {
+  private getStoriesUrl(pageNo: number, language?: string): string {
     const offset = Math.max(pageNo - 1, 0) * PAGE_SIZE;
     const params = new URLSearchParams({
       offset: String(offset),
       limit: String(PAGE_SIZE),
     });
-    if (query) params.set('query', query);
     if (language) params.set('language', language);
     return `${SITE}/api/v3/stories?${params.toString()}`;
+  }
+
+  private getSearchUrl(pageNo: number, searchTerm: string): string {
+    const offset = Math.max(pageNo - 1, 0) * PAGE_SIZE;
+    const params = new URLSearchParams({
+      query: searchTerm.trim(),
+      language: String(VIETNAMESE_LANGUAGE_ID),
+      limit: String(PAGE_SIZE),
+      offset: String(offset),
+    });
+    return `${SITE}/v4/search/stories?${params.toString()}`;
   }
 
   private getBrowseUrl(pageNo: number, genre: string): string {
@@ -289,9 +295,7 @@ class WattpadPlugin implements Plugin.PluginBase {
       return this.mapStories(await this.fetchBrowseStories(pageNo, genre));
     }
 
-    const response = await this.fetchJson(
-      this.getStoriesUrl(pageNo, undefined, language),
-    );
+    const response = await this.fetchJson(this.getStoriesUrl(pageNo, language));
     return this.mapStories(getStories(response));
   }
 
@@ -342,9 +346,9 @@ class WattpadPlugin implements Plugin.PluginBase {
     searchTerm: string,
     pageNo: number,
   ): Promise<Plugin.NovelItem[]> {
-    const response = await this.fetchJson(
-      this.getStoriesUrl(pageNo, searchTerm),
-    );
+    const query = searchTerm.trim();
+    if (!query) return [];
+    const response = await this.fetchJson(this.getSearchUrl(pageNo, query));
     return this.mapStories(getStories(response));
   }
 

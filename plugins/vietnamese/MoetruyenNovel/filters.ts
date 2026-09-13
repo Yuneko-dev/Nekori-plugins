@@ -1,4 +1,4 @@
-import { FilterTypes, Filters } from '@libs/filterInputs';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 
 export default {
   sort: {

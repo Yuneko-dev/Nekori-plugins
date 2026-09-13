@@ -1,15 +1,16 @@
+import { NekoriBasePlugin } from '@nekori/plugin';
 import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 
-class WanwanSekaiPlugin implements Plugin.PluginBase {
+class WanwanSekaiPlugin extends NekoriBasePlugin {
   id = 'wanwansekai';
   name = 'WanwanSekai';
   icon = 'src/vi/wanwansekai/icon.png';
   site = 'https://wanwansekai.com';
-  version = '1.0.4';
+  version = '1.0.5';
 
   private allNovels: Plugin.NovelItem[] = [];
 
@@ -148,14 +149,18 @@ class WanwanSekaiPlugin implements Plugin.PluginBase {
     return NovelStatus.Unknown;
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const res = await fetchApi(this.site + chapterPath);
     const html = await res.text();
     const $ = loadCheerio(html);
 
     $('.reading-content script').remove();
 
-    return $('.reading-content').html() || '';
+    return {
+      state: 'ready',
+      type: 'novel',
+      html: $('.reading-content').html() || '',
+    };
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

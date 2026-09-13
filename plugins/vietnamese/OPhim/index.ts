@@ -1,15 +1,17 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
 
-class OPhimPlugin implements Plugin.PluginBase {
+import { Plugin } from '@/types/plugin';
+
+class OPhimPlugin extends NekoriBasePlugin {
   id = 'yuneko.ophim';
   name = 'OPhim';
   icon = 'icon.png';
   site = 'https://ophim17.cc';
-  version = '1.0.3';
+  version = '1.0.4';
   apiUrl = 'https://ophim1.com/v1/api';
   contentType = ContentType.VIDEO;
 
@@ -146,19 +148,22 @@ class OPhimPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     // For OPhim, chapterPath is the actual video URL because we set it in parseNovel
     const videoUrl = chapterPath;
     const isIframe = videoUrl.includes('.m3u8') ? false : true;
 
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
-      `<meta name="lnreader-video-type" content="${isIframe ? 'iframe' : 'm3u8'}">`,
-      `<meta name="lnreader-video-url" content="${videoUrl}">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
-    ].join('\n');
+    return {
+      state: 'ready',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: [
+        '<meta name="lnreader-video-mode" content="direct">',
+        `<meta name="lnreader-video-type" content="${isIframe ? 'iframe' : 'm3u8'}">`,
+        `<meta name="lnreader-video-url" content="${videoUrl}">`,
+      ].join('\n'),
+    };
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

@@ -1,5 +1,6 @@
 /* eslint-disable no-useless-escape */
 import type { CheerioAPI } from 'cheerio';
+
 import { hanvietdic } from './dict';
 
 /**

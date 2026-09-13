@@ -2,8 +2,9 @@ import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
-import { pluginEntries } from './plugin-build-utils.js';
+
 import { resolvePluginAssets } from '../src/lib/plugin-asset-paths.js';
+import { pluginEntries } from './plugin-build-utils.js';
 
 const entryPointsFiles = pluginEntries();
 
@@ -39,6 +40,13 @@ async function build() {
                     text: '@libs/webview is reserved for the host and must not be imported by plugins.',
                   },
                 ],
+              };
+            // These pure authoring modules belong in the plugin bundle.
+            if (
+              ['@nekori/plugin', '@nekori/pluginMetadata'].includes(args.path)
+            )
+              return {
+                path: path.resolve('src/nekori', args.path.slice(8) + '.ts'),
               };
             if (args.kind === 'entry-point' || args.path.startsWith('.'))
               return;

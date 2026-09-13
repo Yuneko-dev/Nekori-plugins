@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { probeSite } from './site-probe.js';
+
+import { resolveNetworkOptions } from './check-network.js';
 import {
   makeReport,
-  siteEntries,
   runChromiumChecks,
+  siteEntries,
 } from './check-plugin-sites.js';
-import { resolveNetworkOptions } from './check-network.js';
+import { probeSite } from './site-probe.js';
 
 let retryCount = 0;
 const server = http.createServer((request, response) => {

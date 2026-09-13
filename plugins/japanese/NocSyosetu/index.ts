@@ -1,22 +1,24 @@
-import { load as loadCheerio } from 'cheerio';
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
-import { FilterTypes, Filters } from '@libs/filterInputs';
+import { fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { get, set } from '@libs/cookie';
-import { ContentType, ContentWarning } from '@libs/pluginMetadata';
+import { get, set } from '@nekori/cookie';
+import { NekoriPagePlugin } from '@nekori/plugin';
+import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 // Because the selector was debugged on a computer, it must use a Windows user agent.
 const UserAgent =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
 
-class NocSyosetu implements Plugin.PagePlugin {
+class NocSyosetu extends NekoriPagePlugin {
   id = 'noc.syosetu';
   name = 'NocSyosetu';
   icon = 'icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.1.23';
+  version = '1.2.0';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.NSFW;
 
@@ -407,7 +409,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     await this.checkR18Cookie(chapterPath);
 
     const body = await this.fetchTextWithUA(chapterPath);
@@ -424,7 +426,11 @@ class NocSyosetu implements Plugin.PagePlugin {
       ).html() || '';
 
     // Combine title and content with proper HTML structure
-    return `<h1>${chapterTitle}</h1>${chapterContent}`;
+    return {
+      html: `<h1>${chapterTitle}</h1>${chapterContent}`,
+      state: 'ready',
+      type: 'novel',
+    };
   }
 
   async searchNovels(

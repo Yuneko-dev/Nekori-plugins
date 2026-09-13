@@ -1,6 +1,6 @@
-import { debugLog } from './utils';
 import { resolveGoogleApisCdn } from './google_cdn';
-import type { ResolvedMedia, PlayerConfig } from './types';
+import type { PlayerConfig, ResolvedMedia } from './types';
+import { debugLog } from './utils';
 
 export async function fetchAjaxPlayer(
   config: PlayerConfig,

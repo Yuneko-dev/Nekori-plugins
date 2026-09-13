@@ -2,12 +2,12 @@
  * Backward compatibility for 3.0.0 - Re-exports from new location
  * TODO: Remove in 4.0.0
  */
-export { FilterTypes } from '../types/filters';
 export type {
-  Filters,
+  AnyFilterValue,
   Filter,
   FilterOption,
+  Filters,
   FilterToValues,
   FilterValueWithType,
-  AnyFilterValue,
 } from '../types/filters';
+export { FilterTypes } from '../types/filters';

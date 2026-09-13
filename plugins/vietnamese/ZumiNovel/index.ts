@@ -1,10 +1,12 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
-import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
+import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { decodeHtmlEntities } from '@libs/utils';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { decodeHtmlEntities } from '@nekori/utils';
+
+import { Plugin } from '@/types/plugin';
 
 const SITE = 'https://zuminovel.com';
 
@@ -122,12 +124,12 @@ function compareZumiVolumes(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
-class ZumiNovelPlugin implements Plugin.PluginBase {
+class ZumiNovelPlugin extends NekoriBasePlugin {
   id = 'zuminovel';
   name = 'ZumiNovel';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.10';
+  version = '1.1.0';
 
   pluginSettings: Plugin.PluginSettings = {
     showRaw: {
@@ -367,7 +369,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
     return novel;
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const cleanPath = chapterPath
       .replace(/^https?:\/\/[^/]+/, '')
       .split('?')[0]
@@ -381,10 +383,10 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
       lastSeg.match(/-([a-f0-9]{24})$/i) || lastSeg.match(/^([a-f0-9]{24})$/i);
     const chapterId = idMatch ? idMatch[1] : '';
 
-    if (!slug || !chapterId) return '';
+    if (!slug || !chapterId) return { state: 'ready', type: 'novel', html: '' };
 
     const novelId = await this.getNovelId(slug);
-    if (!novelId) return '';
+    if (!novelId) return { state: 'ready', type: 'novel', html: '' };
 
     const apiUrl =
       `${this.site}/api/novels/${encodeURIComponent(novelId)}` +
@@ -423,9 +425,18 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
     }
 
     content = content.trim();
-    if (!content) return title ? `<h2>${title}</h2>` : '';
+    if (!content)
+      return {
+        state: 'ready',
+        type: 'novel',
+        html: title ? `<h2>${title}</h2>` : '',
+      };
 
-    return `<h2>${title}</h2>\n${content}`;
+    return {
+      state: 'ready',
+      type: 'novel',
+      html: `<h2>${title}</h2>\n${content}`,
+    };
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

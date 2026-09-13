@@ -1,9 +1,10 @@
-import path from 'path';
+import { execSync } from 'child_process';
 import fs from 'fs';
+import path from 'path';
 import process from 'process';
 import isValidFilename from 'valid-filename';
+
 import languages from './languages.js';
-import { execSync } from 'child_process';
 import { readPlugin } from './plugin-build-utils.js';
 
 const REMOTE = execSync('git remote get-url origin')
@@ -102,6 +103,8 @@ for (let language in languages) {
       filters,
       contentWarning,
       contentType,
+      isNekoriPlugin,
+      minApiVersion,
     } = instance;
     if (!isValidFilename(id))
       throw new Error(
@@ -113,7 +116,12 @@ for (let language in languages) {
     if (
       ONLY_NEW &&
       existingPlugins[id] &&
-      compareVersions(existingPlugins[id].version, version) >= 0
+      (compareVersions(existingPlugins[id].version, version) > 0 ||
+        (compareVersions(existingPlugins[id].version, version) === 0 &&
+          existingPlugins[id].isNekoriPlugin ===
+            (isNekoriPlugin === true ? true : undefined) &&
+          existingPlugins[id].minApiVersion ===
+            (isNekoriPlugin === true ? minApiVersion : undefined)))
     ) {
       // console.log(`   Skipping ${name} (${id}) - not newer`, '\r🔁');
       return;
@@ -131,6 +139,8 @@ for (let language in languages) {
       customCSS: customCSS ? `${STATIC_LINK}/${customCSS}` : undefined,
       contentWarning,
       contentType,
+      isNekoriPlugin,
+      minApiVersion,
     };
 
     if (pluginSet.has(id)) {
@@ -139,6 +149,8 @@ for (let language in languages) {
     } else {
       pluginSet.add(id);
     }
+    // Replace the previous entry when an API requirement changes at the same version.
+    json = json.filter(previous => previous.id !== id);
     json.push(info);
 
     pluginsPerLanguage[language] += 1;

@@ -1,7 +1,7 @@
-import { debugLog, cleanupIframe } from './utils';
+import { b64urlDecode, descramble, stringUnshuffle } from './crypto';
 import { nativeFetch } from './fetch';
-import { b64urlDecode, stringUnshuffle, descramble } from './crypto';
 import type { ResolvedMedia } from './types';
+import { cleanupIframe, debugLog } from './utils';
 
 export async function resolveGoogleApisCdn(
   playerUrl: string,

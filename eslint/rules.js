@@ -6,6 +6,8 @@ const allowedPluginImports = new Set([
   'cheerio',
   'dayjs',
   'urlencode',
+
+  // Approved external dependencies for plugins (Nekori-only)
   'node-html-markdown',
 
   // Approved internal dependencies for plugins
@@ -14,11 +16,16 @@ const allowedPluginImports = new Set([
   '@libs/isAbsoluteUrl',
   '@libs/filterInputs',
   '@libs/defaultCover',
-  '@libs/pluginMetadata',
   '@libs/aes',
   '@libs/utils',
-  '@libs/cookie',
   '@libs/storage',
+
+  // Approved internal dependencies for plugins (Nekori-only)
+  '@nekori/aes',
+  '@nekori/cookie',
+  '@nekori/plugin',
+  '@nekori/pluginMetadata',
+  '@nekori/utils',
 
   // Approved internal types for plugins
   '@/types/plugin',
@@ -101,89 +108,20 @@ export default {
         type: 'problem',
         schema: [],
         messages: {
-          aes: 'WARNING: Plugins using this AES function will only be compatible with Nekori (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
-          utils:
-            'WARNING: Plugins using this utility function/variable will only be compatible with Nekori (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
-          cookie:
-            "WARNING: Plugins using the '@libs/cookie' library will only be compatible with Nekori (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.",
+          nekori:
+            'WARNING: Plugins using this import will only be compatible with Nekori (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
         },
       },
       create(context) {
-        const nekoriOnlyAesImports = new Set([
-          'ctr',
-          'ecb',
-          'cbc',
-          'cfb',
-          'gcmsiv',
-          'aeskw',
-          'aeskwp',
-          'cmac',
-          'aessiv',
-        ]);
-
-        const nekoriOnlyUtilsImports = new Set([
-          'Buffer',
-          'encodeHtmlEntities',
-          'decodeHtmlEntities',
-          'NodeCrypto',
-          'getUserAgent',
-          'utf8ToBytes',
-          'bytesToUtf8',
-        ]);
-
         return {
           ImportDeclaration(node) {
             const source = node.source.value;
-
-            // Entire @libs/cookie module is Nekori-only.
-            if (source === '@libs/cookie') {
+            if (typeof source === 'string' && source.startsWith('@nekori/')) {
               context.report({
                 node,
-                messageId: 'cookie',
+                messageId: 'nekori',
               });
               return;
-            }
-
-            if (source === '@libs/aes') {
-              for (const specifier of node.specifiers) {
-                if (specifier.type !== 'ImportSpecifier') {
-                  continue;
-                }
-
-                const imported =
-                  specifier.imported.type === 'Identifier'
-                    ? specifier.imported.name
-                    : specifier.imported.value;
-
-                if (nekoriOnlyAesImports.has(imported)) {
-                  context.report({
-                    node: specifier,
-                    messageId: 'aes',
-                  });
-                }
-              }
-
-              return;
-            }
-
-            if (source === '@libs/utils') {
-              for (const specifier of node.specifiers) {
-                if (specifier.type !== 'ImportSpecifier') {
-                  continue;
-                }
-
-                const imported =
-                  specifier.imported.type === 'Identifier'
-                    ? specifier.imported.name
-                    : specifier.imported.value;
-
-                if (nekoriOnlyUtilsImports.has(imported)) {
-                  context.report({
-                    node: specifier,
-                    messageId: 'utils',
-                  });
-                }
-              }
             }
           },
         };

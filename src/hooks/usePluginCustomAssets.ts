@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+
 import { Plugin } from '@/types/plugin';
 
 type UsePluginCustomAssetsReturn = {

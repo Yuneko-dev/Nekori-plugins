@@ -1,6 +1,7 @@
 import { create, StateCreator } from 'zustand';
-import { PluginStore } from './pluginStore';
+
 import { NavigationStore } from './navigationStore';
+import { PluginStore } from './pluginStore';
 
 export type AppStore = PluginStore &
   NavigationStore & {

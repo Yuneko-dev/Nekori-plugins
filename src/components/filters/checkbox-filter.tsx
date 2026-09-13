@@ -1,8 +1,9 @@
-import React from 'react';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { FilterTypes } from '@libs/filterInputs';
 import type { Filter } from '@libs/filterInputs';
+import { FilterTypes } from '@libs/filterInputs';
+import React from 'react';
+
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 type CheckboxFilterProps = {
   filter: {

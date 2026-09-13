@@ -1,4 +1,7 @@
+import type { Filter } from '@libs/filterInputs';
+import { FilterTypes } from '@libs/filterInputs';
 import React from 'react';
+
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -7,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FilterTypes } from '@libs/filterInputs';
-import type { Filter } from '@libs/filterInputs';
 
 type PickerFilterProps = {
   filter: {

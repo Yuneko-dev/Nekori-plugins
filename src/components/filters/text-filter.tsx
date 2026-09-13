@@ -1,8 +1,9 @@
-import React from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { FilterTypes } from '@libs/filterInputs';
 import type { Filter } from '@libs/filterInputs';
+import { FilterTypes } from '@libs/filterInputs';
+import React from 'react';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type TextFilterProps = {
   filter: {

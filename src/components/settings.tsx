@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { storage } from '@libs/storage';
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { Check } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,10 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import useDebounce from '@/hooks/useDebounce';
 import { useAppStore } from '@/store';
-import { storage } from '@libs/storage';
-import { Switch } from '@/components/ui/switch';
 
 export default function SettingsSection() {
   const [cookies, setCookies] = useState('');

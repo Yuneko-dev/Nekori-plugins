@@ -1,17 +1,24 @@
-/* eslint-disable no-useless-escape */
-
-import { load as parseHTML } from 'cheerio';
-import { fetchApi, fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi, fetchText } from '@libs/fetch';
+import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { get, set, setFromResponse, removeSessionCookies } from '@libs/cookie';
-import { decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
+import {
+  get,
+  removeSessionCookies,
+  set,
+  setFromResponse,
+} from '@nekori/cookie';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { decodeHtmlEntities, encodeHtmlEntities } from '@nekori/utils';
+/* eslint-disable no-useless-escape */
+import { load as parseHTML } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
+
+import { ABT_HOSTS, HOST_PATTERNS, looksLikeExternalUrl } from './ExternalURL';
 import filters from './filters';
-import { STVChapterError } from './STVError';
-import { HOST_PATTERNS, ABT_HOSTS, looksLikeExternalUrl } from './ExternalURL';
 import { applyNameEngine } from './nameEngine';
+import { STVChapterError } from './STVError';
 
 const SITE = 'https://sangtacviet.app';
 
@@ -298,7 +305,7 @@ function wrapWithParagraphs(rawText: string): string {
   return htmlResult;
 }
 
-class SangTacVietPlugin implements Plugin.PluginBase {
+class SangTacVietPlugin extends NekoriBasePlugin {
   id = 'sangtacviet';
   name = 'Sáng Tác Việt';
   icon = 'icon.png';
@@ -308,7 +315,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.41';
+  version = '1.1.0';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -676,7 +683,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   }
 
   // @ts-expect-error - public method with auto-retry wrapper
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const maxRetries = this.autoRetry ? 10 : 1;
     let attempt = 0;
     while (attempt < maxRetries) {
@@ -696,7 +703,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
   }
 
-  private async _parseChapter(chapterPath: string): Promise<string> {
+  private async _parseChapter(
+    chapterPath: string,
+  ): Promise<Plugin.ChapterContent> {
     // Path: /truyen/{host}/{sty}/{bookid}/{chapterId}/
     const pathParts = chapterPath.replace(/^\/|\/$/g, '').split('/');
     const bookHost = pathParts[1] || '';
@@ -799,15 +808,24 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       const applyName = this.autoName && this.translateEnabled;
       const content = normalizeChapterHtml(host, rawData, applyName);
       const title = data.chaptername?.trim();
-      return (
-        (title ? `<h2>${title}</h2>` : '') +
-        wrapWithParagraphs(content).replace(/http:\/\//g, 'https://')
-      );
+      return {
+        state: 'ready',
+        type: 'novel',
+        html:
+          (title ? `<h2>${title}</h2>` : '') +
+          wrapWithParagraphs(content).replace(/http:\/\//g, 'https://'),
+      };
     } else {
       console.warn('Unexpected chapter API response', data);
       switch (String(data.code)) {
         case '21': {
-          return "<meta id='no-cache-marker'/><meta id='no-prefetch-marker'/><div id='captcha-placeholder'><p id='removed'>Bạn đã gặp captcha! Đây là placeholder, nếu captcha không xuất hiện, bạn cần tải lại trang để hiện captcha!</p></div>";
+          return {
+            state: 'checkpoint',
+            type: 'novel',
+            noCache: true,
+            noPrefetch: true,
+            html: "<div id='captcha-placeholder'><p id='removed'>Bạn đã gặp captcha! Đây là placeholder, nếu captcha không xuất hiện, bạn cần tải lại trang để hiện captcha!</p></div>",
+          };
         }
         default: {
           throw new STVChapterError(Number(data.code), data);

@@ -1,17 +1,19 @@
-import { fetchApi, fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { Filters, FilterTypes } from '@libs/filterInputs';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi, fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { Buffer } from '@libs/utils';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { Buffer } from '@nekori/utils';
+import { load as loadCheerio } from 'cheerio';
 
-class LNKuroPlugin implements Plugin.PluginBase {
+import { Plugin } from '@/types/plugin';
+
+class LNKuroPlugin extends NekoriBasePlugin {
   id = 'lnkuro';
   name = 'LNKuro';
   icon = 'icon.png';
   site = 'https://lnkuro.top';
-  version = '1.0.10';
+  version = '1.1.0';
   filters = {
     genre: {
       label: 'Thể loại',
@@ -285,7 +287,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
     const [day, month, year] = ddmmyyyy.split('/');
     return `${year}-${month}-${day}`;
   }
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const response = await fetchText(`${this.site}${chapterPath}`);
     if (!response) throw new Error(`API error: ${this.site}${chapterPath}`);
     const $ = loadCheerio(response);
@@ -325,7 +327,7 @@ class LNKuroPlugin implements Plugin.PluginBase {
       throw new Error(
         'Chương không có nội dung, yêu cầu VIP / đăng nhập hoặc plugin bị lỗi.',
       );
-    return chapterContent;
+    return { state: 'ready', type: 'novel', html: chapterContent };
   }
   async searchNovels(
     searchTerm: string,

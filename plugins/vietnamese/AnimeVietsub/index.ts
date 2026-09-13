@@ -1,21 +1,23 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
-import { NovelStatus } from '@libs/novelStatus';
-import { encodeHtmlEntities } from '@libs/utils';
+import { fetchApi } from '@libs/fetch';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
+import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { encodeHtmlEntities } from '@nekori/utils';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 import filters from './filters';
 
-class AnimeVietsubPlugin implements Plugin.PluginBase {
+class AnimeVietsubPlugin extends NekoriBasePlugin {
   id = 'animevietsub';
   name = 'AnimeVietsub';
   icon = 'icon.png';
   site = 'https://animevietsub.li';
-  version = '1.0.46';
+  version = '1.1.0';
   filters = filters;
   contentType = ContentType.VIDEO;
 
@@ -297,7 +299,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   //      fetch the player page → extract avsToken & id → build m3u8 URL
   //   3. If playTech=api/all with sources → pass sources to customJS
   //   4. Fallback: extract data-hash/data-id for AJAX approach in customJS
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const url = this.site + chapterPath;
     const html = await this.fetchHTML(url);
     if (!html) throw new Error('API error: ' + url);
@@ -323,13 +325,25 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
           pd.link.includes('googleapiscdn.com')
         ) {
           if (this.playMode === 'embed') {
-            return this.buildPlayerHtml({
-              iframe: pd.link,
-              embedOnly: true,
-              bannerUrl: img,
-            });
+            return {
+              state: 'ready',
+              type: 'video',
+              noCache: true,
+              noPrefetch: true,
+              html: this.buildPlayerHtml({
+                iframe: pd.link,
+                embedOnly: true,
+                bannerUrl: img,
+              }),
+            };
           }
-          return this.buildPlayerHtml({ iframe: pd.link, bannerUrl: img });
+          return {
+            state: 'ready',
+            type: 'video',
+            noCache: true,
+            noPrefetch: true,
+            html: this.buildPlayerHtml({ iframe: pd.link, bannerUrl: img }),
+          };
         }
 
         // Case B: api / all with sources array
@@ -342,7 +356,13 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
             type: s.type || '',
             label: s.label || '',
           }));
-          return this.buildPlayerHtml({ sources, bannerUrl: img });
+          return {
+            state: 'ready',
+            type: 'video',
+            noCache: true,
+            noPrefetch: true,
+            html: this.buildPlayerHtml({ sources, bannerUrl: img }),
+          };
         }
 
         // Case C: api / all with single string link
@@ -352,27 +372,45 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
         ) {
           const link = pd.link.replace(/^&http/, 'http');
           if (/\.m3u8(\?|$)/i.test(link)) {
-            return this.buildPlayerHtml({
-              m3u8: link,
-              referer: url,
-              bannerUrl: img,
-            });
+            return {
+              state: 'ready',
+              type: 'video',
+              noCache: true,
+              noPrefetch: true,
+              html: this.buildPlayerHtml({
+                m3u8: link,
+                referer: url,
+                bannerUrl: img,
+              }),
+            };
           }
           if (/\.(mp4|webm)(\?|$)/i.test(link)) {
-            return this.buildPlayerHtml({
-              sources: [{ file: link, type: 'mp4', label: '' }],
-              bannerUrl: img,
-            });
+            return {
+              state: 'ready',
+              type: 'video',
+              noCache: true,
+              noPrefetch: true,
+              html: this.buildPlayerHtml({
+                sources: [{ file: link, type: 'mp4', label: '' }],
+                bannerUrl: img,
+              }),
+            };
           }
         }
 
         // Case D: iframe to non-googleapiscdn player
         if (pd.playTech === 'iframe' && typeof pd.link === 'string') {
-          return this.buildPlayerHtml({
-            iframe: pd.link,
-            embedOnly: true,
-            bannerUrl: img,
-          });
+          return {
+            state: 'ready',
+            type: 'video',
+            noCache: true,
+            noPrefetch: true,
+            html: this.buildPlayerHtml({
+              iframe: pd.link,
+              embedOnly: true,
+              bannerUrl: img,
+            }),
+          };
         }
       } catch (_) {
         //
@@ -402,24 +440,42 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     const dataId = $link.attr('data-id') || '';
 
     if (dataHash) {
-      return this.buildPlayerHtml({
-        hash: dataHash,
-        id: dataId,
-        referer: url,
-        site: this.site,
-        bannerUrl: img,
-      });
+      return {
+        state: 'ready',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: this.buildPlayerHtml({
+          hash: dataHash,
+          id: dataId,
+          referer: url,
+          site: this.site,
+          bannerUrl: img,
+        }),
+      };
     }
 
     // ── 3. Last resort: embed the episode page in an iframe ──
     if (this.playMode === 'embed') {
-      return this.buildPlayerHtml({
-        iframe: url,
-        embedOnly: true,
-        bannerUrl: img,
-      });
+      return {
+        state: 'ready',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: this.buildPlayerHtml({
+          iframe: url,
+          embedOnly: true,
+          bannerUrl: img,
+        }),
+      };
     }
-    return '<p style="color:#ff4444;font-size:14px;font-family:sans-serif;text-align:center;padding:16px;">Không tìm thấy nguồn video cho tập phim này.</p><meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>';
+    return {
+      state: 'checkpoint',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: '<p style="color:#ff4444;font-size:14px;font-family:sans-serif;text-align:center;padding:16px;">Không tìm thấy nguồn video cho tập phim này.</p>',
+    };
   }
 
   // ── Helper: build the HTML container for customJS ──
@@ -437,10 +493,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     const esc = (s: string) => encodeHtmlEntities(s);
 
     const base: string[] = [
-      '<meta name="lnreader-chapter-type" content="video">',
       `<meta name="lnreader-debug-mode" content="${Boolean(this.enableDebug)}">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
     ];
 
     if (opts.embedOnly && opts.iframe) {

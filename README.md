@@ -10,25 +10,21 @@ This is a fork of the original repository, containing only my custom plugins and
 
 
 <p>
-<img alt="Total number of available plugins" src="https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/plugins/v3.0.0/total.svg">
+<img alt="Total number of available plugins" src="https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/nekori/v1.0.0/total.svg">
 <img alt="Open plugin requests" src="https://img.shields.io/github/issues/Yuneko-dev/Nekori-plugins/Plugin%20Request?color=success&label=plugin%20requests">
 <img alt="Open bug reports" src="https://img.shields.io/github/issues/Yuneko-dev/Nekori-plugins/Bug?color=red&label=bugs">
 </p>
 
 ### Install URL
 ```sh
-https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/plugins/v3.0.0/.dist/plugins.min.json
+https://raw.githubusercontent.com/Yuneko-dev/Nekori-plugins/nekori/v1.0.0/.dist/plugins.min.json
 ```
 
 ### Additional APIs
 
-Plugins in this repository make use of new API functions that are not available in the original LNReader. Below is a (potentially incomplete) list:
-
-- `node-html-markdown`
-- `@libs/aes`: added `ctr`, `ecb`, `cbc`, `cfb`, `gcmsiv`, `aeskw`, `aeskwp`, `cmac` and `aessiv`
-- `@libs/utils`: added `utf8ToBytes`, `bytesToUtf8`, `getUserAgent`, `Buffer`, `NodeCrypto` (Used similarly to `import NodeCrypto from "node:crypto"`), `encodeHtmlEntities` and `decodeHtmlEntities`
-- `@libs/cookie`
-- `@libs/pluginMetadata`
+Nekori plugins extend `NekoriBasePlugin` or `NekoriPagePlugin` and return structured chapter content.
+See [API v1 documentation](src/nekori/Readme.md) and the templates in `plugins/vietnamese/broken_Template` and `broken_Template2`.
+`@libs/*` provides the LNReader contract; Nekori additions live under `@nekori/*`.
 
 ### Development
 
@@ -130,7 +126,7 @@ and solve Cloudflare in a real WebView, none of which a plain browser can do.
 For a final check on the real app, `npm run serve:dev` serves the built manifest
 over your LAN (see `.env.template`), then add
 `http://<your-lan-ip>:3000/.dist/plugins.min.json` under **Settings →
-Repositories** in LNReader.
+Repositories** in Nekori.
 
 ### Documentation
 

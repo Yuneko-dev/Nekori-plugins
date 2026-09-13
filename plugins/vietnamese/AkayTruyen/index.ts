@@ -1,8 +1,9 @@
 import { fetchApi } from '@libs/fetch';
-import { CheerioAPI, load } from 'cheerio';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
+import { NovelStatus } from '@libs/novelStatus';
+import { CheerioAPI, load } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 class AkayTruyenPlugin implements Plugin.PagePlugin {
   id = 'akaytruyen.com';

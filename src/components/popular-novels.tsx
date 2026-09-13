@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Filter, BookOpen } from 'lucide-react';
+import { Filters, FilterToValues } from '@libs/filterInputs';
+import { BookOpen, Filter } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 import { FiltersSheet } from '@/components/filters/filters-sheet';
 import { NovelCard } from '@/components/novel-card';
@@ -9,7 +10,6 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/store';
-import { FilterToValues, Filters } from '@libs/filterInputs';
 import { Plugin } from '@/types/plugin';
 
 type PopularNovelsSectionProps = {

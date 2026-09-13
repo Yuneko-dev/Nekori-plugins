@@ -1,22 +1,21 @@
+import { BookOpen, Search, Settings, Zap } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { BookOpen, Search, Settings, Zap } from 'lucide-react';
-import PluginHeader from '../components/plugin-header';
-
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ParseChapterSection from '@/components/parse-chapter';
+import ParseNovelSection from '@/components/parse-novel';
+import PopularNovelsSection from '@/components/popular-novels';
+import SearchNovelsSection from '@/components/search-novels';
+import SettingsSection from '@/components/settings';
 import { Input } from '@/components/ui/input';
-
-import plugins from '@/provider/plugin-registry';
-import { useAppStore } from '@/store';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   getPluginDisplayName,
   getPluginNameColor,
 } from '@/lib/plugin-metadata';
-import PopularNovelsSection from '@/components/popular-novels';
-import SearchNovelsSection from '@/components/search-novels';
-import ParseNovelSection from '@/components/parse-novel';
-import SettingsSection from '@/components/settings';
-import ParseChapterSection from '@/components/parse-chapter';
+import plugins from '@/provider/plugin-registry';
+import { useAppStore } from '@/store';
+
+import PluginHeader from '../components/plugin-header';
 
 function Home() {
   const { plugin, selectPlugin } = useAppStore(state => state);

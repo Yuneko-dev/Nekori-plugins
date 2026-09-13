@@ -1,25 +1,26 @@
-// VNExpress - Vietnamese news via RSS (https://vnexpress.net/rss)
-
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { Filters, FilterTypes } from '@libs/filterInputs';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+// VNExpress - Vietnamese news via RSS (https://vnexpress.net/rss)
+import { fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { ContentType } from '@libs/pluginMetadata';
-import { get, set } from '@libs/cookie';
+import { get, set } from '@nekori/cookie';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 const SEARCH_SITE = 'https://timkiem.vnexpress.net';
 
 const UserAgent =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
 
-class VnExpressPlugin implements Plugin.PluginBase {
+class VnExpressPlugin extends NekoriBasePlugin {
   id = 'vnexpress.net';
   name = 'VNExpress';
   icon = 'icon.png';
   site = 'https://vnexpress.net';
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {
@@ -254,10 +255,10 @@ class VnExpressPlugin implements Plugin.PluginBase {
     return novel;
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const path = chapterPath.replace(/#.*$/, '');
     const novel = await this.parseNovel(path);
-    return novel.content || '';
+    return { state: 'ready', type: 'mixed', html: novel.content || '' };
   }
 
   async searchNovels(

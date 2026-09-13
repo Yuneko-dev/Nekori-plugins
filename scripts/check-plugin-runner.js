@@ -1,10 +1,10 @@
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import assert from 'node:assert/strict';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pluginId = 'yuneko.m3uplayer';
@@ -133,8 +133,12 @@ async function main() {
     `http://127.0.0.1:${port}/valid.m3u`,
     result => {
       assertStatus(result, 'parseChapter', 'passed');
-      assert.equal(result.methods[0].result.type, 'string');
-      assert.ok(result.methods[0].result.length > 0);
+      assert.equal(result.methods[0].result.type, 'video');
+      assert.equal(result.methods[0].result.state, 'ready');
+      assert.equal(result.methods[0].result.noCache, true);
+      assert.equal(result.methods[0].result.noPrefetch, true);
+      assert.equal(result.methods[0].result.html.type, 'string');
+      assert.ok(result.methods[0].result.html.length > 0);
       assert.ok(!JSON.stringify(result.methods[0].result).includes('<meta'));
     },
     ['--method', 'parseChapter', '--args-file', argsPath, '--debug'],

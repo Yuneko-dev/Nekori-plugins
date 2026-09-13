@@ -1,4 +1,4 @@
-// @ts-nocheck
+import { NekoriPagePlugin } from '@nekori/plugin';
 
 import { fetchApi, fetchProto, fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
@@ -7,15 +7,16 @@ import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage, localStorage, sessionStorage } from '@libs/storage';
-import { utf8ToBytes, bytesToUtf8, Buffer } from '@libs/utils';
+import { utf8ToBytes, bytesToUtf8 } from '@libs/utils';
+import { Buffer } from '@nekori/utils';
 
 // Phần đầu của TemplatePlugin giống như plugin template.ts, có thể xem ở đó...
-class TemplatePlugin implements Plugin.PagePlugin {
+class TemplatePlugin extends NekoriPagePlugin {
   id = 'template2.id';
   name = 'Template Plugin 2';
   icon = 'icon.png';
   site = 'https://example.com';
-  version = '1.0.0';
+  version = '1.0.1';
   filters: Filters | undefined = undefined;
 
   // Giống như template.ts
@@ -70,12 +71,13 @@ class TemplatePlugin implements Plugin.PagePlugin {
     };
   }
   // Giống như template.ts
-  async parseChapter(chapterPath: string): Promise<string> {
+  /** Return HTML with explicit chapter policy; checkpoint renders but cannot download. */
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const response = await fetchText(`${this.site}${chapterPath}`);
     const $ = loadCheerio(response);
     // Giả sử nội dung chương nằm trong thẻ div có class "chapter-content"
     const chapterContent = $('.chapter-content').html()!;
-    return chapterContent;
+    return { state: 'ready', type: 'novel', html: chapterContent };
   }
   // Giống như template.ts
   async searchNovels(

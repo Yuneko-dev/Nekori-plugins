@@ -1,10 +1,12 @@
+import type { Plugin } from '@/types/plugin';
+
+import corePlayerCss from './assets/core-player.css?raw';
+import corePlayerRaw from './assets/core-player.js?raw';
 import { readerMockScript } from './reader-mock';
-import corePlayerRaw from './core-player.js?raw';
-import corePlayerCss from './core-player.css?raw';
 
 type PreviewDocumentOptions = {
-  /** Chapter HTML returned by `plugin.parseChapter`. */
-  html: string;
+  /** Normalized Nekori contract, including adapted LNReader responses. */
+  chapter: Plugin.ChapterContent;
   /** Shown as the preview window title, e.g. "Novel name - Chapter name". */
   title?: string;
   customCSS?: string;
@@ -29,24 +31,20 @@ const escapeHtml = (value: string) =>
 const staticUrl = (relative: string) =>
   new URL('/public/static/' + relative, window.location.origin).href;
 
-export const isVideoChapter = (html: string) =>
-  /<meta\s+name=["']lnreader-chapter-type["']\s+content=["']video["']/i.test(
-    html,
-  );
-
 /**
  * Assembles the document handed to the preview tab. Element ids and the
  * CSS-then-chapter-then-JS order mirror the real reader WebView, so custom JS
  * that queries `#LNReader-chapter` behaves the same here.
  */
 export function buildPreviewDocument({
-  html,
+  chapter,
   title,
   customCSS,
   customJS,
   dark,
 }: PreviewDocumentOptions): string {
-  const video = isVideoChapter(html);
+  const { html } = chapter;
+  const video = chapter.type === 'video';
 
   return `<!DOCTYPE html>
 <html>

@@ -1,10 +1,12 @@
-import { fetchApi, fetchText } from '@libs/fetch';
 import { defaultCover } from '@libs/defaultCover';
-import { NovelStatus } from '@libs/novelStatus';
-import { ContentType, ContentWarning } from '@libs/pluginMetadata';
-import { FilterTypes } from '@libs/filterInputs';
+import { fetchApi, fetchText } from '@libs/fetch';
 import type { Filters } from '@libs/filterInputs';
+import { FilterTypes } from '@libs/filterInputs';
+import { NovelStatus } from '@libs/novelStatus';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
 import { load as loadCheerio } from 'cheerio';
+
 import { Plugin } from '@/types/plugin';
 
 const SITE = 'https://www.wattpad.com';
@@ -199,12 +201,12 @@ function parseBrowseStories(html: string): WattpadStory[] {
   return [...stories.values()];
 }
 
-class WattpadPlugin implements Plugin.PluginBase {
+class WattpadPlugin extends NekoriBasePlugin {
   id = 'wattpad';
   name = 'Wattpad';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 
@@ -329,7 +331,7 @@ class WattpadPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const chapterId = getId(chapterPath);
     const response = await fetchApi(
       `${SITE}/apiv2/storytext?id=${encodeURIComponent(chapterId)}`,
@@ -339,7 +341,7 @@ class WattpadPlugin implements Plugin.PluginBase {
         `Wattpad chapter request failed: HTTP ${response.status}`,
       );
     }
-    return response.text();
+    return { state: 'ready', type: 'novel', html: await response.text() };
   }
 
   async searchNovels(

@@ -1,10 +1,13 @@
 import { fetchText } from '@libs/fetch';
-import { load, type Cheerio, type CheerioAPI } from 'cheerio';
-import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { type Cheerio, type CheerioAPI, load } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
+
 import filters from './filters';
-import { decryptImage, openChapter } from './NovelDecryptor';
 import { ChapterBlock, NovelReaderConfig } from './interface';
+import { decryptImage, openChapter } from './NovelDecryptor';
 
 const SITE = 'https://moetruyen.net';
 
@@ -149,12 +152,12 @@ function parseChapters($: CheerioAPI): Plugin.ChapterItem[] {
   return chapters;
 }
 
-class MoetruyenNovelPlugin implements Plugin.PluginBase {
+class MoetruyenNovelPlugin extends NekoriBasePlugin {
   id = 'moetruyen.novel';
   name = 'Moetruyen Novel';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.4';
+  version = '1.0.5';
   filters = filters;
 
   async popularNovels(
@@ -245,7 +248,7 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const chapterHtml = await fetchText(`${this.site}${chapterPath}`);
     const $ = load(chapterHtml);
     const configNode = $('#novel-reader-config');
@@ -259,7 +262,13 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
           .text()
           .trim();
         if (title && description) {
-          return `<meta id='no-cache-marker'/><meta id='no-prefetch-marker'/><h2>${title}</h2>\n<p>${description}</p>`;
+          return {
+            state: 'checkpoint',
+            type: 'novel',
+            noCache: true,
+            noPrefetch: true,
+            html: `<h2>${title}</h2>\n<p>${description}</p>`,
+          };
         }
       }
       throw new Error('Không tìm thấy nội dung chương.');
@@ -352,7 +361,11 @@ class MoetruyenNovelPlugin implements Plugin.PluginBase {
       }
     }
 
-    return (await Promise.all(html)).join('\n');
+    return {
+      state: 'ready',
+      type: 'novel',
+      html: (await Promise.all(html)).join('\n'),
+    };
   }
 }
 

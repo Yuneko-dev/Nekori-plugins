@@ -1,11 +1,14 @@
-import { fetchApi } from '@libs/fetch';
-import { load } from 'cheerio';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
-import { ecb } from '@libs/aes';
-import { utf8ToBytes, Buffer } from '@libs/utils';
+import { NovelStatus } from '@libs/novelStatus';
+import { utf8ToBytes } from '@libs/utils';
+import { ecb } from '@nekori/aes';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { Buffer } from '@nekori/utils';
+import { load } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 const API_HOSTS = [
   'https://api-01.mottruyen.vn',
@@ -199,12 +202,12 @@ type ChapterListItem = {
   updatedAt?: string;
 };
 
-class MotTruyenPlugin implements Plugin.PluginBase {
+class MotTruyenPlugin extends NekoriBasePlugin {
   id = 'mottruyen.com.vn';
   name = 'Mọt Truyện';
   icon = 'icon.png';
   site = WEB_HOST;
-  version = '1.0.4';
+  version = '1.0.5';
 
   async popularNovels(
     pageNo: number,
@@ -284,7 +287,7 @@ class MotTruyenPlugin implements Plugin.PluginBase {
     return novel;
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const [storyId, chapterNo] = chapterPath.split('/');
     const json = await apiGet(
       `/api/v1/story/${storyId}/chapter/${chapterNo}/encryption?password=null`,
@@ -316,11 +319,15 @@ class MotTruyenPlugin implements Plugin.PluginBase {
       $(el).replaceWith($(el).text() + '\n');
     });
 
-    return $.text()
-      .split('\n')
-      .filter((line: string) => line.trim().length > 0)
-      .map((line: string) => `<p>${line.trim()}</p>`)
-      .join('\n');
+    return {
+      state: 'ready',
+      type: 'novel',
+      html: $.text()
+        .split('\n')
+        .filter((line: string) => line.trim().length > 0)
+        .map((line: string) => `<p>${line.trim()}</p>`)
+        .join('\n'),
+    };
   }
 
   async searchNovels(

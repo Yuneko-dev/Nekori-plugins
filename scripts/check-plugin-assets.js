@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+
+import { resolvePluginAssets } from '../src/lib/plugin-asset-paths.js';
+import { planAssets } from './build-webviews.js';
 import {
   compiledPlugins,
   pluginEntries,
   staticPath,
 } from './plugin-build-utils.js';
-import { planAssets } from './build-webviews.js';
-import { resolvePluginAssets } from '../src/lib/plugin-asset-paths.js';
 
 const bare = {
   id: 'demo.one',

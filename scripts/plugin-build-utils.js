@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import fastGlob from 'fast-glob';
 
 export const pluginEntries = () =>
@@ -39,7 +40,13 @@ export function readPlugin(file) {
     ${fs.readFileSync(file, 'utf8')};
     return exports.default;
   `,
-  )(name => (name === '@libs/pluginMetadata' ? metadata : proxy), {});
+  )(
+    name =>
+      ['@libs/pluginMetadata', '@nekori/pluginMetadata'].includes(name)
+        ? metadata
+        : proxy,
+    {},
+  );
 }
 
 export function staticPath(relative) {

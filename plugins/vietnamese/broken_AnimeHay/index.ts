@@ -1,3 +1,4 @@
+import { NekoriBasePlugin } from '@nekori/plugin';
 /* eslint-disable */
 
 import { fetchText } from '@libs/fetch';
@@ -6,12 +7,12 @@ import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 
-class AnimeHayPlugin implements Plugin.PluginBase {
+class AnimeHayPlugin extends NekoriBasePlugin {
   id = 'yuneko.animehay';
   name = '🎞 AnimeHay';
   icon = 'src/vi/animehay/icon.png';
   site = 'https://animevietsub.ac'; // 'https://animehay.fm';
-  version = '1.0.0';
+  version = '1.0.1';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -186,7 +187,7 @@ class AnimeHayPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const url = this.site + chapterPath;
     const html = await fetchText(url);
 
@@ -239,19 +240,26 @@ class AnimeHayPlugin implements Plugin.PluginBase {
     }
 
     if (!videoUrl) {
-      return '<p style="text-align:center;padding:16px;">Không tìm thấy video.</p><meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>';
+      return {
+        state: 'checkpoint',
+        type: 'novel',
+        noCache: true,
+        noPrefetch: true,
+        html: '<p style="text-align:center;padding:16px;">Không tìm thấy video.</p>',
+      };
     }
 
     const videoType = isIframe ? 'iframe' : 'm3u8';
 
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
-      `<meta name="lnreader-video-type" content="${videoType}">`,
-      `<meta name="lnreader-video-url" content="${videoUrl}">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
-    ].join('\n');
+    return {
+      state: 'ready',
+      type: 'novel',
+      html: [
+        '<meta name="lnreader-video-mode" content="direct">',
+        `<meta name="lnreader-video-type" content="${videoType}">`,
+        `<meta name="lnreader-video-url" content="${videoUrl}">`,
+      ].join('\n'),
+    };
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

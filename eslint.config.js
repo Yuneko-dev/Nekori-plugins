@@ -2,8 +2,10 @@
 
 import eslint from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
-import tseslint from 'typescript-eslint';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
 import customRules from './eslint/rules.js';
 
 // Dump of globals that are available in the Hermes runtime, which is used by React Native.
@@ -152,8 +154,11 @@ export default tseslint.config(
     files: ['plugins/*/*/*.ts', 'plugins/multisrc/*/template.ts'],
     plugins: {
       custom: customRules,
+      'simple-import-sort': simpleImportSort,
     },
     rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -184,7 +189,12 @@ export default tseslint.config(
   {
     files: ['**/*.{ts,tsx,mts,cts,js}'],
     ignores: ['plugins/*/*/*.ts', 'plugins/multisrc/*/template.ts'],
+    plugins: {
+      'simple-import-sort': simpleImportSort,
+    },
     rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-namespace': 'off',

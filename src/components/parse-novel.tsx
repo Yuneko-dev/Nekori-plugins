@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
 import {
+  ArrowRight,
   BookOpen,
   ChevronLeft,
   ChevronRight,
   Copy,
-  ArrowRight,
   Download,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { TableVirtuoso } from 'react-virtuoso';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -19,10 +20,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useEpubExport } from '@/hooks/useEpubExport';
 import { useAppStore } from '@/store';
 import { Plugin } from '@/types/plugin';
-import { useEpubExport } from '@/hooks/useEpubExport';
-import { TableVirtuoso } from 'react-virtuoso';
 
 type ParseNovelSectionProps = {
   onNavigateToParseChapter?: () => void;

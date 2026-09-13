@@ -1,12 +1,13 @@
 export {
-  ctr,
-  ecb,
-  cbc,
-  cfb,
-  gcm,
-  gcmsiv,
   aeskw,
   aeskwp,
-  cmac,
   aessiv,
+  cbc,
+  cfb,
+  cmac,
+  // Nekori-compatible AES implementations
+  ctr,
+  ecb,
+  gcm, // LNReader-compatible AES-GCM implementation
+  gcmsiv,
 } from '@noble/ciphers/aes.js';

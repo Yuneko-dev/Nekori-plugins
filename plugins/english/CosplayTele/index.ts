@@ -1,12 +1,14 @@
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
-import { NovelStatus } from '@libs/novelStatus';
-import { FilterTypes, Filters } from '@libs/filterInputs';
-import { decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
+import { fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
-import { ContentType, ContentWarning } from '@libs/pluginMetadata';
+import { NovelStatus } from '@libs/novelStatus';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
+import { decodeHtmlEntities, encodeHtmlEntities } from '@nekori/utils';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 const SITE = 'https://cosplaytele.com';
 
@@ -166,12 +168,12 @@ function collectVideoEmbeds($: ReturnType<typeof loadCheerio>): string[] {
   return embeds;
 }
 
-class CosplayTelePlugin implements Plugin.PluginBase {
+class CosplayTelePlugin extends NekoriBasePlugin {
   id = 'cosplaytele';
   name = 'CosplayTele';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.6';
+  version = '1.1.0';
   contentType = ContentType.MIXED;
   contentWarning = ContentWarning.NSFW;
 
@@ -283,14 +285,21 @@ class CosplayTelePlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     if (chapterPath.endsWith(PHOTOS_SUFFIX)) {
       const novelPath = chapterPath.slice(0, -PHOTOS_SUFFIX.length);
       const html = await this.fetchPage(novelPath);
       const $ = loadCheerio(html);
       const photos = collectPhotoUrls($);
       if (!photos.length) {
-        return '<p>No photos found.</p>';
+        return {
+          html: '<p>No photos found in this post.</p>',
+          state: 'checkpoint',
+          type: 'image',
+          noCache: true,
+          noPrefetch: true,
+          checkpointMessage: 'No photos found in this post.',
+        };
       }
       const imgs = photos
         .map(
@@ -298,7 +307,11 @@ class CosplayTelePlugin implements Plugin.PluginBase {
             `<figure style="margin:0 0 1rem;"><img src="${encodeHtmlEntities(url)}" alt="" style="max-width:100%;height:auto;display:block;margin:0 auto;" loading="lazy"/></figure>`,
         )
         .join('\n');
-      return `<div class="cosplaytele-photos">${imgs}</div>`;
+      return {
+        html: `<div class="cosplaytele-photos">${imgs}</div>`,
+        state: 'ready',
+        type: 'image',
+      };
     }
 
     if (chapterPath.endsWith(VIDEO_SUFFIX)) {
@@ -307,20 +320,30 @@ class CosplayTelePlugin implements Plugin.PluginBase {
       const $ = loadCheerio(html);
       const embeds = collectVideoEmbeds($);
       if (!embeds.length) {
-        return '<p>No embedded video on this post.</p>';
+        return {
+          html: '<p>No embedded video on this post.</p>',
+          state: 'checkpoint',
+          type: 'video',
+          noCache: true,
+          noPrefetch: true,
+          checkpointMessage: 'No embedded video on this post.',
+        };
       }
 
       const embedJson = encodeHtmlEntities(JSON.stringify(embeds));
-      return [
-        '<meta name="lnreader-chapter-type" content="video">',
-        '<meta name="lnreader-video-mode" content="lazy">',
-        `<div id="cosplaytele-player" data-embeds="${embedJson}" style="display:none"></div>`,
-        '<meta id="no-cache-marker"/>',
-        '<meta id="no-prefetch-marker"/>',
-      ].join('\n');
+      return {
+        html: [
+          '<meta name="lnreader-video-mode" content="lazy">',
+          `<div id="cosplaytele-player" data-embeds="${embedJson}" style="display:none"></div>`,
+        ].join('\n'),
+        state: 'ready',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+      };
     }
 
-    return '<p>Unknown chapter.</p>';
+    throw new Error('Invalid chapter path: ' + chapterPath);
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

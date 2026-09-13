@@ -1,8 +1,9 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { CheerioAPI, load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
+import { CheerioAPI, load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 class ValvrareTeamPlugin implements Plugin.PluginBase {
   id = 'valvrareteam';

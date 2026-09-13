@@ -1,3 +1,4 @@
+import { NekoriBasePlugin } from '@nekori/plugin';
 import { fetchApi, fetchProto, fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { Filters } from '@libs/filterInputs';
@@ -5,12 +6,13 @@ import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage, localStorage, sessionStorage } from '@libs/storage';
-import { utf8ToBytes, bytesToUtf8, Buffer } from '@libs/utils';
-import { ContentType, ContentWarning } from '@libs/pluginMetadata';
+import { utf8ToBytes, bytesToUtf8 } from '@libs/utils';
+import { Buffer } from '@nekori/utils';
+import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
 import test from './utils';
 
 // Đổi tên folder thành broken_<PluginName> để plugin không được build.
-class TemplatePlugin implements Plugin.PluginBase {
+class TemplatePlugin extends NekoriBasePlugin {
   // Là một ID duy nhất để nhận diện Plugin
   id = 'template.id';
   // Tên hiển thị của Plugin
@@ -20,7 +22,7 @@ class TemplatePlugin implements Plugin.PluginBase {
   // URL của trang web. Đây cũng là URL dùng để mở WebView.
   site = 'https://example.com';
   // Phiên bản của Plugin, được viết theo chuẩn [SemVer 2.0](https://semver.org/) - <major>.<minor>.<patch>
-  version = '1.0.0';
+  version = '1.0.1';
   // Bộ lọc của popularNovels, được sử dụng khi mở plugin trong ứng dụng (sẽ có nút filter ở góc dưới cùng bên phải màn hình plugin)
   filters: Filters | undefined = undefined;
   // Sử dụng để tùy chỉnh yêu cầu hình ảnh. Ví dụ: Nếu trang web yêu cầu header đặc biệt để tải ảnh, có thể thiết lập ở đây.
@@ -61,10 +63,10 @@ class TemplatePlugin implements Plugin.PluginBase {
   customJS?: string | undefined = 'custom.js';
 
   // Loại nội dung mà plugin này cung cấp
-  contentType?: ContentType | undefined = ContentType.NOVEL;
+  contentType: ContentType = ContentType.NOVEL;
 
   // Cảnh báo nội dung mà plugin này có thể chứa
-  contentWarning?: ContentWarning | undefined = ContentWarning.SAFE;
+  contentWarning: ContentWarning = ContentWarning.SAFE;
 
   // Hàm này được gọi khi người dùng mở trang đầu của Plugin. Có thể apply các bộ lọc đã được định nghĩa.
   // Giống như việc bạn xem trang đầu tiên của Web vậy, và nó có chia trang.
@@ -138,12 +140,13 @@ class TemplatePlugin implements Plugin.PluginBase {
     return novel;
   }
   // Hàm này được gọi khi người dùng nhấn vào một chương để đọc. Trả về nội dung của chương đó dưới dạng HTML string.
-  async parseChapter(chapterPath: string): Promise<string> {
+  /** Return HTML with explicit chapter policy; checkpoint renders but cannot download. */
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const response = await fetchText(`${this.site}${chapterPath}`);
     const $ = loadCheerio(response);
     // Giả sử nội dung chương nằm trong thẻ div có class "chapter-content"
     const chapterContent = $('.chapter-content').html()!;
-    return chapterContent;
+    return { state: 'ready', type: 'novel', html: chapterContent };
   }
   // Hàm này được gọi khi người dùng tìm kiếm truyện bằng thanh tìm kiếm. Trả về một mảng các truyện phù hợp với từ khóa tìm kiếm.
   async searchNovels(

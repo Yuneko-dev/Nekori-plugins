@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Plugin } from '@/types/plugin';
+
+import { requireReadyChapter } from '@/lib/chapter-content';
 import { createEpub, downloadBlob } from '@/lib/epub';
+import { Plugin } from '@/types/plugin';
 
 type UseEpubExportOptions = {
   plugin: Plugin.PluginSource | null;
@@ -78,7 +80,10 @@ export function useEpubExport({
       for (let i = 0; i < allChapters.length; i++) {
         const chapter = allChapters[i];
         try {
-          const content = await plugin.parseChapter(chapter.path);
+          const content = requireReadyChapter(
+            await plugin.parseChapter(chapter.path),
+            plugin.isNekoriPlugin === true,
+          );
           chapterContents.push({
             title: chapter.name,
             content: content || '<p>No content available</p>',
@@ -91,6 +96,11 @@ export function useEpubExport({
             description: `${i + 1}/${allChapters.length} chapters processed (${progress}%)`,
           });
         } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.startsWith('CHECK_BLOCKED ')
+          )
+            throw error;
           console.error(`Error fetching chapter ${i + 1}:`, error);
           chapterContents.push({
             title: chapter.name,

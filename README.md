@@ -1,6 +1,8 @@
 # Nekori Plugins
 
-This is a fork of the original repository, containing only my custom plugins and hotfixes.
+This repository contains plugins for [Nekori](https://github.com/Yuneko-dev/Nekori), built upon the [LNReader plugins](https://github.com/lnreader/lnreader-plugins) ecosystem and extended with Nekori's dedicated `@nekori` API.
+
+Although novels remain the primary focus, plugins can also provide images, videos, mixed media, and other WebView-renderable content.
 
 > [!WARNING]
 > I highly recommend using this plugin collection with my modified version of Nekori. Most of the plugins here are not compatible with the original LNReader or other apps that support JS plugins (such as Tsundoku, IReader, Kototoro, etc.), as these plugins rely heavily on modern JavaScript libraries.

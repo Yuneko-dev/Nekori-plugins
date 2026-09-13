@@ -1,20 +1,22 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { Filters, FilterTypes } from '@libs/filterInputs';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { encodeHtmlEntities } from '@libs/utils';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { encodeHtmlEntities } from '@nekori/utils';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 const SITE = 'https://animevsub.to';
 
-class AnimeVsubPlugin implements Plugin.PluginBase {
+class AnimeVsubPlugin extends NekoriBasePlugin {
   id = 'yuneko.animevsub';
   name = 'AnimeVsub';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.3';
+  version = '1.0.4';
   contentType = ContentType.VIDEO;
 
   filters = {
@@ -187,7 +189,7 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const url = this.normalizeUrl(chapterPath);
     const res = await fetchApi(url);
     const html = await res.text();
@@ -201,14 +203,17 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
     const isMp4 = streamUrl.includes('.mp4');
     const type = isM3u8 ? 'm3u8' : isMp4 ? 'video-file' : 'iframe';
 
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
-      `<meta name="lnreader-video-type" content="${type}">`,
-      `<meta name="lnreader-video-url" content="${encodeHtmlEntities(streamUrl)}">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
-    ].join('\n');
+    return {
+      state: 'ready',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: [
+        '<meta name="lnreader-video-mode" content="direct">',
+        `<meta name="lnreader-video-type" content="${type}">`,
+        `<meta name="lnreader-video-url" content="${encodeHtmlEntities(streamUrl)}">`,
+      ].join('\n'),
+    };
   }
 
   async searchNovels(

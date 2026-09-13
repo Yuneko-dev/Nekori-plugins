@@ -1,6 +1,6 @@
 $current=$(git rev-parse --abbrev-ref HEAD)
 $version=$(node -e "console.log(require('./package.json').version);")
-$dist="plugins/v$($version)"
+$dist="nekori/v$($version)"
 
 echo "Publishing plugins: $current -> $dist (v$version)"
 

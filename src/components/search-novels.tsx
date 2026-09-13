@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 import { NovelCard } from '@/components/novel-card';
 import { Badge } from '@/components/ui/badge';

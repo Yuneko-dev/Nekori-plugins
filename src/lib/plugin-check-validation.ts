@@ -1,5 +1,7 @@
 import type { Plugin } from '@/types/plugin';
 
+import { requireReadyChapter } from './chapter-content';
+
 export type CheckStatus =
   | 'passed'
   | 'failed'
@@ -81,7 +83,11 @@ export function validatePage(value: unknown): Plugin.SourcePage {
   return value as Plugin.SourcePage;
 }
 
-export function validateChapter(value: unknown): string {
+export function validateChapter(
+  input: unknown,
+  isNekoriPlugin?: boolean,
+): string {
+  const value = requireReadyChapter(input, isNekoriPlugin);
   if (!isText(value) || !value.trim())
     throw new Error('chapter content is empty');
   if (

@@ -13,8 +13,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["../src/*"],
+      "@plugins/*": ["../plugins/*"],
       "@libs/*": ["../src/libs/*"],
-      "@plugins/*": ["../plugins/*"]
+      "@nekori/*": ["../src/nekori/*"]
     }
   },
   "include": [

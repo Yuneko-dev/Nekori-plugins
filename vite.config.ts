@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react-swc';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,6 +17,7 @@ export default defineConfig({
       '@': path.resolve(dirname, './src'),
       '@plugins': path.resolve(dirname, './plugins'),
       '@libs': path.resolve(dirname, './src/libs'),
+      '@nekori': path.resolve(dirname, './src/nekori'),
     },
   },
 });

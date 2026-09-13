@@ -1,9 +1,11 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+
+import { Plugin } from '@/types/plugin';
 
 type GraphItem = {
   id: string;
@@ -58,12 +60,12 @@ type DeviceCodeResponse = {
   error_description?: string;
 };
 
-class OneDrivePlugin implements Plugin.PluginBase {
+class OneDrivePlugin extends NekoriBasePlugin {
   id = 'yuneko.onedrive';
   name = 'OneDrive';
   icon = 'icon.png';
   site = 'https://onedrive.live.com';
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.VIDEO;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -479,7 +481,7 @@ class OneDrivePlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const params = new URLSearchParams(chapterPath.split('?')[1] || '');
     const id = params.get('id');
     if (!id) throw new Error('Invalid OneDrive video ID.');
@@ -492,14 +494,17 @@ class OneDrivePlugin implements Plugin.PluginBase {
         'Microsoft Graph did not return a playable download URL.',
       );
 
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
-      '<meta name="lnreader-video-type" content="video-file">',
-      `<meta name="lnreader-video-url" content="${this.escapeAttribute(url)}">`,
-      '<meta id="no-cache-marker">',
-      '<meta id="no-prefetch-marker">',
-    ].join('\n');
+    return {
+      state: 'ready',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: [
+        '<meta name="lnreader-video-mode" content="direct">',
+        '<meta name="lnreader-video-type" content="video-file">',
+        `<meta name="lnreader-video-url" content="${this.escapeAttribute(url)}">`,
+      ].join('\n'),
+    };
   }
 
   private escapeAttribute(value: string): string {

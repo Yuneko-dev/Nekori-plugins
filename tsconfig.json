@@ -8,7 +8,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@plugins/*": ["./plugins/*"],
-      "@libs/*": ["./src/libs/*"]
+      "@libs/*": ["./src/libs/*"],
+      "@nekori/*": ["./src/nekori/*"]
     },
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "types": ["node", "electron"],

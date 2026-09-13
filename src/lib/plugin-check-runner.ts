@@ -1,18 +1,20 @@
-import type { Plugin } from '@/types/plugin';
 import { storage } from '@libs/storage';
+
 import { resolvePluginAssets } from '@/lib/plugin-asset-paths';
+import type { Plugin } from '@/types/plugin';
+
 import {
+  type CheckStatus,
   classifyError,
+  diagnosticErrorReason,
+  diagnosticPreview,
+  diagnosticStack,
   errorReason,
+  type MethodCheck,
   validateChapter,
   validateNovel,
   validateNovelList,
   validatePage,
-  diagnosticPreview,
-  diagnosticStack,
-  diagnosticErrorReason,
-  type CheckStatus,
-  type MethodCheck,
 } from './plugin-check-validation';
 
 type CheckOptions = {
@@ -239,7 +241,11 @@ export async function checkPlugin(
   if (chapterPath) {
     await run(
       'parseChapter',
-      async () => validateChapter(await plugin!.parseChapter(chapterPath)),
+      async () =>
+        validateChapter(
+          await plugin!.parseChapter(chapterPath),
+          plugin!.isNekoriPlugin === true,
+        ),
       undefined,
       [chapterPath],
     );
@@ -355,10 +361,8 @@ async function runDebug(
         );
         break;
       case 'parseChapter':
-        value = await withTimeout(
-          plugin.parseChapter(
-            ...(args as Parameters<Plugin.PluginSource['parseChapter']>),
-          ),
+        value = await withTimeout<unknown>(
+          plugin.parseChapter(...(args as [string])),
           options.timeout,
         );
         break;
@@ -377,7 +381,8 @@ async function runDebug(
       validateNovelList(value);
     else if (method === 'parseNovel') validateNovel(value);
     else if (method === 'parsePage') validatePage(value);
-    else if (method === 'parseChapter') validateChapter(value);
+    else if (method === 'parseChapter')
+      validateChapter(value, plugin.isNekoriPlugin === true);
     else if (method === 'resolveUrl') validateResolved(value);
     const count = countOf(value);
     const status =

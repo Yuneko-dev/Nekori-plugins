@@ -1,17 +1,19 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
 import { defaultCover } from '@libs/defaultCover';
-import { FilterTypes, Filters } from '@libs/filterInputs';
-import { encodeHtmlEntities } from '@libs/utils';
-import { ContentType, ContentWarning } from '@libs/pluginMetadata';
+import { fetchApi } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
+import { NovelStatus } from '@libs/novelStatus';
+import { NekoriPagePlugin } from '@nekori/plugin';
+import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
+import { encodeHtmlEntities } from '@nekori/utils';
 
-class PixivNovelPlugin implements Plugin.PagePlugin {
+import { Plugin } from '@/types/plugin';
+
+class PixivNovelPlugin extends NekoriPagePlugin {
   id = 'pixiv.novel';
   name = 'Pixiv Novel';
   icon = 'icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.0.15';
+  version = '1.1.0';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 
@@ -258,20 +260,24 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
   /**
    * Parse chapter content
    */
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const novelIdMatch = chapterPath.match(/\/ajax\/novel\/(\d+)/);
-    if (!novelIdMatch) return '';
+    if (!novelIdMatch) throw new Error('Invalid chapter path');
 
     const body = await this.fetchJson(
       `${this.site}/ajax/novel/${novelIdMatch[1]}?lang=en`,
     );
 
     const content = body?.content || '';
-    return `<div>${content
-      .split('\n')
-      .filter((line: string) => line.trim().length > 0)
-      .map((line: string) => `<p>${encodeHtmlEntities(line.trim())}</p>`)
-      .join('<br/>')}</div>`;
+    return {
+      type: 'novel',
+      html: `<div>${content
+        .split('\n')
+        .filter((line: string) => line.trim().length > 0)
+        .map((line: string) => `<p>${encodeHtmlEntities(line.trim())}</p>`)
+        .join('<br/>')}</div>`,
+      state: 'ready',
+    };
   }
 
   /**

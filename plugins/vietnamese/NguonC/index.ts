@@ -1,22 +1,24 @@
-import { fetchApi, fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { Filters, FilterTypes } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi, fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { encodeHtmlEntities, Buffer } from '@libs/utils';
-import { ContentType } from '@libs/pluginMetadata';
 import { storage } from '@libs/storage';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { Buffer, encodeHtmlEntities } from '@nekori/utils';
 import { load } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 const SITE = 'https://phim.nguonc.com';
 const API_BASE = SITE + '/api';
 
-class NguonCPlugin implements Plugin.PluginBase {
+class NguonCPlugin extends NekoriBasePlugin {
   id = 'nguonc';
   name = 'NguonC';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.12';
+  version = '1.1.0';
   customJS = 'player.js';
   contentType = ContentType.VIDEO;
 
@@ -258,7 +260,7 @@ class NguonCPlugin implements Plugin.PluginBase {
 
   // ---------- parseChapter ----------
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const lastSlash = chapterPath.lastIndexOf('/');
     const movieSlug = chapterPath.substring(0, lastSlash);
     const epSlug = chapterPath.substring(lastSlash + 1);
@@ -271,10 +273,16 @@ class NguonCPlugin implements Plugin.PluginBase {
       for (const server of movie.episodes) {
         for (const ep of server.items || []) {
           if (ep.slug === epSlug) {
-            return this.buildPlayerHtml({
-              m3u8: ep.m3u8,
-              embed: ep.embed || '',
-            });
+            return {
+              state: 'ready',
+              type: 'video',
+              noCache: true,
+              noPrefetch: true,
+              html: await this.buildPlayerHtml({
+                m3u8: ep.m3u8,
+                embed: ep.embed || '',
+              }),
+            };
           }
         }
       }
@@ -302,10 +310,7 @@ class NguonCPlugin implements Plugin.PluginBase {
     embed?: string;
   }): Promise<string> {
     const metas: string[] = [
-      '<meta name="lnreader-chapter-type" content="video">',
       '<meta name="lnreader-debug-mode" content="false">',
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
     ];
 
     if (this.enableEmbed) {

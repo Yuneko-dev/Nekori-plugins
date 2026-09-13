@@ -1,13 +1,15 @@
-import { load as parseHTML } from 'cheerio';
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
-import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
-import { storage } from '@libs/storage';
-import { Buffer, encodeHtmlEntities } from '@libs/utils';
-import { cbc } from '@libs/aes';
+import { fetchApi } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
+import { NovelStatus } from '@libs/novelStatus';
+import { storage } from '@libs/storage';
+import { cbc } from '@nekori/aes';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { Buffer, encodeHtmlEntities } from '@nekori/utils';
+import { load as parseHTML } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 const SITE = 'https://tomatomtl.com';
 const CHAPTERS_PER_VOLUME = 50;
@@ -46,12 +48,12 @@ type EncryptedPayload = {
   enc: string;
 };
 
-class TomatoMTLPlugin implements Plugin.PluginBase {
+class TomatoMTLPlugin extends NekoriBasePlugin {
   id = 'tomatomtl';
   name = 'TomatoMTL';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.9';
+  version = '1.1.0';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -526,7 +528,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
   }
 
   // ─── Plugin API: chapter content ───────────────────────────
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const url = `${SITE}${chapterPath.startsWith('/') ? '' : '/'}${chapterPath}`;
     let { html } = await this.fetchHtml(url);
 
@@ -581,7 +583,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
       out.push(`<p>${encodeHtmlEntities(line)}</p>`);
     }
 
-    return out.join('\n');
+    return { state: 'ready', type: 'novel', html: out.join('\n') };
   }
 
   private detectLoginRequired(html: string): boolean {

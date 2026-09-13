@@ -1,16 +1,18 @@
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { load as loadCheerio } from 'cheerio';
 
-class YeuAnimePlugin implements Plugin.PluginBase {
+import { Plugin } from '@/types/plugin';
+
+class YeuAnimePlugin extends NekoriBasePlugin {
   id = 'yuneko.yeuanime';
   name = 'Yêu Anime';
   icon = 'icon.png';
   site = 'https://yeuanime.buzz';
-  version = '1.0.4';
+  version = '1.0.5';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {
@@ -424,7 +426,7 @@ class YeuAnimePlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const url = chapterPath.startsWith('http')
       ? chapterPath
       : this.site + chapterPath;
@@ -504,7 +506,13 @@ class YeuAnimePlugin implements Plugin.PluginBase {
     }
 
     if (validTracks.length === 0) {
-      return '<p style="text-align:center;padding:16px;">Không tìm thấy video.</p><meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>';
+      return {
+        state: 'checkpoint',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: '<p style="text-align:center;padding:16px;">Không tìm thấy video.</p>',
+      };
     }
 
     // ! todo: multi source
@@ -513,14 +521,17 @@ class YeuAnimePlugin implements Plugin.PluginBase {
       !primaryVideoUrl.includes('.m3u8') ||
       primaryVideoUrl.split('https://').length > 1;
 
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
-      `<meta name="lnreader-video-type" content="${isIframe ? 'iframe' : 'm3u8'}">`,
-      `<meta name="lnreader-video-url" content="${primaryVideoUrl}">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
-    ].join('\n');
+    return {
+      state: 'ready',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: [
+        '<meta name="lnreader-video-mode" content="direct">',
+        `<meta name="lnreader-video-type" content="${isIframe ? 'iframe' : 'm3u8'}">`,
+        `<meta name="lnreader-video-url" content="${primaryVideoUrl}">`,
+      ].join('\n'),
+    };
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

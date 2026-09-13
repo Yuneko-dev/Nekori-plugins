@@ -1,10 +1,12 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
-import { encodeHtmlEntities } from '@libs/utils';
 import { storage } from '@libs/storage';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { encodeHtmlEntities } from '@nekori/utils';
+
+import { Plugin } from '@/types/plugin';
 
 import filters from './filters';
 
@@ -74,12 +76,12 @@ function parseList(response: ListResponse): Plugin.NovelItem[] {
   });
 }
 
-class KKPhimPlugin implements Plugin.PluginBase {
+class KKPhimPlugin extends NekoriBasePlugin {
   id = 'kkphim';
   name = 'KKPhim';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.6';
+  version = '1.0.7';
   customJS = 'player.js';
   contentType = ContentType.VIDEO;
 
@@ -191,18 +193,27 @@ class KKPhimPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     if (!chapterPath.startsWith('http')) {
-      return '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/><p style="color:#ff4444;font-size:14px;font-family:sans-serif;text-align:center;padding:16px;">Không tìm thấy nguồn video cho tập phim này.</p>';
+      return {
+        state: 'checkpoint',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: '<p style="color:#ff4444;font-size:14px;font-family:sans-serif;text-align:center;padding:16px;">Không tìm thấy nguồn video cho tập phim này.</p>',
+      };
     }
     const escapedUrl = encodeHtmlEntities(chapterPath);
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="lazy">',
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
-      `<div id="kkphim-player-container" data-m3u8="${escapedUrl}" data-ad-blocker="${this.enableAdBlocker}" style="display:none;"></div>`,
-    ].join('\n');
+    return {
+      state: 'ready',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: [
+        '<meta name="lnreader-video-mode" content="lazy">',
+        `<div id="kkphim-player-container" data-m3u8="${escapedUrl}" data-ad-blocker="${this.enableAdBlocker}" style="display:none;"></div>`,
+      ].join('\n'),
+    };
   }
 
   resolveUrl(path: string): string {

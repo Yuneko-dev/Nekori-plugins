@@ -1,8 +1,11 @@
 import { fetchApi } from '@libs/fetch';
-import { load } from 'cheerio';
-import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { load } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
+
 import css from './css';
 import filters from './filters';
 import {
@@ -13,11 +16,11 @@ import {
   urlToPath,
 } from './utils';
 
-class HakoPlugin implements Plugin.PluginBase {
+class HakoPlugin extends NekoriBasePlugin {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'icon.png';
-  version = '1.2.24';
+  version = '1.3.0';
   filters = filters;
 
   // customCSS = 'style.css';
@@ -419,7 +422,7 @@ class HakoPlugin implements Plugin.PluginBase {
     console.log(novel);
     return novel;
   }
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const html = await this.fetchHtml(
       chapterPath,
       html => load(html)('div#chapter-content').length > 0,
@@ -429,7 +432,7 @@ class HakoPlugin implements Plugin.PluginBase {
     const chapterContainer = $('div#chapter-content').first();
 
     if (!chapterContainer.length) {
-      return '';
+      throw new Error('Chapter content is empty or could not be parsed.');
     }
 
     const protectedContent = chapterContainer
@@ -479,7 +482,7 @@ class HakoPlugin implements Plugin.PluginBase {
       .trim();
 
     if (!chapterText) {
-      return '';
+      throw new Error('Chapter content is empty or could not be parsed.');
     }
 
     let output = `<div>\n${chapterText}\n</div>`;
@@ -541,7 +544,11 @@ class HakoPlugin implements Plugin.PluginBase {
       output = `<div>${volumeName}${chapterName}<h6>${infoComponent.html()}</h6></div>\n${output}`;
     }
 
-    return output;
+    return {
+      html: output,
+      state: 'ready',
+      type: 'novel',
+    };
   }
 
   async searchNovels(

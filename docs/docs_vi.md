@@ -1,5 +1,7 @@
 # Tài liệu phát triển Nekori Plugins
 
+[English](docs.md)
+
 > [!NOTE]
 > Tài liệu này được tạo bởi AI dựa trên mã nguồn của repository. Nội dung đã
 > được đối chiếu với mã nguồn nhưng vẫn có thể lệch — khi nghi ngờ, hãy tin
@@ -7,17 +9,17 @@
 
 Tài liệu tham chiếu để viết plugin trong repository này. Nguồn chính xác nhất là
 `src/types/plugin.ts`; mẫu khung đầy đủ (có chú thích) nằm ở
-`plugins/vietnamese/Template/index.ts` (`PluginBase`) và
-`plugins/vietnamese/Template2/index.ts` (`PagePlugin`).
+`plugins/vietnamese/broken_Template/index.ts` (`NekoriBasePlugin`) và
+`plugins/vietnamese/broken_Template2/index.ts` (`NekoriPagePlugin`).
 
-> Fork này hướng tới [Nekori](https://github.com/Yuneko-dev/Nekori).
-> Một số API bên dưới không tồn tại trong LNReader gốc và được đánh dấu
-> **chỉ eXtended**.
+> Nekori API v1 là contract chính thức. Plugin Nekori không chạy trên LNReader.
+> App Nekori nâng chuỗi chương của LNReader thành object ChapterContent.
 
 - [Cài đặt](#cài-đặt)
 - [Cấu trúc Plugin](#cấu-trúc-plugin)
 - [Các loại Plugin](#các-loại-plugin)
 - [Các trường metadata](#các-trường-metadata)
+- [Manifest repository](#manifest-repository)
 - [Các hàm](#các-hàm)
 - [Các kiểu dữ liệu](#các-kiểu-dữ-liệu)
 - [Bộ lọc (Filters)](#bộ-lọc-filters)
@@ -30,7 +32,7 @@ Tài liệu tham chiếu để viết plugin trong repository này. Nguồn chí
 
 ## Cài đặt
 
-Yêu cầu: kiến thức Git và TypeScript, Node.js >= 20 (khuyến nghị 24).
+Yêu cầu: kiến thức Git và TypeScript, Node.js >= 20.
 
 ```bash
 npm install
@@ -97,27 +99,17 @@ tệp fallback hiện có, không xoá các tệp static không liên quan.
 
 ## Các loại Plugin
 
-| Loại | Dùng khi nào |
+Import abstract class từ `@nekori/plugin` và dùng `extends`:
+
+| Class | Dùng khi nào |
 | --- | --- |
-| `Plugin.PluginBase` | Nguồn thông thường. `parseNovel` trả về toàn bộ danh sách chương. |
-| `Plugin.PagePlugin` | Web phân trang danh sách chương (ví dụ 1000 chương chia thành nhiều trang 50 chương), hoặc bạn muốn gom chương theo volume. |
+| `NekoriBasePlugin` | `parseNovel` trả toàn bộ danh sách chương, kể cả truyện gom volume. |
+| `NekoriPagePlugin` | Danh sách phân trang; `parseNovel` trả `totalPages` nguyên dương, `parsePage` tải từng trang. |
 
-`PagePlugin` khác ở hai điểm: `parseNovel` trả thêm `totalPages`, và bạn phải
-cài đặt `parsePage(novelPath, page)`. `PluginBase` khai báo `parsePage?: never`,
-nên class nào có `parsePage` **bắt buộc** phải khai kiểu là `PagePlugin`, nếu
-không TypeScript sẽ báo lỗi.
-
-```ts
-class MyPlugin implements Plugin.PagePlugin {
-  async parseNovel(
-    novelPath: string,
-  ): Promise<Plugin.SourceNovel & { totalPages: number }> { /* … */ }
-
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    return { chapters: [] };
-  }
-}
-```
+Volume dùng `ChapterItem.page` làm nhãn (ví dụ `'Volume 1'`) trên base plugin.
+Plugin phân trang dùng chuỗi số nguyên dương chuẩn như `'1'`, `'2'`, không dùng nhãn volume.
+`Plugin.PluginBase` và `Plugin.PagePlugin` chỉ dành cho LNReader legacy: `parseChapter(): Promise<string>`.
+Plugin Nekori trả `Promise<Plugin.ChapterContent>`. Hai template được liên kết ở đầu tài liệu chứa class đầy đủ.
 
 ## Các trường metadata
 
@@ -125,26 +117,29 @@ class MyPlugin implements Plugin.PagePlugin {
 | --- | --- | --- | --- |
 | `id` | `string` | có | Duy nhất giữa mọi plugin. Phải là tên tệp hợp lệ — nếu không, bước build manifest sẽ báo lỗi. |
 | `name` | `string` | có | Tên hiển thị. |
-| `icon` | `string` | có | Đường dẫn tương đối so với `public/static/`. |
+| `icon` | `string` | có | Tên file local như `icon.png`, tự thêm namespace `src/<id>/`. Đường dẫn cũ có `/` giữ nguyên. |
 | `site` | `string` | có | URL trang web. Cũng là URL mở trong WebView và là base URL của Reader. |
 | `version` | `string` | có | Theo [SemVer 2.0](https://semver.org/). **Phải tăng version, nếu không pipeline sẽ bỏ qua thay đổi của bạn** (`--only-new` so sánh version). |
+| `isNekoriPlugin` | `true` | kế thừa | Base class đặt; host dùng để chọn contract chương. |
+| `minApiVersion` | `number` | kế thừa | Hiện là 1, đặt tập trung ở `src/nekori/plugin.ts`; API không hỗ trợ bị từ chối cài/chạy. |
+| `outputTarget` | `'js' / 'hermes' / 'all'` | không | No-op: hiện mọi giá trị đều chỉ build JS, chưa có HBC. |
 | `filters` | `Filters` | không | Xem [Bộ lọc](#bộ-lọc-filters). |
 | `pluginSettings` | `Plugin.PluginSettings` | không | Xem [Plugin settings](#plugin-settings-và-storage). |
 | `imageRequestInit` | `Plugin.ImageRequestInit` | không | Bổ sung `method` / `headers` / `body` cho request ảnh, dùng khi web chặn hotlink. |
 | `customCSS` | `string` | không | Đường dẫn tương đối so với `public/static/`. |
 | `customJS` | `string` | không | Đường dẫn tương đối so với `public/static/`; được build từ `webview/`. |
-| `contentType` | `ContentType` | không | `NOVEL`, `IMAGE`, `VIDEO`, `MIXED`. **chỉ eXtended** |
-| `contentWarning` | `ContentWarning` | không | `UNSPECIFIED`, `SAFE`, `MIXED`, `NSFW`. **chỉ eXtended** |
+| `contentType` | `ContentType` | không | `NOVEL`, `IMAGE`, `VIDEO`, `MIXED`. **chỉ Nekori** |
+| `contentWarning` | `ContentWarning` | không | `UNSPECIFIED`, `SAFE`, `MIXED`, `NSFW`. **chỉ Nekori** |
 | `webStorageUtilized` | `boolean` | không | Bật khi plugin cần `localStorage` / `sessionStorage` của WebView Reader (ví dụ session lưu trong web storage thay vì Cookie). |
 
-Quy ước tăng version: `patch` cho sửa lỗi giúp plugin chạy lại (đổi selector,
-sai filter), `minor` cho cải tiến (thêm filter, thêm tuỳ chọn tìm kiếm), `major`
-cho thay đổi lớn (đổi URL site).
+Tăng version của plugin khi phát hành thay đổi. Phiên bản API được quản lý tập trung tại `src/nekori/plugin.ts`.
 
 ```ts
-import { ContentType, ContentWarning } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
 
-class MyPlugin implements Plugin.PluginBase {
+// Trích metadata; cài các method abstract theo template đầy đủ.
+class MyPlugin extends NekoriBasePlugin {
   id = 'myplugin.id';
   name = 'My Plugin';
   icon = 'icon.png';
@@ -153,6 +148,35 @@ class MyPlugin implements Plugin.PluginBase {
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.SAFE;
 }
+```
+
+### Manifest repository
+
+Manifest vẫn là mảng JSON. Build đọc metadata từ instance export trong index.ts bằng runtime mock,
+không duy trì thêm bản metadata viết tay. Language được lấy từ thư mục qua scripts/languages.js;
+URL JS/icon/CSS/customJS được sinh từ cấu hình build và đường dẫn asset.
+Mỗi entry Nekori có isNekoriPlugin: true và minApiVersion: 1. outputTarget chưa sinh HBC và chưa được ghi vào manifest.
+App kiểm tra minApiVersion nếu có (số nguyên dương), từ chối cài/chạy API mới hơn mức hỗ trợ.
+Khi nạp plugin, metadata trong code là nguồn xác định contract; tăng version để app nhận bản cập nhật.
+
+Ví dụ một entry (URL minh họa):
+
+```json
+[
+  {
+    "id": "example",
+    "name": "Example",
+    "site": "https://example.com",
+    "lang": "English",
+    "version": "1.0.0",
+    "url": "https://repo.example/plugins/english/Example.js",
+    "iconUrl": "https://repo.example/static/src/example/icon.png",
+    "contentWarning": 0,
+    "contentType": "novel",
+    "isNekoriPlugin": true,
+    "minApiVersion": 1
+  }
+]
 ```
 
 ## Các hàm
@@ -167,35 +191,64 @@ popularNovels(
 ```
 
 Được gọi khi mở trang đầu của plugin. `options.showLatestNovels` đánh dấu mục
-"Latest". **Khi `showLatestNovels` bằng true, ứng dụng không gửi filters** — hãy
-dùng bộ mặc định của riêng bạn thay vì đọc `options.filters`. `options.filters`
+"Latest". Không giả định Latest bỏ filters; host có thể truyền giá trị bộ lọc
+hoặc mặc định của plugin. `options.filters`
 chứa các cặp `{ type, value }`, khoá trùng với khoá trong định nghĩa filter.
 
 ### parseNovel
 
 ```ts
 parseNovel(novelPath: string): Promise<Plugin.SourceNovel>
-// PagePlugin: Promise<Plugin.SourceNovel & { totalPages: number }>
+// NekoriPagePlugin: Promise<Plugin.SourceNovel & { totalPages: number }>
 ```
 
 `novelPath` chính là `path` trong `NovelItem` bạn đã trả về, và
 `SourceNovel.path` nên giữ nguyên giá trị đó.
 
-### parsePage — chỉ `PagePlugin`
+### parsePage — chỉ `NekoriPagePlugin`
 
 ```ts
 parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage>
 ```
 
-Trả về danh sách chương của một trang/volume.
+Trả về danh sách chương của một trang được đánh số.
 
 ### parseChapter
 
 ```ts
-parseChapter(chapterPath: string): Promise<string>
+async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
+  const html = await fetchText(this.site + chapterPath);
+  return { state: 'ready', type: 'novel', html };
+}
 ```
 
-Trả về nội dung chương dưới dạng chuỗi HTML.
+`ChapterContent` là object chính thức trong Electron và Android; chỉ `html` dùng để render.
+`type` bắt buộc: `novel | mixed | image | video`. Mọi loại vẫn render bằng HTML.
+
+| Trường | Ý nghĩa |
+| --- | --- |
+| `state: 'ready'` | Nội dung sử dụng được. |
+| `state: 'checkpoint'` | Được hiển thị HTML xác minh/đăng nhập/chương khóa, nhưng download và EPUB export phải báo lỗi. |
+| `noCache?: boolean` | Không tái sử dụng phản hồi trong cache đọc/runtime; không tự cấm download. |
+| `noPrefetch?: boolean` | Dừng đọc trước từ chương này, chặn nối chương vào infinite reader; không tự cấm download. |
+| `checkpointMessage?: string` | Thông báo tùy chọn của checkpoint. |
+
+Checkpoint khai báo cả hai cờ true; normalizer cũng ép chúng thành true.
+
+```ts
+return {
+  state: 'checkpoint',
+  type: 'novel',
+  html: '<div id="captcha-placeholder">Please verify and reload.</div>',
+  checkpointMessage: 'Verification required',
+  noCache: true,
+  noPrefetch: true,
+};
+```
+
+Throw lỗi nếu không có HTML hữu ích. Checkpoint không tự giải captcha hoặc retry;
+customJS xử lý tương tác và yêu cầu reload qua bridge reader hiện có.
+LNReader trả chuỗi được nâng thành object; không hạ object Nekori về chuỗi hay tạo lại marker policy.
 
 ### searchNovels
 
@@ -257,9 +310,7 @@ Giá trị `NovelStatus`: `Unknown`, `Ongoing`, `Completed`, `Licensed`,
 | `page` | `string` | không | Gom nhóm theo trang/volume — xem bên dưới. |
 | `scanlator` | `string \| string[]` | không | Nhóm dịch. |
 
-Trong ứng dụng gốc, `page` là chỉ số trang của `PagePlugin`. Bản patch của
-Ellie chấp nhận chuỗi tuỳ ý và hiển thị nó như tên volume (giống Hako), nên
-`page: 'Volume 1'` là hợp lệ.
+Dùng `page: 'Volume 1'` làm nhãn volume trên base plugin. Plugin phân trang dùng chuỗi số trang, với `totalPages` nguyên dương.
 
 ### SourcePage
 
@@ -317,7 +368,7 @@ const { include, exclude } = options.filters.tags.value;
 ## Plugin settings và storage
 
 `pluginSettings` tạo các tuỳ chọn cho người dùng trong màn hình cài đặt plugin
-của ứng dụng. **Chỉ eXtended.** Cần tải lại ứng dụng để thay đổi có hiệu lực.
+của ứng dụng. Tải lại plugin/app để thay đổi có hiệu lực.
 
 ```ts
 pluginSettings: Plugin.PluginSettings = {
@@ -367,39 +418,33 @@ gì WebView Reader đã ghi, do ứng dụng đưa cho plugin. Đặt
 
 ## Thư viện được phép import
 
-Mã plugin bị ESLint chặn mọi import trừ danh sách cho phép. Import ngoài danh
-sách là **lỗi**:
+Allowlist hiện tại:
 
-`@libs/*`, `@/types/plugin`, `cheerio`, `htmlparser2`, `dayjs`, `urlencode`,
-`node-html-markdown`.
+| Namespace | Exports / modules |
+| --- | --- |
+| `@libs/*` | `fetch`, `storage`, `filterInputs`, `novelStatus`, `defaultCover`, `isAbsoluteUrl` |
+| `@libs/aes` | `gcm` |
+| `@libs/utils` | `utf8ToBytes`, `bytesToUtf8` |
+| `@nekori/plugin` | `NekoriBasePlugin`, `NekoriPagePlugin` |
+| `@nekori/pluginMetadata` | `ContentType`, `ContentWarning` |
+| `@nekori/aes` | `gcm`, `ctr`, `ecb`, `cbc`, `cfb`, `gcmsiv`, `aeskw`, `aeskwp`, `cmac`, `aessiv` |
+| `@nekori/utils` | `Buffer`, `NodeCrypto`, `getUserAgent`, `encodeHtmlEntities`, `decodeHtmlEntities` |
+| `@nekori/cookie` | `set`, `get`, `setFromResponse`, `flush`, `removeSessionCookies` |
 
-Các module `@libs` hiện có: `fetch`, `storage`, `filterInputs`, `novelStatus`,
-`defaultCover`, `isAbsoluteUrl`, `utils`, `aes`, `cookie`, `pluginMetadata`.
-`@libs/webview` cố ý không được phép trong mã nguồn plugin đang hoạt động.
-Giữ `src/lib/webview.ts` và re-export `src/libs/webview.ts` cho phần host/browser;
-không thêm import này vào plugin để vượt qua guard.
+Ngoài ra: `@/types/plugin`, `cheerio`, `htmlparser2`, `dayjs`, `urlencode`, `node-html-markdown`.
+Import tương đối phải nằm trong thư mục plugin.
 
-```ts
-import { fetchApi, fetchText, fetchProto, type FetchInit } from '@libs/fetch';
-```
+Build nhúng class @nekori/plugin và constants metadata; các API runtime khác do host cung cấp. @libs/cookie, @libs/pluginMetadata, @libs/webview không thuộc API hiện tại.
 
-- `fetchApi(url, init)` — dùng như Fetch API thông thường.
-- `fetchText(url, init?, encoding?)` — trả text đã decode, mặc định `utf-8`; trả
-  `''` nếu thất bại.
-- `fetchProto<T>({ proto, requestType, requestData?, responseType }, url, init?)`
-  — request/response dạng protobuf.
+@nekori/webview chỉ là stub và không nằm trong allowlist: solveCloudflare trả false, solveCloudflareTurnstile reject. Không dùng như solver hoạt động.
 
-Những API sau **chỉ chạy trên eXtended**, ESLint sẽ cảnh báo khi bạn import và
-nhắc ghi chú điều đó vào README của plugin:
+NodeCrypto dùng Node trong Electron và crypto-browserify trên Android; chỉ dùng thuật toán có ở cả hai. cookie.flush() ghi cookie.
 
-- `@libs/aes`: mọi cipher trừ `gcm` (`ctr`, `ecb`, `cbc`, `cfb`, `gcmsiv`,
-  `aeskw`, `aeskwp`, `cmac`, `aessiv`).
-- `@libs/utils`: `Buffer`, `NodeCrypto`, `getUserAgent`, `encodeHtmlEntities`,
-  `decodeHtmlEntities`.
-- `@libs/cookie` (mọi import).
+- `fetchApi(url, init?)`: Response; kiểm tra status trước khi đọc body.
+- `fetchText(url, init?, encoding?)`: decode text (mặc định UTF-8), trả chuỗi rỗng khi thất bại.
+- `fetchProto<T>({ proto, requestType, requestData?, responseType }, url, init?)`: protobuf.
 
-Plugin và webview được bundle trực tiếp từ TypeScript sang ES2020 cho Hermes của
-Nekori. API chỉ có trên trình duyệt vẫn có thể lỗi trên thiết bị.
+Bundle nhắm ES2020. Chưa có HBC. Electron dùng để dev, kiểm thử release trên app.
 
 ## Gỡ lỗi (Debug)
 
@@ -499,7 +544,7 @@ WebView của ứng dụng.
   khi chạy Playground.
 - DevTools: `F12` trong tab Preview, hoặc icon debug trên tab WebView.
 
-### 2. serve:dev (kiểm thử trực tiếp trên ứng dụng LNReader)
+### 2. serve:dev (kiểm thử release trên ứng dụng Nekori)
 
 Dành cho bước kiểm tra cuối. Lệnh này biên dịch plugin và dựng một server local
 để bạn thêm vào app trên điện thoại.
@@ -532,13 +577,15 @@ chứa `/` vẫn giữ nguyên.
 Lưu ý về môi trường Reader:
 
 - Nội dung chương được bọc trong `<div id="LNReader-chapter">`.
-- Kết quả của `parseChapter` đã được chuẩn hoá, nên thẻ `<script>` nội tuyến có
+- App xử lý `ChapterContent.html`, nên thẻ `<script>` nội tuyến có
   thể không chạy — hãy đưa logic vào `customJS`.
-- Location của trang là **URL site của plugin**, không phải URL của chương.
+- Không suy ra danh tính chương từ `window.location`; dùng bridge reader.
+  Preview Electron dùng `plugin.site` làm base URL; Android chọn base URL từ
+  URL chương, truyện và nguồn.
 - Xem `src/lib/reader-mock.ts` để biết ngữ cảnh JS mà ứng dụng cung cấp
   (`window.reader`, `window.tts`, `window.pageReader`, `window.van`).
 
-Một số API hữu ích (**chỉ eXtended**):
+Một số API hữu ích (**chỉ Nekori**):
 
 ```js
 window.reader.refetch();                    // buộc tải lại, bỏ qua cache
@@ -558,14 +605,19 @@ thư viện ngoài — chỉ cần trả về HTML chứa các thẻ `<meta>` đ
 Dành cho trang mà bạn bóc tách được link video ngay trong TypeScript của plugin:
 
 ```ts
-async parseChapter(chapterPath: string): Promise<string> {
+async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
   const videoUrl = 'https://example.com/video.m3u8';
-  return [
-    '<meta name="lnreader-chapter-type" content="video">',  // bắt buộc
-    '<meta name="lnreader-video-mode" content="direct">',
-    '<meta name="lnreader-video-type" content="m3u8">',
-    `<meta name="lnreader-video-url" content="${videoUrl}">`,
-  ].join('\n');
+  return {
+    state: 'ready',
+    type: 'video',
+    noCache: true,
+    noPrefetch: true,
+    html: [
+      '<meta name="lnreader-video-mode" content="direct">',
+      '<meta name="lnreader-video-type" content="m3u8">',
+      `<meta name="lnreader-video-url" content="${videoUrl}">`,
+    ].join('\n'),
+  };
 }
 ```
 
@@ -587,12 +639,17 @@ captcha, tự giải mã m3u8, tạo blob), hoặc khi cần truyền tuỳ ch�
 thẻ meta không mang được chúng:
 
 ```ts
-async parseChapter(chapterPath: string): Promise<string> {
-  return [
-    '<meta name="lnreader-chapter-type" content="video">',
-    '<meta name="lnreader-video-mode" content="lazy">',
-    '<meta name="lnreader-debug-mode" content="true">', // hiện log overlay trên màn hình
-  ].join('\n');
+async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
+  return {
+    state: 'ready',
+    type: 'video',
+    noCache: true,
+    noPrefetch: true,
+    html: [
+      '<meta name="lnreader-video-mode" content="lazy">',
+      '<meta name="lnreader-debug-mode" content="true">', // hiện log overlay trên màn hình
+    ].join('\n'),
+  };
 }
 ```
 
@@ -686,7 +743,7 @@ Lỗi được hiển thị cho người dùng dưới dạng banner ngay trong 
 gì bị nuốt im lặng, nhưng cũng không có gì ném ngược về plugin của bạn. Khi phát
 triển, hãy đọc overlay debug hoặc cắm `chrome://inspect`.
 
-Toàn bộ API: [`src/lib/core-player.js`](../src/lib/core-player.js).
+Toàn bộ API: [`src/lib/assets/core-player.js`](../src/lib/assets/core-player.js).
 
 ### Cấu hình dash.js
 
@@ -760,12 +817,10 @@ của Chromium **không** phải nguyên nhân — nó in ra cả khi gọi thà
 
 ## Các thẻ meta đặc biệt
 
-Thêm vào kết quả trả về của `parseChapter`.
+Dùng các trường `ChapterContent.noCache`, `noPrefetch`, `type`; plugin Nekori không phát `no-cache-marker`, `no-prefetch-marker` hoặc `lnreader-chapter-type`. Chỉ adapter legacy đọc chúng. Các thẻ video bên dưới vẫn nằm trong `ChapterContent.html`.
 
 | Thẻ | Tác dụng |
 | --- | --- |
-| `<meta id="no-cache-marker" />` | Không cache chương này. |
-| `<meta id="no-prefetch-marker" />` | Không tải trước chương kế tiếp. |
 | `<meta id="lnreader-video-disable-progress" />` | Chương video không lưu tiến độ (ví dụ Live, không có thời điểm kết thúc). Player chuyển sang skin live, đồng thời chương này cũng không hỗ trợ tải xuống. |
 | `<meta name="lnreader-video-poster" content="…" />` | Ảnh tĩnh hiện trước khi phát. |
 | `<meta name="lnreader-video-thumbnails" content="…" />` | File WebVTT storyboard cho ảnh preview khi tua. Xem cảnh báo bên dưới. |
@@ -777,7 +832,4 @@ chắc chắn có gửi header CORS.
 
 ## Captcha và các vấn đề bên lề
 
-1. Ưu tiên mở trang web bằng tab WebView và giải captcha ở đó trước.
-2. Nếu trang web chặn WebView, thử đổi User-Agent trong phần cài đặt.
-3. Nếu vẫn không được, có thể render captcha ngay trong Reader — do kết quả của
-   `parseChapter` đã được chuẩn hoá, hãy điều khiển bằng `customJS`.
+Nếu site cho phép, mở WebView để đăng nhập/xác minh. Khi cần tương tác trong reader (như Sáng Tác Việt), trả checkpoint với HTML và hai cờ true như ví dụ parseChapter. Custom JS dùng bridge reader hiện có để xử lý và yêu cầu reload. Checkpoint phải bị tính là lỗi download và không được nối lặp vào infinite reader. API v1 chưa thêm IPC plugin–customJS tổng quát hoặc solver tự động.

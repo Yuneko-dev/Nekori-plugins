@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { Plugin } from '@/types/plugin';
+// import { Plugin } from '@/types/plugin'; // apparently unused
 
 export type EpubOptions = {
   title: string;

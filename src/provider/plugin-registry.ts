@@ -1,5 +1,5 @@
-import type { Plugin } from '@/types/plugin';
 import { resolvePluginAssets } from '@/lib/plugin-asset-paths';
+import type { Plugin } from '@/types/plugin';
 
 const pluginModules = import.meta.glob<Plugin.PluginSource>(
   ['/plugins/*/*/index.ts', '!/plugins/*/broken_*/**', '!/plugins/multisrc/**'],

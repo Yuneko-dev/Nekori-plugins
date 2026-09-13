@@ -1,8 +1,9 @@
-import React from 'react';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { FilterTypes } from '@libs/filterInputs';
 import type { Filter } from '@libs/filterInputs';
+import { FilterTypes } from '@libs/filterInputs';
+import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 
 type ExcludableCheckboxFilterProps = {
   filter: {

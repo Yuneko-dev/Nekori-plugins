@@ -1,4 +1,12 @@
-import React, { useEffect, useState, ReactNode } from 'react';
+import {
+  AnyFilterValue,
+  Filters,
+  FilterToValues,
+  FilterTypes,
+} from '@libs/filterInputs';
+import { RotateCcw } from 'lucide-react';
+import React, { ReactNode, useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -8,18 +16,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import {
-  AnyFilterValue,
-  Filters,
-  FilterToValues,
-  FilterTypes,
-} from '@libs/filterInputs';
+
+import { CheckboxFilter } from './checkbox-filter';
+import { ExcludableCheckboxFilter } from './excludable-checkbox-filter';
 import { PickerFilter } from './picker-filter';
 import { SwitchFilter } from './switch-filter';
 import { TextFilter } from './text-filter';
-import { CheckboxFilter } from './checkbox-filter';
-import { ExcludableCheckboxFilter } from './excludable-checkbox-filter';
-import { RotateCcw } from 'lucide-react';
 
 const renderFilters = (
   filters: Filters | undefined,

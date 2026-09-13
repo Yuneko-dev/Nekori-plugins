@@ -113,4 +113,4 @@ class SessionStorage {
 export const storage = new Storage();
 export const localStorage = new LocalStorage();
 export const sessionStorage = new SessionStorage();
-export { Storage, LocalStorage, SessionStorage };
+export { LocalStorage, SessionStorage, Storage };

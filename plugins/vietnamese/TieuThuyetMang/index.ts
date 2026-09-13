@@ -1,11 +1,13 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
-import { NovelStatus } from '@libs/novelStatus';
+import { fetchApi } from '@libs/fetch';
 import { Filters } from '@libs/filterInputs';
-import { set } from '@libs/cookie';
-import { encodeHtmlEntities } from '@libs/utils';
+import { NovelStatus } from '@libs/novelStatus';
+import { set } from '@nekori/cookie';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { encodeHtmlEntities } from '@nekori/utils';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 type TieuThuyetMangStory = {
   slug?: string;
@@ -17,12 +19,12 @@ type TieuThuyetMangSearchResponse = {
   stories?: TieuThuyetMangStory[];
 };
 
-class TieuThuyetMangPlugin implements Plugin.PluginBase {
+class TieuThuyetMangPlugin extends NekoriBasePlugin {
   id = 'tieuthuyetmang.com';
   name = 'Tiểu Thuyết Mạng';
   icon = 'icon.png';
   site = 'https://tieuthuyetmang.com';
-  version = '1.0.10';
+  version = '1.1.0';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -291,7 +293,7 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     await this.beforeRequest();
     const response = await fetchApi(new URL(chapterPath, this.site).toString());
     const html = await response.text();
@@ -305,12 +307,16 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
       );
     }
 
-    return `<div>${chapterContent
-      .html()
-      ?.trim()
-      .split('\n')
-      .map(line => `<p>${encodeHtmlEntities(line)}</p>`)
-      .join('<br>')}<div>`;
+    return {
+      state: 'ready',
+      type: 'novel',
+      html: `<div>${chapterContent
+        .html()
+        ?.trim()
+        .split('\n')
+        .map(line => `<p>${encodeHtmlEntities(line)}</p>`)
+        .join('<br>')}<div>`,
+    };
   }
 
   async searchNovels(

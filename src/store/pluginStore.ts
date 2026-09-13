@@ -1,6 +1,7 @@
-import { Plugin } from '@/types/plugin';
-import { StoreCreator } from '.';
 import plugins from '@/provider/plugin-registry';
+import { Plugin } from '@/types/plugin';
+
+import { StoreCreator } from '.';
 
 export type PluginStore = {
   pluginItem?: Plugin.PluginItem;

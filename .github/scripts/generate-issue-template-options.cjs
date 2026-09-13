@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 const version = require('../../package.json').version;
-const dist = `plugins/v${version}`;
+const dist = `nekori/v${version}`;
 const fs = require('fs');
 
 const rawText = fs.readFileSync(

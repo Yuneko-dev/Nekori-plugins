@@ -1,9 +1,11 @@
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+
+import { Plugin } from '@/types/plugin';
 
 type PlaylistItem = {
   name: string;
@@ -126,11 +128,11 @@ const iptvPlaylistParser = {
   },
 };
 
-class M3UPlayerPlugin implements Plugin.PluginBase {
+class M3UPlayerPlugin extends NekoriBasePlugin {
   id = 'yuneko.m3uplayer';
   name = 'M3U Player';
   icon = 'icon.png';
-  version = '1.0.5';
+  version = '1.1.0';
   contentType = ContentType.VIDEO;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -217,22 +219,25 @@ class M3UPlayerPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     if (!chapterPath.startsWith('/m3u?')) {
       throw new Error('Invalid URL');
     }
     const params = new URLSearchParams(chapterPath.split('?')[1]);
     const url = params.get('url') || '';
 
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
-      '<meta name="lnreader-video-type" content="m3u8">',
-      `<meta name="lnreader-video-url" content="${url}">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
-      '<meta id="lnreader-video-disable-progress"/>',
-    ].join('\n');
+    return {
+      noCache: true,
+      noPrefetch: true,
+      type: 'video',
+      html: [
+        '<meta name="lnreader-video-mode" content="direct">',
+        '<meta name="lnreader-video-type" content="m3u8">',
+        `<meta name="lnreader-video-url" content="${url}">`,
+        '<meta id="lnreader-video-disable-progress"/>',
+      ].join('\n'),
+      state: 'ready',
+    };
   }
 
   resolveUrl(path: string): string {

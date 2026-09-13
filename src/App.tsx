@@ -1,8 +1,10 @@
 import React from 'react';
+
 import { Toaster } from '@/components/ui/sonner';
-import Home from './pages/home';
+
 import { TooltipProvider } from './components/ui/tooltip';
 import { useTheme } from './hooks/useTheme';
+import Home from './pages/home';
 
 function App() {
   useTheme();

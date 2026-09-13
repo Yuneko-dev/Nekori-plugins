@@ -1,4 +1,5 @@
-import type { FilterToValues, Filters } from '@libs/filterInputs';
+import type { Filters, FilterToValues } from '@libs/filterInputs';
+
 import type { ContentType, ContentWarning } from './constants';
 export namespace Plugin {
   export type ChapterItem = {
@@ -53,8 +54,6 @@ export namespace Plugin {
     version: string;
     icon: string;
     site: string;
-    contentWarning?: ContentWarning;
-    contentType?: ContentType;
   };
   export type ImageRequestInit = {
     [x: string]:
@@ -128,8 +127,6 @@ export namespace Plugin {
     /** Output filename; source is webview/style.css. */
     customCSS?: string;
     site: string;
-    contentWarning?: ContentWarning;
-    contentType?: ContentType;
     imageRequestInit?: ImageRequestInit;
     filters?: Filters;
     version: string;
@@ -147,23 +144,76 @@ export namespace Plugin {
      * @returns novel metadata and its first page
      */
     parseNovel(novelPath: string): Promise<SourceNovel>;
-    parseChapter(chapterPath: string): Promise<string>;
     searchNovels(searchTerm: string, pageNo: number): Promise<NovelItem[]>;
     resolveUrl?(path: string, isNovel?: boolean): string;
   };
 
   export type PluginBase = PluginCommon & {
+    isNekoriPlugin?: false;
     parsePage?: never;
+    parseChapter(chapterPath: string): Promise<string>;
   };
 
   export type PagePlugin = Omit<PluginCommon, 'parseNovel'> & {
+    isNekoriPlugin?: false;
     parseNovel(
       novelPath: string,
     ): Promise<SourceNovel & { totalPages: number }>;
     parsePage(novelPath: string, page: string): Promise<SourcePage>;
+    parseChapter(chapterPath: string): Promise<string>;
   };
 
-  export type PluginSource = PluginBase | PagePlugin;
+  export type ChapterContentType = 'novel' | 'mixed' | 'image' | 'video';
+
+  /** HTML is rendered unchanged. Checkpoint content is transient and must never be downloaded. */
+  export type ChapterContent =
+    | {
+        state: 'ready';
+        type: ChapterContentType;
+        html: string;
+        /** Do not reuse this response in reader or source caches; downloads remain allowed. */
+        noCache?: boolean;
+        /** Stop automatic read-ahead from this chapter. */
+        noPrefetch?: boolean;
+      }
+    | {
+        state: 'checkpoint';
+        type: ChapterContentType;
+        html: string;
+        /** Optional explanation shown by checks and download failures. HTML may contain interactive UI. */
+        checkpointMessage?: string;
+        noCache: true;
+        noPrefetch: true;
+      };
+
+  export type NekoriMetadata = {
+    readonly isNekoriPlugin: true;
+    readonly minApiVersion: number;
+    contentType: ContentType;
+    contentWarning: ContentWarning;
+    outputTarget: 'hermes' | 'js' | 'all';
+  };
+
+  export type NekoriBasePlugin = PluginCommon &
+    NekoriMetadata & {
+      parsePage?: never;
+      parseChapter(chapterPath: string): Promise<ChapterContent>;
+    };
+
+  export type NekoriPagePlugin = Omit<PluginCommon, 'parseNovel'> &
+    NekoriMetadata & {
+      parseNovel(
+        novelPath: string,
+      ): Promise<SourceNovel & { totalPages: number }>;
+      parsePage(novelPath: string, page: string): Promise<SourcePage>;
+      parseChapter(chapterPath: string): Promise<ChapterContent>;
+    };
+
+  export type PluginSource =
+    | PluginBase
+    | PagePlugin
+    | NekoriBasePlugin
+    | NekoriPagePlugin;
 }
 
 export namespace HTMLParser2Util {

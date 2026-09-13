@@ -1,13 +1,14 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+
+import { resolveNetworkOptions } from './check-network.js';
 import { compiledPlugins } from './plugin-build-utils.js';
 import { probeSite } from './site-probe.js';
-import { resolveNetworkOptions } from './check-network.js';
 
 const DEFAULT_OUTPUT = 'broken-sites-report.json';
 export function parseArgs(argv) {

@@ -1,5 +1,5 @@
+import { ArrowRight, Copy } from 'lucide-react';
 import React from 'react';
-import { Copy, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';

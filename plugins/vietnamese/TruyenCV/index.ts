@@ -1,9 +1,10 @@
-import { load as parseHTML } from 'cheerio';
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
-import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
+import { NovelStatus } from '@libs/novelStatus';
+import { load as parseHTML } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 const API_BASE = 'https://truyencv.io/wp-json';
 

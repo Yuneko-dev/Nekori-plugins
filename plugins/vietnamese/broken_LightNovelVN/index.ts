@@ -1,3 +1,4 @@
+import { NekoriPagePlugin } from '@nekori/plugin';
 import { CheerioAPI, load as parseHTML } from 'cheerio';
 import { fetchApi } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
@@ -13,10 +14,10 @@ type SearchedResult = {
   data?: SearchedNovel[];
 };
 
-class LightNovelVN implements Plugin.PagePlugin {
+class LightNovelVN extends NekoriPagePlugin {
   id = 'lightnovel.vn';
   name = 'Light Novel VN';
-  version = '1.0.0';
+  version = '1.0.1';
   icon = 'src/vi/lightnovelvn/icon.png';
   filters?: Filters | undefined;
   site = 'https://lightnovel.vn';
@@ -130,14 +131,14 @@ class LightNovelVN implements Plugin.PagePlugin {
       chapters,
     };
   }
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const body = await fetchApi(this.site + chapterPath).then(r => r.text());
 
     const loadedCheerio = parseHTML(body);
 
     const chapterText = loadedCheerio('div.chapter-content').html() || '';
 
-    return chapterText;
+    return { state: 'ready', type: 'novel', html: chapterText };
   }
   async searchNovels(
     searchTerm: string,

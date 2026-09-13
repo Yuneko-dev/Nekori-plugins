@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Copy, FileText, ExternalLink } from 'lucide-react';
+import { Copy, ExternalLink, FileText } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAppStore } from '@/store';
+import { normalizeChapterContent } from '@/lib/chapter-content';
 import { buildPreviewDocument } from '@/lib/preview-document';
+import { useAppStore } from '@/store';
+import type { Plugin } from '@/types/plugin';
 
 export default function ParseChapterSection() {
   const plugin = useAppStore(state => state.plugin);
@@ -27,7 +29,9 @@ export default function ParseChapterSection() {
   const [chapterPath, setChapterPath] = useState('');
   /** "Novel name - Chapter name", only known when navigated from Parse Novel. */
   const [chapterTitle, setChapterTitle] = useState('');
-  const [chapterText, setChapterText] = useState('');
+  const [chapterContent, setChapterContent] =
+    useState<Plugin.ChapterContent | null>(null);
+  const chapterText = chapterContent?.html || '';
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
 
@@ -35,9 +39,19 @@ export default function ParseChapterSection() {
     if (plugin && path.trim()) {
       setLoading(true);
       setFetchError('');
+      setChapterContent(null);
       try {
         const result = await plugin.parseChapter(path);
-        setChapterText(result);
+        const content = normalizeChapterContent(
+          result,
+          plugin.isNekoriPlugin === true,
+        );
+        setChapterContent(content);
+        if (content.state === 'checkpoint')
+          setFetchError(
+            content.checkpointMessage ||
+              'Chapter requires interaction. Open Preview to continue.',
+          );
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch chapter';
@@ -87,7 +101,7 @@ export default function ParseChapterSection() {
   ]);
 
   const openPreview = async () => {
-    if (!plugin || !chapterText) return;
+    if (!plugin || !chapterContent?.html) return;
     if (!window.electronAPI) {
       toast.error('Preview requires the Electron playground');
       return;
@@ -100,7 +114,7 @@ export default function ParseChapterSection() {
         pluginId: plugin.id,
         title,
         html: buildPreviewDocument({
-          html: chapterText,
+          chapter: chapterContent,
           title,
           customCSS: plugin.customCSS,
           customJS: plugin.customJS,
@@ -309,7 +323,8 @@ export default function ParseChapterSection() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setChapterText('');
+                  setChapterContent(null);
+                  setFetchError('');
                   setChapterPath('');
                   setChapterTitle('');
                 }}

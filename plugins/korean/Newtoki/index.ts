@@ -1,26 +1,28 @@
-import { load as loadCheerio } from 'cheerio';
-import { fetchApi, fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
-import { FilterTypes, Filters } from '@libs/filterInputs';
+import { fetchApi, fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
+import { get, setFromResponse } from '@nekori/cookie';
+import { NekoriBasePlugin } from '@nekori/plugin';
 import {
   Buffer,
-  NodeCrypto,
-  getUserAgent,
   encodeHtmlEntities,
-} from '@libs/utils';
-import { get, setFromResponse } from '@libs/cookie';
+  getUserAgent,
+  NodeCrypto,
+} from '@nekori/utils';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 // https://t.me/s/newtoki_url
 const SITE = 'https://toki31.com';
 
-class NewtokiPlugin implements Plugin.PluginBase {
+class NewtokiPlugin extends NekoriBasePlugin {
   id = 'newtoki.novel';
   name = 'Newtoki';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.11';
+  version = '1.1.0';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -266,7 +268,7 @@ class NewtokiPlugin implements Plugin.PluginBase {
     return `20${yy}-${mm}-${dd}`;
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const url = `${this.site}${chapterPath}`;
     const userAgent = getUserAgent();
 
@@ -371,7 +373,11 @@ class NewtokiPlugin implements Plugin.PluginBase {
     }
 
     if (!chapterHtml) throw new Error('No content available.');
-    return chapterHtml;
+    return {
+      html: chapterHtml,
+      state: 'ready',
+      type: 'novel',
+    };
   }
 
   async searchNovels(

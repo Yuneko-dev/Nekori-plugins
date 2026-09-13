@@ -1,6 +1,6 @@
 {
   "name": "nekori-plugins",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "description": "Plugins repo for Nekori",
   "main": "index.js",
   "type": "module",
@@ -33,7 +33,7 @@
     "build:prepare": "npm run clean:multisrc && npm run build:multisrc && npm run build:plugins && npm run build:assets",
     "test:build": "node scripts/check-plugin-assets.js",
     "check:plugins": "npm run build:prepare && node scripts/check-plugins.js",
-    "test:checks": "node scripts/check-site-probe.js && node scripts/check-plugin-runner.js"
+    "test:checks": "node scripts/check-chapter-content.js && node scripts/check-site-probe.js && node scripts/check-plugin-runner.js"
   },
   "author": "aiko-chan-ai",
   "license": "MIT",
@@ -84,6 +84,7 @@
     "electron": "github:castlabs/electron-releases#v43.0.0+wvcus",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-simple-import-sort": "12.1.1",
     "globals": "^15.6.0",
     "htmlparser2": "^9.1.0",
     "http-proxy": "^1.18.1",
@@ -111,5 +112,12 @@
   },
   "lint-staged": {
     "**/*.{js,ts,jsx,tsx}": "prettier --write"
+  },
+  "allowScripts": {
+    "@swc/core@1.11.22": true,
+    "@tailwindcss/oxide@4.1.14": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true,
+    "protobufjs@7.6.6": true
   }
 }

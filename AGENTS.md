@@ -111,7 +111,7 @@ export after esbuild assigns `module.exports`.
 Metadata field initializers must be plain values. Calls into real `@libs` APIs
 during construction receive the proxy, not a runtime value.
 
-Publishing creates orphan `plugins/v<package version>` branches and copies
+Publishing creates orphan `nekori/v<package version>` branches and copies
 `.js/plugins` to `.js/src/plugins` for legacy repository paths. Never put
 type-checking in the publish build path; CI checks TypeScript separately.
 

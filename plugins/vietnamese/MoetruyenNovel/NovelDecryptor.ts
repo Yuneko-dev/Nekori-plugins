@@ -1,6 +1,7 @@
-import { fetchApi } from '@libs/fetch';
-import { Buffer } from '@libs/utils';
 import { gcm } from '@libs/aes';
+import { fetchApi } from '@libs/fetch';
+import { Buffer } from '@nekori/utils';
+
 import { ChapterDocument, NovelAsset, NovelReaderConfig } from './interface';
 
 const utf8Encoder = new TextEncoder();

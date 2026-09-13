@@ -1,8 +1,10 @@
-import esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+
+import esbuild from 'esbuild';
+
 import { compiledPlugins, staticPath } from './plugin-build-utils.js';
 
 export function planAssets(plugins) {

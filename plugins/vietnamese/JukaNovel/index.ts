@@ -1,19 +1,21 @@
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { FilterTypes, Filters } from '@libs/filterInputs';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { Buffer, encodeHtmlEntities } from '@libs/utils';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { Buffer, encodeHtmlEntities } from '@nekori/utils';
+import { load as loadCheerio } from 'cheerio';
 
-class JukaNovelPlugin implements Plugin.PluginBase {
+import { Plugin } from '@/types/plugin';
+
+class JukaNovelPlugin extends NekoriBasePlugin {
   id = 'jukanovel';
   name = 'JukaNovel';
   icon = 'icon.png';
   site = 'https://sangtacviet.online';
   // 'https://jukaza.site';
-  version = '1.0.12';
+  version = '1.1.0';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {
@@ -96,7 +98,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     novel.chapters = chapters;
     return novel;
   }
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const chapterIdMatch = chapterPath.match(/\/(\d+)/);
     if (!chapterIdMatch) {
       throw new Error('Không thể tìm thấy ID chương.');
@@ -136,7 +138,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
       };
       const chapterContent = this.decryptJukaNovel(readerData);
       if (!chapterContent) throw new Error('chapterContent = null');
-      return chapterContent;
+      return { state: 'ready', type: 'novel', html: chapterContent };
     } catch (e) {
       throw new Error('Lỗi xử lý dữ liệu chương: ' + (e as any).message);
     }

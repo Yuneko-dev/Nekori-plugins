@@ -1,19 +1,20 @@
-// Easter Eggs
-
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { Filters, FilterTypes } from '@libs/filterInputs';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+// Easter Eggs
+import { fetchText } from '@libs/fetch';
+import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { load as loadCheerio } from 'cheerio';
 
-class BaoMoiPlugin implements Plugin.PluginBase {
+import { Plugin } from '@/types/plugin';
+
+class BaoMoiPlugin extends NekoriBasePlugin {
   id = 'baomoi.com';
   name = 'Báo Mới';
   icon = 'icon.png';
   site = 'https://baomoi.com';
-  version = '1.0.13';
+  version = '1.1.0';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {
@@ -335,9 +336,9 @@ class BaoMoiPlugin implements Plugin.PluginBase {
     return novel;
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const novel = await this.parseNovel(chapterPath);
-    return novel.content || '';
+    return { state: 'ready', type: 'mixed', html: novel.content || '' };
   }
   async searchNovels(
     searchTerm: string,

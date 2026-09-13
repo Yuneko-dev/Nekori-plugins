@@ -1,9 +1,10 @@
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { Filters } from '@libs/filterInputs';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchText } from '@libs/fetch';
+import { Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 class LuvevalandPlugin implements Plugin.PluginBase {
   id = 'luvevaland.co';

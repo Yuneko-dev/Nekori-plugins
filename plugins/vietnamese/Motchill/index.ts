@@ -1,16 +1,18 @@
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
-import { ContentType } from '@libs/pluginMetadata';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType } from '@nekori/pluginMetadata';
+import { load as loadCheerio } from 'cheerio';
 
-class MotchillPlugin implements Plugin.PluginBase {
+import { Plugin } from '@/types/plugin';
+
+class MotchillPlugin extends NekoriBasePlugin {
   id = 'yuneko.motchill';
   name = 'Motchill';
   icon = 'icon.png';
   site = 'https://envasion.net';
-  version = '1.0.3';
+  version = '1.0.4';
   contentType = ContentType.VIDEO;
 
   imageRequestInit: Plugin.ImageRequestInit = {
@@ -212,7 +214,7 @@ class MotchillPlugin implements Plugin.PluginBase {
     };
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const url = this.site + chapterPath;
     const html = await fetchText(url);
     const $ = loadCheerio(html);
@@ -255,17 +257,26 @@ class MotchillPlugin implements Plugin.PluginBase {
     }
 
     if (!videoUrl) {
-      return '<p style="text-align:center;padding:16px;">Không tìm thấy video.</p><meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>';
+      return {
+        state: 'checkpoint',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: '<p style="text-align:center;padding:16px;">Không tìm thấy video.</p>',
+      };
     }
 
-    return [
-      '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
-      '<meta name="lnreader-video-type" content="iframe">',
-      `<meta name="lnreader-video-url" content="${videoUrl}">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
-    ].join('\n');
+    return {
+      state: 'ready',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: [
+        '<meta name="lnreader-video-mode" content="direct">',
+        '<meta name="lnreader-video-type" content="iframe">',
+        `<meta name="lnreader-video-url" content="${videoUrl}">`,
+      ].join('\n'),
+    };
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

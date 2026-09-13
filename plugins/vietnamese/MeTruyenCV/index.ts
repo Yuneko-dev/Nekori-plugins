@@ -1,15 +1,13 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { NovelStatus } from '@libs/novelStatus';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
-import { cbc } from '@libs/aes';
-import {
-  utf8ToBytes,
-  Buffer,
-  NodeCrypto,
-  encodeHtmlEntities,
-} from '@libs/utils';
+import { NovelStatus } from '@libs/novelStatus';
+import { utf8ToBytes } from '@libs/utils';
+import { cbc } from '@nekori/aes';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { Buffer, encodeHtmlEntities, NodeCrypto } from '@nekori/utils';
+
+import { Plugin } from '@/types/plugin';
 
 const API_BASE = 'https://backend.metruyencv.com/api';
 const APP_ID = 'MeTruyenChu';
@@ -101,12 +99,12 @@ type ApiListResponse<T> = {
   success: boolean;
 };
 
-class MeTruyenCVPlugin implements Plugin.PluginBase {
+class MeTruyenCVPlugin extends NekoriBasePlugin {
   id = 'metruyencv';
   name = 'MeTruyenCV';
   icon = 'icon.png';
   site = 'https://metruyencv.com';
-  version = '1.0.6';
+  version = '1.0.7';
 
   async popularNovels(
     pageNo: number,
@@ -188,7 +186,7 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
     return novel;
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const hash = generateHash();
     const urlPath = `chapters/${chapterPath}?hash=${hash}`;
     const json = await apiGet(urlPath);
@@ -201,11 +199,15 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
     if (!encrypted) throw new Error('Nội dung chương trống hoặc lỗi');
 
     const content = decryptContent(encrypted, hash);
-    return content
-      .split('\n')
-      .filter(line => line.trim().length > 0)
-      .map(line => `<p>${encodeHtmlEntities(line.trim())}</p>`)
-      .join('<br>');
+    return {
+      state: 'ready',
+      type: 'novel',
+      html: content
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+        .map(line => `<p>${encodeHtmlEntities(line.trim())}</p>`)
+        .join('<br>'),
+    };
   }
 
   async searchNovels(

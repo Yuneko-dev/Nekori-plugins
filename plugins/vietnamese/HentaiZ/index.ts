@@ -1,16 +1,18 @@
-import { fetchApi } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
+import { storage } from '@libs/storage';
+import { ctr } from '@nekori/aes';
+import { NekoriBasePlugin } from '@nekori/plugin';
+import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
 import {
+  Buffer,
   decodeHtmlEntities,
   encodeHtmlEntities,
   NodeCrypto,
-} from '@libs/utils';
-import { Buffer } from '@libs/utils';
-import { storage } from '@libs/storage';
-import { ctr } from '@libs/aes';
-import { ContentType, ContentWarning } from '@libs/pluginMetadata';
+} from '@nekori/utils';
+
+import { Plugin } from '@/types/plugin';
 
 import filters from './filters';
 
@@ -339,12 +341,12 @@ async function callRemoteWithRetry(
   return second.data;
 }
 
-class HentaiZPlugin implements Plugin.PluginBase {
+class HentaiZPlugin extends NekoriBasePlugin {
   id = 'hentaiz';
   name = 'HentaiZ';
   icon = 'icon.png';
   site = SITE;
-  version = '1.1.2';
+  version = '1.1.3';
   contentType = ContentType.VIDEO;
   contentWarning = ContentWarning.NSFW;
 
@@ -639,7 +641,7 @@ class HentaiZPlugin implements Plugin.PluginBase {
     return result?.embedUrl || '';
   }
 
-  async parseChapter(chapterPath: string): Promise<string> {
+  async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
     const slug = chapterPath.replace('/watch/', '');
     const embedUrl = await this.getEmbedUrl(slug);
 
@@ -649,7 +651,13 @@ class HentaiZPlugin implements Plugin.PluginBase {
 
     // Embed mode: plain iframe
     if (this.enableEmbed) {
-      return this.buildPlayerHtml({ iframe: embedUrl });
+      return {
+        state: 'ready',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: this.buildPlayerHtml({ iframe: embedUrl }),
+      };
     }
 
     // M3U8 mode: decrypt video data server-side
@@ -657,18 +665,36 @@ class HentaiZPlugin implements Plugin.PluginBase {
     const videoId = idMatch ? idMatch[1] : '';
 
     if (!videoId) {
-      return this.buildPlayerHtml({ iframe: embedUrl });
+      return {
+        state: 'ready',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: this.buildPlayerHtml({ iframe: embedUrl }),
+      };
     }
 
     const videoData = await decryptVideoData(videoId);
     if (!videoData) {
-      return this.buildPlayerHtml({ iframe: embedUrl });
+      return {
+        state: 'ready',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: this.buildPlayerHtml({ iframe: embedUrl }),
+      };
     }
 
     // Preferred: the CDN serves a real master playlist with `ACAO: *`, so the
     // core player can stream it directly without any blob juggling.
     if (videoData.masterUrl) {
-      return this.buildPlayerHtml({ m3u8: videoData.masterUrl });
+      return {
+        state: 'ready',
+        type: 'video',
+        noCache: true,
+        noPrefetch: true,
+        html: this.buildPlayerHtml({ m3u8: videoData.masterUrl }),
+      };
     }
 
     // Build absolute-URL m3u8 playlists and embed as JSON data attribute
@@ -700,10 +726,16 @@ class HentaiZPlugin implements Plugin.PluginBase {
       })
       .join('\n');
 
-    return this.buildPlayerHtml({
-      m3u8Master: rewrittenMaster,
-      m3u8Playlists: rewrittenPlaylists,
-    });
+    return {
+      state: 'ready',
+      type: 'video',
+      noCache: true,
+      noPrefetch: true,
+      html: this.buildPlayerHtml({
+        m3u8Master: rewrittenMaster,
+        m3u8Playlists: rewrittenPlaylists,
+      }),
+    };
   }
 
   private buildPlayerHtml(opts: {
@@ -715,10 +747,7 @@ class HentaiZPlugin implements Plugin.PluginBase {
     const esc = (s: string) => encodeHtmlEntities(s);
 
     const base: string[] = [
-      '<meta name="lnreader-chapter-type" content="video">',
       `<meta name="lnreader-debug-mode" content="false">`,
-      '<meta id="no-cache-marker"/>',
-      '<meta id="no-prefetch-marker"/>',
     ];
 
     if (opts.iframe) {

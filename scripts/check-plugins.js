@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { compiledPlugins } from './plugin-build-utils.js';
+import { parseArgs } from 'node:util';
+
 import { networkOptions, resolveNetworkOptions } from './check-network.js';
+import { compiledPlugins } from './plugin-build-utils.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJsonFile = file =>

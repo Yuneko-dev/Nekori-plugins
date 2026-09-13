@@ -1,5 +1,5 @@
-import { createProviders } from './providers';
 import type { ProviderName } from './providers';
+import { createProviders } from './providers';
 import { createCaptchaView } from './ui';
 
 const DEFAULT_PROVIDER: ProviderName = 'sangtacviet';

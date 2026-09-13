@@ -1,13 +1,13 @@
-import React from 'react';
 import { Moon, Sun } from 'lucide-react';
+import React from 'react';
 
-import { Plugin } from '@/types/plugin';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import {
   getPluginDisplayName,
   getPluginNameColor,
 } from '@/lib/plugin-metadata';
+import { Plugin } from '@/types/plugin';
 
 type PluginHeaderProps = {
   selectedPlugin?: Plugin.PluginSource;

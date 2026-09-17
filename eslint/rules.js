@@ -1,14 +1,11 @@
 import path from 'node:path';
 
-const allowedPluginImports = new Set([
+const LNREADER_ONLY_IMPORTS = [
   // Approved external dependencies for plugins
   'htmlparser2',
   'cheerio',
   'dayjs',
   'urlencode',
-
-  // Approved external dependencies for plugins (Nekori-only)
-  'node-html-markdown',
 
   // Approved internal dependencies for plugins
   '@libs/novelStatus',
@@ -20,16 +17,38 @@ const allowedPluginImports = new Set([
   '@libs/utils',
   '@libs/storage',
 
+  // Approved internal types for plugins
+  '@/types/plugin',
+];
+
+const NEKORI_ONLY_IMPORTS = [
   // Approved internal dependencies for plugins (Nekori-only)
   '@nekori/aes',
   '@nekori/cookie',
   '@nekori/plugin',
   '@nekori/pluginMetadata',
   '@nekori/utils',
+];
 
-  // Approved internal types for plugins
-  '@/types/plugin',
+const NEKORI_EXTERNAL_IMPORTS = [
+  // Approved external dependencies for plugins (Nekori-only)
+  'node-html-markdown',
+];
+
+function isNekoriImport(source) {
+  return (
+    typeof source === 'string' &&
+    (source.startsWith('@nekori/') ||
+      NEKORI_EXTERNAL_IMPORTS.some(dep => source.startsWith(dep)))
+  );
+}
+
+const allowedPluginImports = new Set([
+  ...LNREADER_ONLY_IMPORTS,
+  ...NEKORI_ONLY_IMPORTS,
+  ...NEKORI_EXTERNAL_IMPORTS,
 ]);
+
 export default {
   rules: {
     'approved-imports': {
@@ -109,14 +128,14 @@ export default {
         schema: [],
         messages: {
           nekori:
-            'WARNING: Plugins using this import will only be compatible with Nekori (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
+            'WARNING: Plugins using this import will only be compatible with Nekori (No backward compatibility with original LNReader).',
         },
       },
       create(context) {
         return {
           ImportDeclaration(node) {
             const source = node.source.value;
-            if (typeof source === 'string' && source.startsWith('@nekori/')) {
+            if (isNekoriImport(source)) {
               context.report({
                 node,
                 messageId: 'nekori',

@@ -65,11 +65,18 @@ function b64urlToString(b64: string): string {
   return atob(s);
 }
 
-function parseEnvelope(envB64: string): { cn: string; sk: string; ts: string; uid: string } | null {
+function parseEnvelope(
+  envB64: string,
+): { cn: string; sk: string; ts: string; uid: string } | null {
   try {
     const bytes = b64urlDecode(envB64);
     if (bytes.length < 11) return null;
-    if (bytes[0] !== 85 || bytes[1] !== 83 || bytes[2] !== 68 || bytes[3] !== 75) {
+    if (
+      bytes[0] !== 85 ||
+      bytes[1] !== 83 ||
+      bytes[2] !== 68 ||
+      bytes[3] !== 75
+    ) {
       return null;
     }
     if (bytes[4] !== 1) return null;
@@ -86,14 +93,22 @@ function parseEnvelope(envB64: string): { cn: string; sk: string; ts: string; ui
 }
 
 function buildM3u8DataUri(m3u8Text: string): string {
-  const lines = m3u8Text.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = m3u8Text
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean);
   const headers: string[] = [];
   const media: string[] = [];
   for (const line of lines) {
     if (/^#EXT-X-KEY/i.test(line) || /urn:avs:shield/i.test(line)) continue;
     if (/\/hls\/[0-9a-f]{24}\.ts/i.test(line)) continue;
     if (line.startsWith('#')) {
-      if (/^#EXTINF:/i.test(line) || /^#EXT-X-(VERSION|TARGETDURATION|MEDIA-SEQUENCE|PLAYLIST-TYPE)/i.test(line)) {
+      if (
+        /^#EXTINF:/i.test(line) ||
+        /^#EXT-X-(VERSION|TARGETDURATION|MEDIA-SEQUENCE|PLAYLIST-TYPE)/i.test(
+          line,
+        )
+      ) {
         if (/^#EXTINF:/i.test(line)) media.push(line);
         else headers.push(line);
       }
@@ -133,7 +148,8 @@ function buildM3u8DataUri(m3u8Text: string): string {
       (out.find(l => /^https?:/i.test(l)) || '').slice(0, 70),
   );
   return (
-    'data:application/vnd.apple.mpegurl;charset=utf-8,' + encodeURIComponent(body)
+    'data:application/vnd.apple.mpegurl;charset=utf-8,' +
+    encodeURIComponent(body)
   );
 }
 
@@ -208,11 +224,11 @@ async function decryptM3u8SegmentUrls(
 
   const clean = outLines.filter(
     l =>
-      l &&
-      !l.includes('urn:avs:shield') &&
-      !/\/hls\/[0-9a-f]{24}\.ts/i.test(l),
+      l && !l.includes('urn:avs:shield') && !/\/hls\/[0-9a-f]{24}\.ts/i.test(l),
   );
-  debugLog('decryptM3u8SegmentUrls replaced=' + replaced + ' lines=' + clean.length);
+  debugLog(
+    'decryptM3u8SegmentUrls replaced=' + replaced + ' lines=' + clean.length,
+  );
   return clean.join('\n');
 }
 
@@ -300,7 +316,14 @@ async function processEncryptedM3u8(
     debugLog('no _t values');
     return null;
   }
-  debugLog('_t count=' + tValues.length + ' cn=' + cn.slice(0, 10) + ' sk=' + sk.slice(0, 10));
+  debugLog(
+    '_t count=' +
+      tValues.length +
+      ' cn=' +
+      cn.slice(0, 10) +
+      ' sk=' +
+      sk.slice(0, 10),
+  );
 
   const concatenated = tValues.join('');
   const cnBytes = b64urlDecode(cn);
@@ -310,7 +333,10 @@ async function processEncryptedM3u8(
     s => stringUnshuffle(s, sk),
     s => s,
   ];
-  const hmacFormats = [uid + ':' + ts + ':' + sk + ':0', uid + ':' + ts + ':' + sk];
+  const hmacFormats = [
+    uid + ':' + ts + ':' + sk + ':0',
+    uid + ':' + ts + ':' + sk,
+  ];
 
   for (const unshuffleFn of unshuffleFns) {
     for (const hmacData of hmacFormats) {
@@ -349,7 +375,8 @@ async function processEncryptedM3u8(
 
         let fullM3u8Text = headerLines.join('\n') + '\n' + m3u8Body;
         if (!/^#EXTM3U/m.test(fullM3u8Text.trimStart())) {
-          fullM3u8Text = '#EXTM3U\n' + fullM3u8Text.replace(/^#EXTM3U[^\n]*\n?/i, '');
+          fullM3u8Text =
+            '#EXTM3U\n' + fullM3u8Text.replace(/^#EXTM3U[^\n]*\n?/i, '');
         }
         if (!fullM3u8Text.includes('#EXT-X-ENDLIST')) {
           fullM3u8Text += '\n#EXT-X-ENDLIST';
@@ -389,7 +416,7 @@ export async function resolveGoogleApisCdn(
 
   try {
     return await decryptGoogleApisCdn(playerUrl, iframe);
-  } catch (err: any) {
+  } catch (err) {
     cleanupIframe(iframe);
     throw err;
   }
@@ -423,7 +450,12 @@ async function decryptGoogleApisCdn(
         continue;
       }
       debugLog(
-        'token ok attempt=' + attempt + ' len=' + avsToken.length + ' html=' + html.length,
+        'token ok attempt=' +
+          attempt +
+          ' len=' +
+          avsToken.length +
+          ' html=' +
+          html.length,
       );
 
       const m3u8Url =
@@ -452,14 +484,13 @@ async function decryptGoogleApisCdn(
         cleanupIframe(iframe);
         return {
           type: 'sources',
-          sources: [
-            { file: buildM3u8DataUri(decrypted), type: 'hls' },
-          ],
+          sources: [{ file: buildM3u8DataUri(decrypted), type: 'hls' }],
         };
       }
       debugLog('decrypt FAILED attempt=' + attempt);
-    } catch (e: any) {
-      debugLog('attempt ' + attempt + ' error: ' + (e && e.message));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      debugLog('attempt ' + attempt + ' error: ' + message);
     }
   }
 

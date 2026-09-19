@@ -212,7 +212,10 @@ async function resolveMedia(config: PlayerConfig): Promise<ResolvedMedia> {
     }
   }
   if (config.iframeSrc) {
-    if (config.iframeSrc.indexOf('googleapiscdn.com') !== -1 && config.mode === 'm3u8') {
+    if (
+      config.iframeSrc.indexOf('googleapiscdn.com') !== -1 &&
+      config.mode === 'm3u8'
+    ) {
       debugLog('Resolver: googleapis m3u8 decrypt…');
       return await resolveGoogleApisCdn(config.iframeSrc);
     }
@@ -247,7 +250,10 @@ function renderMedia(resolved: ResolvedMedia, config: PlayerConfig) {
         xhrSetup: (xhr: any, url: string) => {
           try {
             if (/googleusercontent|stream\.googleapis/i.test(String(url))) {
-              xhr.setRequestHeader('Referer', 'https://stream.googleapiscdn.com/');
+              xhr.setRequestHeader(
+                'Referer',
+                'https://stream.googleapiscdn.com/',
+              );
             }
           } catch {
             //

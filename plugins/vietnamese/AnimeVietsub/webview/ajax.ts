@@ -30,10 +30,16 @@ export async function fetchAjaxPlayer(
   const text = await res.text();
   debugLog('/ajax/player response: ' + text.slice(0, 300));
 
-  let json: any;
+  type AjaxPlayerJson = {
+    success?: boolean;
+    playTech?: string;
+    link?: string | { file?: string; type?: string; label?: string }[];
+  };
+
+  let json: AjaxPlayerJson;
   try {
-    json = JSON.parse(text);
-  } catch (e) {
+    json = JSON.parse(text) as AjaxPlayerJson;
+  } catch {
     throw new Error(
       'Không thể phân tích phản hồi từ server (không phải JSON).',
     );
@@ -47,7 +53,11 @@ export async function fetchAjaxPlayer(
 }
 
 async function parsePlayerResponse(
-  json: any,
+  json: {
+    success?: boolean;
+    playTech?: string;
+    link?: string | { file?: string; type?: string; label?: string }[];
+  },
   mode: string,
 ): Promise<ResolvedMedia> {
   if (json.playTech === 'iframe' && typeof json.link === 'string') {
@@ -58,7 +68,14 @@ async function parsePlayerResponse(
   }
 
   if (Array.isArray(json.link)) {
-    return { type: 'sources', sources: json.link };
+    return {
+      type: 'sources',
+      sources: json.link.map(s => ({
+        file: s.file || '',
+        type: s.type,
+        label: s.label,
+      })),
+    };
   }
 
   if (typeof json.link === 'string') {

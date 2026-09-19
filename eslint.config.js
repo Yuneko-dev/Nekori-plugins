@@ -178,6 +178,7 @@ export default tseslint.config(
         },
       ],
       'custom/approved-imports': 'error',
+      'custom/deprecated-imports': 'warn',
       'custom/no-lnreader-incompatible-imports': 'warn',
     },
     languageOptions: {

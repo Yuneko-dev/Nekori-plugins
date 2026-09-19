@@ -1,13 +1,13 @@
 import path from 'node:path';
 
-const LNREADER_ONLY_IMPORTS = [
-  // Approved external dependencies for plugins
+const LNREADER_IMPORTS = [
+  // External
   'htmlparser2',
   'cheerio',
   'dayjs',
   'urlencode',
 
-  // Approved internal dependencies for plugins
+  // Internal
   '@libs/novelStatus',
   '@libs/fetch',
   '@libs/isAbsoluteUrl',
@@ -17,37 +17,49 @@ const LNREADER_ONLY_IMPORTS = [
   '@libs/utils',
   '@libs/storage',
 
-  // Approved internal types for plugins
+  // Types
   '@/types/plugin',
 ];
 
-const NEKORI_ONLY_IMPORTS = [
-  // Approved internal dependencies for plugins (Nekori-only)
-  '@nekori/aes',
+const NEKORI_IMPORTS = [
   '@nekori/cookie',
   '@nekori/plugin',
   '@nekori/pluginMetadata',
   '@nekori/utils',
-];
 
-const NEKORI_EXTERNAL_IMPORTS = [
-  // Approved external dependencies for plugins (Nekori-only)
   'node-html-markdown',
 ];
 
-function isNekoriImport(source) {
-  return (
-    typeof source === 'string' &&
-    (source.startsWith('@nekori/') ||
-      NEKORI_EXTERNAL_IMPORTS.some(dep => source.startsWith(dep)))
-  );
+const DEPRECATED_IMPORTS = ['@nekori/aes'];
+
+const ALLOWED_IMPORTS = new Set([
+  ...LNREADER_IMPORTS,
+  ...NEKORI_IMPORTS,
+  ...DEPRECATED_IMPORTS,
+]);
+
+const DEPRECATED_IMPORT_SET = new Set(DEPRECATED_IMPORTS);
+
+function matchesImport(source, dependency) {
+  return source === dependency || source.startsWith(`${dependency}/`);
 }
 
-const allowedPluginImports = new Set([
-  ...LNREADER_ONLY_IMPORTS,
-  ...NEKORI_ONLY_IMPORTS,
-  ...NEKORI_EXTERNAL_IMPORTS,
-]);
+function isNekoriImport(source) {
+  return NEKORI_IMPORTS.some(dep => matchesImport(source, dep));
+}
+
+function getSource(node) {
+  const source = node.source?.value;
+  return typeof source === 'string' ? source : null;
+}
+
+function getImportVisitors(check) {
+  return {
+    ImportDeclaration: check,
+    ExportNamedDeclaration: check,
+    ExportAllDeclaration: check,
+  };
+}
 
 export default {
   rules: {
@@ -66,7 +78,6 @@ export default {
       create(context) {
         const filename = path.resolve(context.filename);
         const parts = filename.split(path.sep);
-
         const pluginsIndex = parts.lastIndexOf('plugins');
 
         // plugins/<category>/<plugin>/
@@ -76,12 +87,9 @@ export default {
             : null;
 
         function check(node) {
-          if (!node.source) return;
+          const source = getSource(node);
+          if (!source) return;
 
-          const source = node.source.value;
-          if (typeof source !== 'string') return;
-
-          // Relative import
           if (source.startsWith('./') || source.startsWith('../')) {
             if (!pluginRoot) return;
 
@@ -103,8 +111,7 @@ export default {
             return;
           }
 
-          // Approved external import
-          if (allowedPluginImports.has(source)) {
+          if (ALLOWED_IMPORTS.has(source)) {
             return;
           }
 
@@ -114,11 +121,33 @@ export default {
           });
         }
 
-        return {
-          ImportDeclaration: check,
-          ExportNamedDeclaration: check,
-          ExportAllDeclaration: check,
-        };
+        return getImportVisitors(check);
+      },
+    },
+
+    'deprecated-imports': {
+      meta: {
+        type: 'problem',
+        schema: [],
+        messages: {
+          deprecated:
+            'This import is deprecated and should not be used in new plugins.',
+        },
+      },
+
+      create(context) {
+        function check(node) {
+          const source = getSource(node);
+
+          if (source && DEPRECATED_IMPORT_SET.has(source)) {
+            context.report({
+              node: node.source,
+              messageId: 'deprecated',
+            });
+          }
+        }
+
+        return getImportVisitors(check);
       },
     },
 
@@ -128,22 +157,23 @@ export default {
         schema: [],
         messages: {
           nekori:
-            'WARNING: Plugins using this import will only be compatible with Nekori (No backward compatibility with original LNReader).',
+            'WARNING: Plugins using this import will only be compatible with Nekori (no backward compatibility with original LNReader).',
         },
       },
+
       create(context) {
-        return {
-          ImportDeclaration(node) {
-            const source = node.source.value;
-            if (isNekoriImport(source)) {
-              context.report({
-                node,
-                messageId: 'nekori',
-              });
-              return;
-            }
-          },
-        };
+        function check(node) {
+          const source = getSource(node);
+
+          if (source && isNekoriImport(source)) {
+            context.report({
+              node: node.source,
+              messageId: 'nekori',
+            });
+          }
+        }
+
+        return getImportVisitors(check);
       },
     },
   },

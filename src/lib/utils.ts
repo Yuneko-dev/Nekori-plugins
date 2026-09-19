@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export { bytesToUtf8, utf8ToBytes } from '@noble/ciphers/utils.js';
+export { bytesToUtf8, utf8ToBytes } from './nobleWrapper';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

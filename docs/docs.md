@@ -424,7 +424,7 @@ Current allowlist:
 | `@libs/utils` | `utf8ToBytes`, `bytesToUtf8` |
 | `@nekori/plugin` | `NekoriBasePlugin`, `NekoriPagePlugin` |
 | `@nekori/pluginMetadata` | `ContentType`, `ContentWarning` |
-| `@nekori/aes` | `gcm`, `ctr`, `ecb`, `cbc`, `cfb`, `gcmsiv`, `aeskw`, `aeskwp`, `cmac`, `aessiv` |
+| `@nekori/aes` | `gcm`, `ctr`, `ecb`, `cbc`, `cfb` |
 | `@nekori/utils` | `Buffer`, `NodeCrypto`, `getUserAgent`, `encodeHtmlEntities`, `decodeHtmlEntities` |
 | `@nekori/cookie` | `set`, `get`, `setFromResponse`, `flush`, `removeSessionCookies` |
 

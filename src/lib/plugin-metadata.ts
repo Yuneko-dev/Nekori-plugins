@@ -2,12 +2,9 @@ import { ContentType, ContentWarning } from '@/types/constants';
 import type { Plugin } from '@/types/plugin';
 
 type PluginMetadata = Pick<Plugin.PluginCommon, 'name'> &
-  Partial<
-    Pick<
-      Plugin.NekoriMetadata,
-      'contentType' | 'contentWarning' | 'isNekoriPlugin'
-    >
-  >;
+  Partial<Pick<Plugin.NekoriMetadata, 'contentType' | 'contentWarning'>> & {
+    isNekoriPlugin?: Plugin.PluginSource['isNekoriPlugin'];
+  };
 
 export const R18_PLUGIN_NAME_COLOR = 'rgb(210, 15, 57)';
 

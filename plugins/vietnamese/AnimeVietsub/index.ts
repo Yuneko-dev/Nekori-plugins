@@ -17,7 +17,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
   name = 'AnimeVietsub';
   icon = 'icon.png';
   site = 'https://animevietsub.li';
-  version = '1.2.0';
+  version = '1.2.1';
   filters = filters;
   contentType = ContentType.VIDEO;
 
@@ -165,11 +165,11 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
     const country = filters.country?.value || 'all';
     const page = pageNo > 1 ? `trang-${pageNo}.html` : '';
     const url = new URL(
-      `${this.site}/danh-sach/${category}/${genreList}/${season}/${year}/${studio}/${age}/${country}/${page}`,
+      `${this.site}/danh-sach/${category}/${genreList}/${season}/${year}/${studio}/${age}/${country}/${page}/`,
     );
     url.searchParams.set('sort', filters.sort?.value || 'latest');
     // Build URL
-    // https://animevietsub.bz/danh-sach/category/genre_list/season/year/studio/age/country?sort=?
+    // https://animevietsub.li/danh-sach/category/genre_list/season/year/studio/age/country/?sort={value}
     const html = await this.fetchHTML(url.toString());
     return this.parseListHtml(html);
   }

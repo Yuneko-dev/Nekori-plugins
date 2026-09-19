@@ -17,7 +17,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
   name = 'AnimeVietsub';
   icon = 'icon.png';
   site = 'https://animevietsub.li';
-  version = '1.1.0';
+  version = '1.2.0';
   filters = filters;
   contentType = ContentType.VIDEO;
 
@@ -152,10 +152,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
   // ---------- popularNovels ----------
   async popularNovels(
     pageNo: number,
-    {
-      showLatestNovels,
-      filters,
-    }: Plugin.PopularNovelsOptions<typeof this.filters>,
+    { filters }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
     // Build filters into URL parameters
     const category = filters.category?.value || 'all';
@@ -351,11 +348,13 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
           (pd.playTech === 'api' || pd.playTech === 'all') &&
           Array.isArray(pd.link)
         ) {
-          const sources = pd.link.map((s: any) => ({
-            file: (s.file || '').replace(/^&http/, 'http'),
-            type: s.type || '',
-            label: s.label || '',
-          }));
+          const sources = pd.link.map(
+            (s: { file?: string; type?: string; label?: string }) => ({
+              file: (s.file || '').replace(/^&http/, 'http'),
+              type: s.type || '',
+              label: s.label || '',
+            }),
+          );
           return {
             state: 'ready',
             type: 'video',
@@ -524,7 +523,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
     ].join('\n');
   }
 
-  resolveUrl(path: string, isNovel?: boolean): string {
+  resolveUrl(path: string): string {
     return this.site + path;
   }
 }

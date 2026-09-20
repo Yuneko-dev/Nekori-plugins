@@ -30,7 +30,7 @@ abstract class NekoriBasePlugin implements Plugin.NekoriBasePlugin {
   contentWarning: ContentWarning = ContentWarning.UNSPECIFIED;
   // Optional properties
   /** Minimum Nekori core API level required to run this plugin.  */
-  readonly minApiVersion = 1; // Repository-wide API floor; bump here for every Nekori plugin.
+  minApiVersion = 1; // Repository-wide API floor; bump here for every Nekori plugin.
   /**
    * Specifies the build output target format:
    * - `'js'`: Standard bundled JavaScript (default).

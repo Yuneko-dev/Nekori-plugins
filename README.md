@@ -53,6 +53,11 @@ The playground uses one implementation of fetch, cookie, storage, and utils in
 `src/lib/`; `src/libs/` keeps the `@libs/*` compatibility facades used by
 plugins. Nekori supplies these modules separately on the device.
 
+Filter types follow LNReader's value-map refactor (`f18f497a`) and match Nekori's
+`js-runtime/src/plugins/types/filterTypes.ts`; the `{ type, value }` payload is unchanged.
+Run `node scripts/check-filters.js ../nekori/js-runtime/src/plugins/types/filterTypes.ts`
+to check filter fallback behavior and contract parity with a sibling app checkout.
+
 Plugin assets are kept with their plugin. Put the icon at the plugin root using
 the basename from `metadata.icon`, put CSS in `webview/style.css`, and put the
 webview entry in `webview/index.ts` or `webview/index.js`. `build:assets` copies

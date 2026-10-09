@@ -1,14 +1,8 @@
-/**
- * Filter's Options user can choose from
- */
 export type FilterOption = {
   readonly label: string;
   readonly value: string;
 };
 
-/**
- * Every currently implemented FilterType
- */
 export enum FilterTypes {
   TextInput = 'Text',
   Picker = 'Picker',
@@ -17,97 +11,38 @@ export enum FilterTypes {
   ExcludableCheckboxGroup = 'XCheckbox',
 }
 
-type SwitchFilter = {
-  type: FilterTypes.Switch;
-  /** Default value */
-  value: boolean;
-};
-
-type TextFilter = {
-  type: FilterTypes.TextInput;
-  /** Default value */
-  value: string;
-};
-
-type CheckboxFilter = {
-  type: FilterTypes.CheckboxGroup;
-  options: readonly FilterOption[];
-  /** Default value */
-  value: string[];
-};
-type PickerFilter = {
-  type: FilterTypes.Picker;
-  options: readonly FilterOption[];
-  /** Default value */
-  value: string;
-};
-
-type ExcludableCheckboxFilter = {
-  type: FilterTypes.ExcludableCheckboxGroup;
-  options: readonly FilterOption[];
-  /** Default value */
-  value: {
-    /** Checkboxes marked as included */
+type FilterValueMap = {
+  [FilterTypes.TextInput]: string;
+  [FilterTypes.Picker]: string;
+  [FilterTypes.Switch]: boolean;
+  [FilterTypes.CheckboxGroup]: string[];
+  [FilterTypes.ExcludableCheckboxGroup]: {
     include?: string[];
-    /** Checkboxes marked as excluded */
     exclude?: string[];
   };
 };
 
-/**
- * key - filter pairs
- */
+type WithOptions =
+  | FilterTypes.Picker
+  | FilterTypes.CheckboxGroup
+  | FilterTypes.ExcludableCheckboxGroup;
+
+type OptionsOf<T extends FilterTypes> = T extends WithOptions
+  ? { options: readonly FilterOption[] }
+  : object;
+
+export type ValueOfFilter<T extends FilterTypes> = FilterValueMap[T];
+
+export type Filter<T extends FilterTypes = FilterTypes> = T extends FilterTypes
+  ? {
+      label: string;
+      type: T;
+      value: FilterValueMap[T];
+    } & OptionsOf<T>
+  : never;
+
 export type Filters = Record<string, Filter<FilterTypes>>;
 
-/** Mapping of each FilterType to a Filter */
-type FilterFromType = {
-  [FilterTypes.CheckboxGroup]: CheckboxFilter;
-  [FilterTypes.ExcludableCheckboxGroup]: ExcludableCheckboxFilter;
-  [FilterTypes.Picker]: PickerFilter;
-  [FilterTypes.Switch]: SwitchFilter;
-  [FilterTypes.TextInput]: TextFilter;
-};
-
-/**
- * Get type of a single filter type from the {@link FilterType}
- */
-export type Filter<Type extends FilterTypes> = {
-  label: string;
-} & FilterFromType[Type];
-
-/**
- * Strip {@link FilterObject} object from 'label' and 'options' to get key - filter_value pairs
- * @see {@link ValueOfFilter}
- */
-export type FilterToValues<
-  FilterObject extends Record<string, { type: FilterTypes }> | undefined,
-> = FilterObject extends undefined
-  ? undefined
-  : {
-      // copy the Filters object, but just get {value,type} pairs instead of the whole Filter object
-      [SingleFilter in keyof FilterObject]: FilterValueWithType<
-        FilterType<NonNullable<FilterObject>[SingleFilter]>
-      >;
-    };
-
-/**
- * Get value type for a {@link Filter} given it's FilterType
- * @see {@link FilterTypes}
- */
-export type ValueOfFilter<T extends FilterTypes> =
-  T extends FilterTypes.CheckboxGroup
-    ? CheckboxFilter['value']
-    : T extends FilterTypes.Picker
-      ? PickerFilter['value']
-      : T extends FilterTypes.Switch
-        ? SwitchFilter['value']
-        : T extends FilterTypes.TextInput
-          ? TextFilter['value']
-          : T extends FilterTypes.ExcludableCheckboxGroup
-            ? ExcludableCheckboxFilter['value']
-            : never;
-
-/** Get {@link Filter}'s type */
 export type FilterType<T extends { type: unknown }> = T extends {
   type: infer K;
 }
@@ -116,15 +51,40 @@ export type FilterType<T extends { type: unknown }> = T extends {
     : never
   : never;
 
-/** Get {type, value} types for given FilterType
- * @see {@link ValueOfFilter}
- */
 export type FilterValueWithType<T extends FilterTypes> = {
   type: T;
   value: ValueOfFilter<T>;
 };
 
-/**
- * Any possible filter value
- */
+export type FilterToValues<
+  FilterObject extends Record<string, { type: FilterTypes }> | undefined,
+> = FilterObject extends undefined
+  ? undefined
+  : {
+      [K in keyof FilterObject]: FilterValueWithType<
+        FilterType<NonNullable<FilterObject>[K]>
+      >;
+    };
+
 export type AnyFilterValue = ValueOfFilter<FilterTypes>;
+
+type FilterValueCheckMap = {
+  [K in FilterTypes]: (v: unknown) => v is ValueOfFilter<K>;
+};
+
+const valueCheck: FilterValueCheckMap = {
+  [FilterTypes.TextInput]: (v): v is string => typeof v === 'string',
+  [FilterTypes.Picker]: (v): v is string => typeof v === 'string',
+  [FilterTypes.Switch]: (v): v is boolean => typeof v === 'boolean',
+  [FilterTypes.CheckboxGroup]: (v): v is string[] => Array.isArray(v),
+  [FilterTypes.ExcludableCheckboxGroup]: (
+    v,
+  ): v is { include?: string[]; exclude?: string[] } =>
+    !!v && typeof v === 'object' && !Array.isArray(v),
+};
+
+export const isFilterValue = <T extends FilterTypes>(
+  q: FilterToValues<Filters>[string],
+  type: T,
+): q is FilterValueWithType<T> =>
+  q.type === type && valueCheck[type](q.value as ValueOfFilter<T>);

@@ -33,7 +33,7 @@
     "build:prepare": "npm run clean:multisrc && npm run build:multisrc && npm run build:plugins && npm run build:assets",
     "test:build": "node scripts/check-plugin-assets.js",
     "check:plugins": "npm run build:prepare && node scripts/check-plugins.js",
-    "test:checks": "node scripts/check-chapter-content.js && node scripts/check-site-probe.js && node scripts/check-plugin-runner.js"
+    "test:checks": "node scripts/check-filters.js && node scripts/check-chapter-content.js && node scripts/check-site-probe.js && node scripts/check-plugin-runner.js"
   },
   "author": "aiko-chan-ai",
   "license": "MIT",

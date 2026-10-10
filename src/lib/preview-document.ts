@@ -67,10 +67,10 @@ export function buildPreviewDocument({
     </style>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dashjs@5.2.0/dist/legacy/umd/dash.all.min.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/video.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/live-video.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/media/hlsjs-video.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/media/dash-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/live-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/media/hlsjs-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/media/dash-video.js"></script>
     ${readerMockScript}
     ${video ? `<script>${corePlayerRaw}</script>` : ''}
     ${customCSS ? `<link rel="stylesheet" href="${staticUrl(customCSS)}">` : ''}

@@ -1,0 +1,30 @@
+:root {
+  --reader-margin-right: 0px;
+  --reader-margin-left: 0px;
+}
+
+#nekori-reader p:has(img),
+#nekori-reader div:has(img):not(#nekori-reader),
+#nekori-reader figure {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+#nekori-reader figure {
+  width: calc(100% + (var(--readerSettings-padding) * 2)) !important;
+  max-width: none !important;
+  margin-left: calc(-1 * var(--readerSettings-padding)) !important;
+  margin-right: calc(-1 * var(--readerSettings-padding)) !important;
+  overflow: hidden;
+}
+
+#nekori-reader figure img,
+#nekori-reader img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}

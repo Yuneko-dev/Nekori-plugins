@@ -12,7 +12,7 @@ class TwkanPlugin extends NekoriBasePlugin {
   name = 'Twkan';
   icon = 'icon.png';
   site = 'https://twkan.com';
-  version = '1.0.2';
+  version = '1.0.0';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.SAFE;
 

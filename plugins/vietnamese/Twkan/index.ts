@@ -1,10 +1,11 @@
-import { NekoriBasePlugin } from '@nekori/plugin';
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
+import { NekoriBasePlugin } from '@nekori/plugin';
 import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 class TwkanPlugin extends NekoriBasePlugin {
   id = 'twkan.com';
@@ -15,7 +16,7 @@ class TwkanPlugin extends NekoriBasePlugin {
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.SAFE;
 
-  private chapterLinkRegex = /\/txt\/\d+\/\d+$/;
+  private chapterLinkRegex = /txt\/\d+\/\d+$/;
 
   private statusTextToEnum(status: string): string {
     const s = status.trim();
@@ -149,7 +150,7 @@ class TwkanPlugin extends NekoriBasePlugin {
 
     const title = $('h1').first().text().trim();
 
-    let content = $('#txtcontent0').first();
+    const content = $('#txtcontent0').first();
     content.find('.txtad, script, style, ins, iframe').remove();
     const chapterHtml = content.html() || '';
 
@@ -191,7 +192,7 @@ class TwkanPlugin extends NekoriBasePlugin {
       const href = $(el).attr('href');
       const name = $(el).text().trim();
       if (!href || !name) return;
-      if (!href.match(/\/book\/\d+\.html$/)) return;
+      if (!href.match(/book\/\d+\.html$/)) return;
       if (seen.has(href)) return;
       seen.add(href);
       novels.push({ name, path: href.replace(this.site, '') });

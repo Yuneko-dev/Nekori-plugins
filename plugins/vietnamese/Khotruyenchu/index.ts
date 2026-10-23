@@ -1,11 +1,12 @@
-import { NekoriPagePlugin } from '@nekori/plugin';
-import { fetchText } from '@libs/fetch';
-import { Plugin } from '@/types/plugin';
-import { Filters } from '@libs/filterInputs';
-import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
+import { fetchText } from '@libs/fetch';
+import { Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
+import { NekoriPagePlugin } from '@nekori/plugin';
 import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
+import { load as loadCheerio } from 'cheerio';
+
+import { Plugin } from '@/types/plugin';
 
 class KhotruyenchuPlugin extends NekoriPagePlugin {
   id = 'khotruyenchu';
@@ -17,7 +18,7 @@ class KhotruyenchuPlugin extends NekoriPagePlugin {
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.SAFE;
 
-  private chapterUrlRegex = /\/chuong-(\d+)-([^\/]+)\/?/;
+  private chapterUrlRegex = /chuong-(\d+)-([^/]+)\/?/;
 
   private novelName($: ReturnType<typeof loadCheerio>): string {
     const h1 = $('h1.entry-title, h1.page-title, h1').first().text().trim();
@@ -50,7 +51,7 @@ class KhotruyenchuPlugin extends NekoriPagePlugin {
       const href = $(el).attr('href');
       const name = $(el).text().trim();
       if (!href || !name) return;
-      if (!href.match(/\/truyen\/[^\/]+\/$/)) return;
+      if (!href.match(/truyen\/[^/]+\/$/)) return;
       if (seen.has(href)) return;
       seen.add(href);
       const cover =
@@ -197,7 +198,7 @@ class KhotruyenchuPlugin extends NekoriPagePlugin {
         const href = $(el).attr('href');
         const name = $(el).text().trim();
         if (!href || !name) return;
-        if (!href.match(/\/truyen\/[^\/]+\/$/)) return;
+        if (!href.match(/truyen\/[^/]+\/$/)) return;
         if (seen.has(href)) return;
         seen.add(href);
         novels.push({ name, path: href.replace(this.site, '') });

@@ -76,14 +76,7 @@ class TwkanPlugin extends NekoriBasePlugin {
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const html = await fetchText(this.site + novelPath);
     if (!html) {
-      return {
-        state: 'checkpoint',
-        type: 'novel',
-        html: '<div>Không thể tải trang sách twkan.com. Vui lòng mở trong WebView để xác thực và tải lại.</div>',
-        checkpointMessage: 'Site yêu cầu xác thực qua WebView',
-        noCache: true,
-        noPrefetch: true,
-      };
+      throw new Error('Không thể tải trang sách twkan.com');
     }
 
     const $ = loadCheerio(html);

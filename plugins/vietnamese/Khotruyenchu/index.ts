@@ -76,14 +76,7 @@ class KhotruyenchuPlugin extends NekoriPagePlugin {
     const url = this.site + novelPath;
     const html = await fetchText(url);
     if (!html) {
-      return {
-        state: 'checkpoint',
-        type: 'novel',
-        html: '<div>Không thể tải trang sách khotruyenchu.fun. Vui lòng mở trong WebView để xác thực và tải lại.</div>',
-        checkpointMessage: 'Site yêu cầu xác thực qua WebView',
-        noCache: true,
-        noPrefetch: true,
-      };
+      throw new Error('Không thể tải trang sách khotruyenchu.fun');
     }
 
     const $ = loadCheerio(html);

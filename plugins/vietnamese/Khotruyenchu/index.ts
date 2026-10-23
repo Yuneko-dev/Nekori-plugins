@@ -13,7 +13,7 @@ class KhotruyenchuPlugin extends NekoriPagePlugin {
   name = 'Khotruyenchu';
   icon = 'icon.png';
   site = 'https://khotruyenchu.fun';
-  version = '1.0.2';
+  version = '1.0.0';
   filters: Filters | undefined = undefined;
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.SAFE;

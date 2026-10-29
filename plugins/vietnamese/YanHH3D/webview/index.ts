@@ -6,7 +6,6 @@ type Source = {
   resolved?: string;
 };
 
-const SITE = 'https://yanhh3d.plus';
 const M3U8_RE = /\.m3u8(\?|$)/i;
 const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const TS_PACKET = 188;
@@ -86,8 +85,17 @@ void (async () => {
   const raw = container.getAttribute('data-sources') || '[]';
   const pageUrl = container.getAttribute('data-page-url') || '';
   const debugEnabled = container.getAttribute('data-debug') === '1';
-  // Derive origin from the actual chapter page — works even if SITE moves
-  const site = pageUrl ? new URL(pageUrl).origin : SITE;
+  // Site origin — prefer chapter URL, then iframe location
+  const site = (() => {
+    if (pageUrl) {
+      try {
+        return new URL(pageUrl).origin;
+      } catch {
+        // fallthrough
+      }
+    }
+    return location.origin;
+  })();
 
   if (debugEnabled) player.setDebug?.(true);
 

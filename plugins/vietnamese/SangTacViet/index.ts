@@ -412,45 +412,8 @@ class SangTacVietPlugin extends NekoriBasePlugin {
       }
     }
 
-    await this.setHostCookie(origin, 'transmode', transmode);
-    await this.setHostCookie(origin, 'foreignlang', foreignlang);
-  }
-
-  private async removeLegacyDomainCookie(
-    origin: string,
-    name: string,
-  ): Promise<void> {
-    // Android set() adds Domain; expire only that scope, preserving host-only cookies.
-    const accepted = await set(origin, {
-      name,
-      value: '',
-      domain: new URL(origin).hostname,
-      path: '/',
-      expires: '1970-01-01T00:00:00.000Z',
-    });
-    if (!accepted) throw new Error(`Không thể xóa cookie cũ ${name}.`);
-  }
-
-  private async setHostCookie(
-    origin: string,
-    name: string,
-    value: string,
-  ): Promise<void> {
-    await this.removeLegacyDomainCookie(origin, name);
-    const accepted = await setFromResponse(origin, `${name}=${value}; Path=/`);
-    if (!accepted) throw new Error(`Không thể cập nhật cookie ${name}.`);
-  }
-
-  private async applyResponseCookies(
-    origin: string,
-    response: Response,
-  ): Promise<void> {
-    const header = response.headers.get('set-cookie');
-    if (!header) return;
-    for (const cookie of header.split(/,(?=\s*[A-Za-z0-9_-]+=)/)) {
-      const accepted = await setFromResponse(origin, cookie.trim());
-      if (!accepted) throw new Error('Không thể cập nhật cookie từ máy chủ.');
-    }
+    await set(origin, { name: 'transmode', value: transmode });
+    await set(origin, { name: 'foreignlang', value: foreignlang });
   }
 
   private async _cookieHeader(origin: string): Promise<Record<string, string>> {
@@ -717,7 +680,14 @@ class SangTacVietPlugin extends NekoriBasePlugin {
 
   // @ts-expect-error - public method with auto-retry wrapper
   async parseChapter(chapterPath: string): Promise<Plugin.ChapterContent> {
-    const maxRetries = this.autoRetry ? 10 : 1;
+    // Code 5 is a transient anti-bot/session rejection (e.g. the reader
+    // WebView and net.request racing over the shared `_ac` token on the
+    // Cloudflare-protected HTTPS domain). It almost always clears on retry
+    // with a fresh probe, so always allow a few attempts even when the
+    // user-facing autoRetry toggle is off. `shouldStopRetry` still gates
+    // genuinely fatal codes (captcha, login, deleted book).
+    const autoRetryEnabled = this.autoRetry;
+    const maxRetries = autoRetryEnabled ? 10 : 4;
     let attempt = 0;
     while (attempt < maxRetries) {
       try {
@@ -731,7 +701,15 @@ class SangTacVietPlugin extends NekoriBasePlugin {
           throw err;
         }
         console.warn(`Failed to load chapter (attempt ${attempt}):`, err);
-        await new Promise(res => setTimeout(res, 1000));
+        // Honor the server's `time` hint when present, else 1s.
+        const waitMs =
+          err instanceof STVChapterError &&
+          typeof err.raw?.time === 'number' &&
+          err.raw.time > 0 &&
+          err.raw.time < 10000
+            ? err.raw.time
+            : 1000;
+        await new Promise(res => setTimeout(res, waitMs));
       }
     }
   }
@@ -748,22 +726,62 @@ class SangTacVietPlugin extends NekoriBasePlugin {
 
     const origin = new URL(this.site).origin;
 
-    // Remove stale plugin-created _ac without clearing login or CAPTCHA sessions.
-    await this.removeLegacyDomainCookie(origin, '_ac');
+    // Step 0: clear the chapter API's anti-bot/session cookies but preserve
+    // translation preference AND Cloudflare clearance (cf_clearance/__cf_bm).
+    // Wiping ALL session cookies via removeSessionCookies() used to delete the
+    // Cloudflare clearance that the WebView solved, forcing every request on
+    // the HTTPS domain through a fresh bot challenge -> code 5. Keep cf_* and
+    // transmode/foreignlang; only expire the site anti-bot tokens.
+    const oldCookies = await get(origin);
+    const epoch = new Date(0).toISOString();
+    for (const k in oldCookies) {
+      const lower = k.toLowerCase();
+      const keep =
+        lower.startsWith('cf_') ||
+        lower.startsWith('__cf') ||
+        lower === 'cf_clearance' ||
+        lower === 'transmode' ||
+        lower === 'foreignlang';
+      if (!keep) {
+        // Truly delete (expires in the past), preserving the original
+        // domain/path so Chromium matches the exact stored cookie.
+        // Merely setting value='' left empty PHPSESSID/_ac cookies that
+        // poisoned the session -> code 7 after a few chapters.
+        await set(origin, {
+          name: k,
+          value: '',
+          domain: oldCookies[k].domain,
+          path: oldCookies[k].path,
+          expires: epoch,
+        });
+      }
+    }
+
+    // Set translation cookies BEFORE Step 1 so the server sees them
+    // on the very first request (session creation).
     await this.applyTranslationCookies(origin);
 
-    const pageRes = await fetchApi(referer, {
-      headers: { ...(await this._cookieHeader(origin)) },
-    });
-    if (!pageRes.ok) {
-      throw new Error(`Không thể tải trang chương (HTTP ${pageRes.status}).`);
-    }
-    await this.applyResponseCookies(origin, pageRes);
-    const firstCookies = this.extractCookiesFromHtml(await pageRes.text());
-    for (const [name, value] of Object.entries(firstCookies)) {
-      await this.setHostCookie(origin, name, value);
+    // Step 1: prime the session — sends translation cookies with the GET.
+    try {
+      const pageRes = await fetchApi(referer, {
+        headers: { ...(await this._cookieHeader(origin)) },
+      });
+      const html = await pageRes.text();
+      const firstCookies = this.extractCookiesFromHtml(html);
+      for (const k in firstCookies) {
+        await set(origin, {
+          name: k,
+          value: firstCookies[k],
+        });
+      }
+      if (pageRes.headers.get('set-cookie')) {
+        await setFromResponse(origin, pageRes.headers.get('set-cookie')!);
+      }
+    } catch {
+      // continue — server may still recognise the WebView's cookie jar
     }
 
+    // Re-apply translation cookies in case Step 1's Set-Cookie overwrote them.
     await this.applyTranslationCookies(origin);
 
     const apiUrl = new URL(`${this.site}/index.php`);
@@ -775,8 +793,17 @@ class SangTacVietPlugin extends NekoriBasePlugin {
     apiUrl.searchParams.set('sty', '1');
     apiUrl.searchParams.set('exts', '');
 
-    // Only a fresh page token needs rotation; code 7 is normal for this probe.
-    if (firstCookies._ac) {
+    // Step 2: probe POST that rotates `_ac`.
+    // The browser sends the current `_ac` cookie value as the POST body.
+    // The response issues a fresh `_ac` via Set-Cookie; the real request MUST
+    // send that rotated value or the server rejects with code 5 (err 4002).
+    // Parse it from the Set-Cookie header; fall back to re-reading the jar.
+    let rotatedAc: string | null = null;
+    try {
+      const jar = await get(origin);
+      const acValue =
+        (jar._ac && (typeof jar._ac === 'string' ? jar._ac : jar._ac.value)) ||
+        '';
       const probeRes = await fetchApi(apiUrl.toString(), {
         method: 'POST',
         headers: {
@@ -785,30 +812,60 @@ class SangTacVietPlugin extends NekoriBasePlugin {
           Referer: referer,
           ...(await this._cookieHeader(origin)),
         },
-        body: firstCookies._ac,
+        body: acValue,
       });
-      if (!probeRes.ok) {
-        throw new Error(`Không thể khởi tạo chương (HTTP ${probeRes.status}).`);
-      }
       await probeRes.text();
-      await this.applyResponseCookies(origin, probeRes);
+      const probeSetCookie = probeRes.headers.get('set-cookie');
+      if (probeSetCookie) {
+        // Parse the rotated `_ac` straight from the response header — the most
+        // reliable source, independent of jar flush timing.
+        for (const m of probeSetCookie.matchAll(/(?:^|,|;)\s*_ac=([^;,]+)/gi)) {
+          rotatedAc = m[1];
+        }
+        await setFromResponse(origin, probeSetCookie);
+      }
+    } catch {
+      // probe is best-effort; carry on
     }
 
+    // Fallback: if set-cookie parsing found nothing (Headers may strip it in
+    // some runtimes), re-read the shared jar — the host persists the probe's
+    // Set-Cookie into it before the body resolves.
+    if (!rotatedAc) {
+      const freshJar = await get(origin);
+      rotatedAc =
+        (freshJar._ac &&
+          (typeof freshJar._ac === 'string'
+            ? freshJar._ac
+            : freshJar._ac.value)) ||
+        null;
+    }
+
+    // Step 3: actual chapter fetch using the rotated cookies.
+    // Rebuild the Cookie header from the fresh jar so the rotated `_ac` is
+    // guaranteed present (the plugin header overrides the jar per-name).
+    const realCookieHeader = { ...(await this._cookieHeader(origin)) };
+    if (rotatedAc) {
+      const cookie = (realCookieHeader.Cookie ||
+        realCookieHeader.cookie ||
+        '') as string;
+      const parts = cookie
+        .split(';')
+        .map(p => p.trim())
+        .filter(p => p && !p.startsWith('_ac='));
+      parts.push(`_ac=${rotatedAc}`);
+      realCookieHeader.Cookie = parts.join('; ');
+      delete realCookieHeader.cookie;
+    }
     const chapRes = await fetchApi(apiUrl.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Referer: referer,
-        ...(await this._cookieHeader(origin)),
+        ...realCookieHeader,
       },
       body: this.forceFetch ? 'rescan=true&k=' : '',
     });
-    if (!chapRes.ok) {
-      throw new Error(
-        `Không thể tải nội dung chương (HTTP ${chapRes.status}).`,
-      );
-    }
-    await this.applyResponseCookies(origin, chapRes);
     const data = this.parseLooseJson(await chapRes.text());
     if (!data) {
       throw new Error(

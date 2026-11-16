@@ -164,7 +164,7 @@ class Ciweimao extends NekoriBasePlugin {
   name = 'Ciweimao';
   icon = 'icon.svg';
   site = 'https://www.ciweimao.com';
-  version = '1.0.0';
+  version = '1.0.1';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
   imageRequestInit = {
@@ -239,8 +239,6 @@ class Ciweimao extends NekoriBasePlugin {
     },
   } satisfies Filters;
 
-  private tagSlugCache?: Map<string, string>;
-
   private async fetchDocument(url: string) {
     const response = await fetchApi(url);
     if (!response.ok) {
@@ -301,25 +299,6 @@ class Ciweimao extends NekoriBasePlugin {
     return novels;
   }
 
-  private async getTagSlugMap(): Promise<Map<string, string>> {
-    if (this.tagSlugCache) return this.tagSlugCache;
-
-    const $ = await this.fetchDocument(`${this.site}/book_list/`);
-    const tagSlugs = new Map<string, string>();
-    $('#J_DialogLabel .J_LabelBox li a[data-val]').each((_, element) => {
-      const $link = $(element);
-      const label = $link.text().trim();
-      const slug = $link.attr('data-val');
-      if (label && slug) tagSlugs.set(label, slug);
-    });
-    if (tagSlugs.size === 0) {
-      throw new Error('Ciweimao tag filters were not found.');
-    }
-
-    this.tagSlugCache = tagSlugs;
-    return tagSlugs;
-  }
-
   private async fetchListingPage(
     pageNo: number,
     filters?: Plugin.PopularNovelsOptions<typeof this.filters>['filters'],
@@ -336,7 +315,6 @@ class Ciweimao extends NekoriBasePlugin {
     const facets: string[] = [];
     if (tagIds.length > 0) {
       const availableTags = [...IP_TAGS, ...ATTRIBUTE_TAGS];
-      const tagSlugs = await this.getTagSlugMap();
       for (const tagId of tagIds) {
         const tag = availableTags.find(option => option.value === tagId);
         if (!tag) {
@@ -348,11 +326,7 @@ class Ciweimao extends NekoriBasePlugin {
           englishLabelStart >= 0
             ? tag.label.slice(0, englishLabelStart)
             : tag.label;
-        const slug = tagSlugs.get(label);
-        if (!slug) {
-          throw new Error(`Ciweimao tag "${label}" was not found on the site.`);
-        }
-        facets.push(slug);
+        facets.push(label);
       }
     }
 
@@ -364,7 +338,7 @@ class Ciweimao extends NekoriBasePlugin {
       filters?.wordCount?.value || '0',
       filters?.status?.value || '0',
     ].join('-');
-    const facetPath = facets.join('-') || '全部';
+    const facetPath = encodeURIComponent(facets.join('-') || '全部');
     const route = `/get-search-book-list/${filterPath}/${facetPath}/${encodeURIComponent(searchTerm)}/${pageNo}`;
     const $ = await this.fetchDocument(new URL(route, this.site).href);
     return this.parseNovels($);

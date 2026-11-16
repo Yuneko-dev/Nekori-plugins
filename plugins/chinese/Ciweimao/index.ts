@@ -164,7 +164,7 @@ class Ciweimao extends NekoriBasePlugin {
   name = 'Ciweimao';
   icon = 'icon.svg';
   site = 'https://www.ciweimao.com';
-  version = '1.0.3';
+  version = '1.0.0';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
   imageRequestInit = {
@@ -418,8 +418,7 @@ class Ciweimao extends NekoriBasePlugin {
 
     const info = $('.book-info .info');
     const authorLine =
-      info.find('.author').text().trim() ||
-      $title.find('span').text().trim();
+      info.find('.author').text().trim() || $title.find('span').text().trim();
     const author =
       $title.find('span a').first().text().trim() ||
       authorLine.split(/\s+著/)[0]?.trim() ||

@@ -13,6 +13,7 @@ body:
       description: Select the affected plugin(s).
       multiple: true
       options:
+        - "中文, 汉语, 漢語: Ciweimao"
         - "English: CosplayTele"
         - "日本語: NocSyosetu"
         - "日本語: Pixiv Novel"

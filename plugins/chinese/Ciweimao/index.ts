@@ -164,7 +164,7 @@ class Ciweimao extends NekoriBasePlugin {
   name = 'Ciweimao';
   icon = 'icon.svg';
   site = 'https://www.ciweimao.com';
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
   imageRequestInit = {
@@ -458,11 +458,13 @@ class Ciweimao extends NekoriBasePlugin {
       throw new Error(`Invalid Ciweimao chapter path: ${chapterPath}`);
     }
 
-    let $ = await this.fetchDocument(`${this.site}/chapter/${chapterId}`);
+    let $ = await this.fetchDocument(
+      `https://mip.ciweimao.com/chapter/${chapterId}`,
+    );
     let $content = $('#J_BookRead');
     if (!$content.text().trim()) {
       $ = await this.fetchDocument(
-        `https://mip.ciweimao.com/chapter/${chapterId}`,
+        `https://wap.ciweimao.com/chapter/${chapterId}`,
       );
       $content = $('#J_BookRead');
     }

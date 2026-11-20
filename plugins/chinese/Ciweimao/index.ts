@@ -164,7 +164,7 @@ class Ciweimao extends NekoriBasePlugin {
   name = 'Ciweimao';
   icon = 'icon.svg';
   site = 'https://www.ciweimao.com';
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
   imageRequestInit = {
@@ -475,7 +475,41 @@ class Ciweimao extends NekoriBasePlugin {
       );
     }
 
-    $content.find('script, style, .num-link, span').remove();
+    $content.find('script, style, .num-link, span').each((_, element) => {
+      const $element = $(element);
+      if ($element.find('img').length > 0) {
+        $element.replaceWith($element.contents());
+      } else {
+        $element.remove();
+      }
+    });
+
+    $content.find('img').each((_, element) => {
+      const $image = $(element);
+      const imageSource = [
+        $image.attr('data-original'),
+        $image.attr('data-src'),
+        $image.attr('data-lazy-src'),
+        $image.attr('data-echo'),
+        $image.attr('src'),
+        $image.attr('data-srcset')?.split(',')[0]?.trim().split(/\s+/)[0],
+      ].find(
+        source =>
+          source &&
+          !/^data:image\/(?:gif|png);base64,/i.test(source) &&
+          source !== 'about:blank',
+      );
+
+      if (imageSource) {
+        try {
+          $image.attr('src', new URL(imageSource, this.site).href);
+        } catch {
+          throw new Error(`Invalid Ciweimao chapter image URL: ${imageSource}`);
+        }
+      }
+      $image.attr('loading', 'lazy');
+    });
+
     $content.find('p.chapter').each((_, element) => {
       const $paragraph = $(element);
       const html = $paragraph.html();

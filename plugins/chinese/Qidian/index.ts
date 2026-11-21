@@ -1,23 +1,38 @@
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
+import { get as getCookies } from '@nekori/cookie';
 import { NekoriBasePlugin } from '@nekori/plugin';
 import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
 import { load as loadCheerio } from 'cheerio';
 
 import { Plugin } from '@/types/plugin';
 
+const FEMALE_CATEGORIES = new Set([
+  '80',
+  '81',
+  '82',
+  '83',
+  '84',
+  '85',
+  '86',
+  '87',
+  '88',
+]);
+
 class QidianPlugin extends NekoriBasePlugin {
   id = 'qidian.com';
   name = 'Qidian';
   icon = 'icon.svg';
   site = 'https://www.qidian.com';
-  version = '1.0.0';
+  version = '1.0.1';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
 
   private readonly mobileSite = 'https://m.qidian.com';
-  private readonly csrfToken = '1234567890abcdef1234567890abcdef12345678';
+  private readonly defaultCsrfToken =
+    '1234567890abcdef1234567890abcdef12345678';
+  private cachedCsrfToken: string | undefined;
 
   filters = {
     category: {
@@ -25,20 +40,30 @@ class QidianPlugin extends NekoriBasePlugin {
       label: '分类 (Category)',
       value: '21',
       options: [
-        { label: '玄幻 (Fantasy)', value: '21' },
-        { label: '奇幻 (Fantasy)', value: '1' },
-        { label: '武侠 (Wuxia)', value: '5' },
-        { label: '仙侠 (Xianxia)', value: '22' },
-        { label: '都市 (Urban)', value: '4' },
-        { label: '现实 (Realistic Fiction)', value: '15' },
-        { label: '军事 (Military)', value: '6' },
-        { label: '历史 (Historical)', value: '7' },
-        { label: '游戏 (Gaming)', value: '8' },
-        { label: '体育 (Sports)', value: '9' },
-        { label: '科幻 (Science Fiction)', value: '10' },
-        { label: '悬疑 (Mystery)', value: '11' },
-        { label: '轻小说 (Light Novel)', value: '12' },
-        { label: '短篇 (Short Stories)', value: '13' },
+        { label: '男频·玄幻 (Male - Xuanhuan)', value: '21' },
+        { label: '男频·奇幻 (Male - Fantasy)', value: '1' },
+        { label: '男频·武侠 (Male - Wuxia)', value: '2' },
+        { label: '男频·仙侠 (Male - Xianxia)', value: '22' },
+        { label: '男频·都市 (Male - Urban)', value: '4' },
+        { label: '男频·现实 (Male - Realistic Fiction)', value: '15' },
+        { label: '男频·军事 (Male - Military)', value: '6' },
+        { label: '男频·历史 (Male - Historical)', value: '5' },
+        { label: '男频·游戏 (Male - Gaming)', value: '7' },
+        { label: '男频·体育 (Male - Sports)', value: '8' },
+        { label: '男频·科幻 (Male - Science Fiction)', value: '9' },
+        { label: '男频·悬疑灵异 (Male - Mystery)', value: '10' },
+        { label: '男频·诸天无限 (Male - Endless Worlds)', value: '20109' },
+        { label: '男频·轻小说 (Male - Light Novel)', value: '12' },
+        { label: '男频·短篇 (Male - Short Stories)', value: '20076' },
+        { label: '女频·古代言情 (Female - Ancient Romance)', value: '80' },
+        { label: '女频·仙侠奇缘 (Female - Immortal Romance)', value: '81' },
+        { label: '女频·现代言情 (Female - Modern Romance)', value: '82' },
+        { label: '女频·浪漫青春 (Female - Romantic Youth)', value: '83' },
+        { label: '女频·玄幻言情 (Female - Fantasy Romance)', value: '84' },
+        { label: '女频·悬疑推理 (Female - Mystery & Suspense)', value: '85' },
+        { label: '女频·科幻空间 (Female - Sci-Fi Space)', value: '86' },
+        { label: '女频·轻小说 (Female - Light Novel)', value: '87' },
+        { label: '女频·游戏竞技 (Female - Gaming & Sports)', value: '88' },
       ],
     },
     gender: {
@@ -137,7 +162,43 @@ class QidianPlugin extends NekoriBasePlugin {
     return match?.[1];
   }
 
+  private parseRecordsToNovels(records: unknown[]): Plugin.NovelItem[] {
+    const novels: Plugin.NovelItem[] = [];
+    for (const record of records) {
+      if (!this.isRecord(record)) continue;
+      const idValue = record.bid ?? record.bookId;
+      const id =
+        typeof idValue === 'number' || typeof idValue === 'string'
+          ? String(idValue)
+          : '';
+      const name = typeof record.bName === 'string' ? record.bName.trim() : '';
+      if (!/^\d+$/.test(id) || !name) continue;
+
+      const image =
+        (typeof record.imgUrl === 'string' && record.imgUrl) ||
+        `//bookcover.yuewen.com/qdbimg/349573/${id}/180`;
+      novels.push({
+        name,
+        path: `/book/${id}/`,
+        cover: this.normalizeCover(image),
+      });
+    }
+    return novels;
+  }
+
   private parseNovelList(body: string): Plugin.NovelItem[] {
+    const pageData = this.extractPageData(body);
+    if (pageData) {
+      const container = this.isRecord(pageData.list)
+        ? pageData.list
+        : this.isRecord(pageData.bookInfo)
+          ? pageData.bookInfo
+          : undefined;
+      if (container && Array.isArray(container.records)) {
+        return this.parseRecordsToNovels(container.records);
+      }
+    }
+
     const $ = loadCheerio(body);
     const novels: Plugin.NovelItem[] = [];
     const seen = new Set<string>();
@@ -215,28 +276,96 @@ class QidianPlugin extends NekoriBasePlugin {
       );
     }
 
-    const novels: Plugin.NovelItem[] = [];
-    for (const record of records) {
-      if (!this.isRecord(record)) continue;
-      const idValue = record.bid ?? record.bookId;
-      const id =
-        typeof idValue === 'number' || typeof idValue === 'string'
-          ? String(idValue)
-          : '';
-      const name = typeof record.bName === 'string' ? record.bName.trim() : '';
-      if (!/^\d+$/.test(id) || !name) continue;
+    return this.parseRecordsToNovels(records);
+  }
 
-      const image =
-        (typeof record.imgUrl === 'string' && record.imgUrl) ||
-        `//bookcover.yuewen.com/qdbimg/349573/${id}/180`;
-      novels.push({
-        name,
-        path: `/book/${id}/`,
-        cover: this.normalizeCover(image),
-      });
+  private updateCsrfFromResponse(response: Response): void {
+    const setCookie =
+      response.headers.get('set-cookie') || response.headers.get('Set-Cookie');
+    const match = setCookie?.match(/(?:^|[,;\s])_csrfToken=([^;,\s]+)/);
+    if (match?.[1]) {
+      this.cachedCsrfToken = match[1];
+    }
+  }
+
+  private async resolveCsrfToken(): Promise<{
+    token: string;
+    fromJar: boolean;
+  }> {
+    try {
+      const cookies = await getCookies(this.mobileSite);
+      const token = cookies?.['_csrfToken']?.value?.trim();
+      if (token) {
+        this.cachedCsrfToken = token;
+        return { token, fromJar: true };
+      }
+    } catch {
+      // Fallback when host cookie reader is unavailable
     }
 
-    return novels;
+    if (!this.cachedCsrfToken) {
+      try {
+        const res = await fetchApi(`${this.mobileSite}/soushu/`);
+        this.updateCsrfFromResponse(res);
+        const cookies = await getCookies(this.mobileSite).catch(
+          () => undefined,
+        );
+        const token = cookies?.['_csrfToken']?.value?.trim();
+        if (token) {
+          this.cachedCsrfToken = token;
+          return { token, fromJar: true };
+        }
+      } catch {
+        // Ignore warmup failure and use fallback token
+      }
+    }
+
+    return {
+      token: this.cachedCsrfToken || this.defaultCsrfToken,
+      fromJar: false,
+    };
+  }
+
+  private async fetchWithCsrf(
+    endpointPath: string,
+    params: URLSearchParams,
+    referer: string,
+  ): Promise<Response> {
+    const firstCsrf = await this.resolveCsrfToken();
+    params.set('_csrfToken', firstCsrf.token);
+    const headers: Record<string, string> = { Referer: referer };
+    if (!firstCsrf.fromJar) {
+      headers.Cookie = `_csrfToken=${firstCsrf.token}`;
+    }
+
+    let response = await fetchApi(
+      `${this.mobileSite}${endpointPath}?${params.toString()}`,
+      { headers },
+    );
+    this.updateCsrfFromResponse(response);
+
+    if (response.status === 403) {
+      this.cachedCsrfToken = undefined;
+      try {
+        const warmup = await fetchApi(referer);
+        this.updateCsrfFromResponse(warmup);
+      } catch {
+        // Ignore warmup error
+      }
+      const retryCsrf = await this.resolveCsrfToken();
+      params.set('_csrfToken', retryCsrf.token);
+      const retryHeaders: Record<string, string> = { Referer: referer };
+      if (!retryCsrf.fromJar) {
+        retryHeaders.Cookie = `_csrfToken=${retryCsrf.token}`;
+      }
+      response = await fetchApi(
+        `${this.mobileSite}${endpointPath}?${params.toString()}`,
+        { headers: retryHeaders },
+      );
+      this.updateCsrfFromResponse(response);
+    }
+
+    return response;
   }
 
   async popularNovels(
@@ -244,7 +373,15 @@ class QidianPlugin extends NekoriBasePlugin {
     options: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
     const filters = options?.filters;
-    const category = filters?.category?.value || '21';
+    const selectedCategory = filters?.category?.value || '21';
+    const selectedGender = filters?.gender?.value || 'male';
+    const isFemaleCategory = FEMALE_CATEGORIES.has(selectedCategory);
+    const category =
+      selectedGender === 'female' && !isFemaleCategory
+        ? '80'
+        : selectedCategory;
+    const gender = FEMALE_CATEGORIES.has(category) ? 'female' : 'male';
+
     const routeFilters = [
       filters?.sort?.value ? `orderby${filters.sort.value}` : '',
       filters?.access?.value ? `isvip${filters.access.value}` : '',
@@ -253,24 +390,22 @@ class QidianPlugin extends NekoriBasePlugin {
       filters?.quality?.value ? `sign${filters.quality.value}` : '',
       filters?.updated?.value ? `update${filters.updated.value}` : '',
     ].filter(Boolean);
-    routeFilters.push(filters?.gender?.value || 'male');
+    routeFilters.push(gender);
     const route = routeFilters.join('-');
+    const referer = `${this.mobileSite}/category/catid${category}/${route}/`;
+
     if (pageNo <= 1) {
-      const url = `${this.mobileSite}/category/catid${category}/${route}/`;
-      const response = await fetchApi(url);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch popular novels: HTTP ${response.status}`,
-        );
+      const response = await fetchApi(referer);
+      this.updateCsrfFromResponse(response);
+      if (response.ok) {
+        return this.parseNovelList(await response.text());
       }
-      return this.parseNovelList(await response.text());
     }
 
     const params = new URLSearchParams({
       catId: category,
-      gender: filters?.gender?.value || 'male',
+      gender,
       pageNum: String(pageNo),
-      _csrfToken: this.csrfToken,
     });
     if (filters?.sort?.value) params.set('orderBy', filters.sort.value);
     if (filters?.access?.value) params.set('isvip', filters.access.value);
@@ -279,14 +414,10 @@ class QidianPlugin extends NekoriBasePlugin {
     if (filters?.quality?.value) params.set('sign', filters.quality.value);
     if (filters?.updated?.value) params.set('update', filters.updated.value);
 
-    const response = await fetchApi(
-      `${this.mobileSite}/webcommon/category/list?${params.toString()}`,
-      {
-        headers: {
-          Cookie: `_csrfToken=${this.csrfToken}`,
-          Referer: `${this.mobileSite}/category/catid${category}/${route}/`,
-        },
-      },
+    const response = await this.fetchWithCsrf(
+      '/webcommon/category/list',
+      params,
+      referer,
     );
     if (!response.ok) {
       throw new Error(
@@ -303,28 +434,23 @@ class QidianPlugin extends NekoriBasePlugin {
     const term = searchTerm.trim();
     if (!term) return [];
 
+    const referer = `${this.mobileSite}/soushu/${encodeURIComponent(term)}.html`;
     if (pageNo <= 1) {
-      const url = `${this.mobileSite}/soushu/${encodeURIComponent(term)}.html`;
-      const response = await fetchApi(url);
-      if (!response.ok) {
-        throw new Error(`Failed to search novels: HTTP ${response.status}`);
+      const response = await fetchApi(referer);
+      this.updateCsrfFromResponse(response);
+      if (response.ok) {
+        return this.parseNovelList(await response.text());
       }
-      return this.parseNovelList(await response.text());
     }
 
     const params = new URLSearchParams({
       kw: term,
       pageNum: String(pageNo),
-      _csrfToken: this.csrfToken,
     });
-    const response = await fetchApi(
-      `${this.mobileSite}/webcommon/search/list?${params.toString()}`,
-      {
-        headers: {
-          Cookie: `_csrfToken=${this.csrfToken}`,
-          Referer: `${this.mobileSite}/soushu/${encodeURIComponent(term)}.html`,
-        },
-      },
+    const response = await this.fetchWithCsrf(
+      '/webcommon/search/list',
+      params,
+      referer,
     );
     if (!response.ok) {
       throw new Error(`Failed to search novels: HTTP ${response.status}`);

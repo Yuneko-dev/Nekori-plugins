@@ -164,7 +164,7 @@ class Ciweimao extends NekoriBasePlugin {
   name = 'Ciweimao';
   icon = 'icon.svg';
   site = 'https://www.ciweimao.com';
-  version = '1.0.2';
+  version = '1.0.3';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
   imageRequestInit = {
@@ -417,22 +417,31 @@ class Ciweimao extends NekoriBasePlugin {
       ? NovelStatus.Completed
       : NovelStatus.Ongoing;
 
+    const $chapters =
+      $('#J_ReadAll').length > 0
+        ? await this.fetchDocument(
+            `${this.site}/chapter/get_chapter_list_in_chapter_detail?book_id=${bookId}&chapter_id=0&orderby=0`,
+          )
+        : $;
+
     const chapters: Plugin.ChapterItem[] = [];
     const chapterPaths = new Set<string>();
-    $(
+    $chapters(
       '.catalogue-list a[href*="/chapter/"], .book-chapter-box a[href*="/chapter/"]',
     ).each((index, element) => {
-      const $link = $(element);
+      const $link = $chapters(element);
       const href = $link.attr('href');
       const chapterId = href?.match(/\/chapter\/(\d+)/)?.[1];
-      const chapterName = $link.text().trim();
-      if (!chapterId || !chapterName) return;
+      const rawName = $link.text().trim();
+      if (!chapterId || !rawName) return;
 
       const chapterPath = `/chapter/${chapterId}`;
       if (chapterPaths.has(chapterPath)) return;
       chapterPaths.add(chapterPath);
 
-      const number = chapterName.match(/第\s*(\d+)\s*章/);
+      const isLocked = $link.find('.icon-lock').length > 0;
+      const chapterName = isLocked ? `🔒 ${rawName}` : rawName;
+      const number = rawName.match(/第\s*(\d+)\s*章/);
       chapters.push({
         name: chapterName,
         path: chapterPath,

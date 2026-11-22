@@ -1,7 +1,7 @@
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
-import { get as getCookies } from '@nekori/cookie';
+import { get as getCookies, set as setCookie } from '@nekori/cookie';
 import { NekoriBasePlugin } from '@nekori/plugin';
 import { ContentType, ContentWarning } from '@nekori/pluginMetadata';
 import { load as loadCheerio } from 'cheerio';
@@ -18,28 +18,36 @@ const FEMALE_CATEGORIES = new Set([
   '86',
   '87',
   '88',
+  '30083',
+  '30120',
 ]);
+
+const CSRF_CHARS =
+  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 class QidianPlugin extends NekoriBasePlugin {
   id = 'qidian.com';
   name = 'Qidian';
   icon = 'icon.svg';
   site = 'https://www.qidian.com';
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
 
-  private readonly mobileSite = 'https://m.qidian.com';
-  private readonly defaultCsrfToken =
-    '1234567890abcdef1234567890abcdef12345678';
   private cachedCsrfToken: string | undefined;
 
   filters = {
+    keyword: {
+      type: FilterTypes.TextInput,
+      label: '关键词搜索 (Search Keyword)',
+      value: '',
+    },
     category: {
       type: FilterTypes.Picker,
       label: '分类 (Category)',
-      value: '21',
+      value: '',
       options: [
+        { label: '全部 / 默认玄幻 (All / Default)', value: '' },
         { label: '男频·玄幻 (Male - Xuanhuan)', value: '21' },
         { label: '男频·奇幻 (Male - Fantasy)', value: '1' },
         { label: '男频·武侠 (Male - Wuxia)', value: '2' },
@@ -64,13 +72,16 @@ class QidianPlugin extends NekoriBasePlugin {
         { label: '女频·科幻空间 (Female - Sci-Fi Space)', value: '86' },
         { label: '女频·轻小说 (Female - Light Novel)', value: '87' },
         { label: '女频·游戏竞技 (Female - Gaming & Sports)', value: '88' },
+        { label: '女频·现实生活 (Female - Realistic Life)', value: '30120' },
+        { label: '女频·短篇 (Female - Short Stories)', value: '30083' },
       ],
     },
     gender: {
       type: FilterTypes.Picker,
       label: '频道 (Audience)',
-      value: 'male',
+      value: '',
       options: [
+        { label: '全部 / 默认男频 (All / Default Male)', value: '' },
         { label: '男频 (Male-Oriented)', value: 'male' },
         { label: '女频 (Female-Oriented)', value: 'female' },
       ],
@@ -84,7 +95,9 @@ class QidianPlugin extends NekoriBasePlugin {
         { label: '时间 (Recently Updated)', value: '4' },
         { label: '字数 (Word Count)', value: '3' },
         { label: '收藏 (Favorites)', value: '11' },
-        { label: '推荐 (Recommendations)', value: '9' },
+        { label: '周推荐 (Weekly Recommendations)', value: '9' },
+        { label: '月推荐 (Monthly Recommendations)', value: '10' },
+        { label: '总推荐 (Total Recommendations)', value: '2' },
         { label: '月票 (Monthly Tickets)', value: '12' },
         { label: '点击 (Views)', value: '1' },
       ],
@@ -146,20 +159,142 @@ class QidianPlugin extends NekoriBasePlugin {
     },
   } satisfies Filters;
 
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
   private absoluteUrl(path: string): string {
     if (/^https?:\/\//i.test(path)) return path;
     if (path.startsWith('//')) return `https:${path}`;
-    return `${this.mobileSite}${path.startsWith('/') ? path : `/${path}`}`;
+    return `${this.site}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
-  private normalizeCover(path: string | undefined): string | undefined {
-    if (!path) return undefined;
-    return this.absoluteUrl(path);
+  private normalizeCover(
+    path: string | undefined,
+    bookId?: string,
+  ): string | undefined {
+    const raw =
+      path ||
+      (bookId ? `//bookcover.yuewen.com/qdbimg/349573/${bookId}/180` : '');
+    return raw ? this.absoluteUrl(raw) : undefined;
   }
 
   private parseNovelId(path: string): string | undefined {
-    const match = path.match(/\/(?:book|chapter)\/(\d+)/);
-    return match?.[1];
+    return path.match(/\/(?:book|chapter)\/(\d+)/)?.[1];
+  }
+
+  private generateCsrfToken(): string {
+    let token = '';
+    for (let i = 0; i < 40; i += 1) {
+      token += CSRF_CHARS[Math.floor(Math.random() * CSRF_CHARS.length)];
+    }
+    return token;
+  }
+
+  private updateCsrfFromResponse(response: Response): void {
+    const setCookieHeader =
+      response.headers.get('set-cookie') || response.headers.get('Set-Cookie');
+    const match = setCookieHeader?.match(/(?:^|[,;\s])_csrfToken=([^;,\s]+)/);
+    if (match?.[1]) {
+      this.cachedCsrfToken = match[1];
+    }
+  }
+
+  private async resolveCsrfToken(): Promise<{
+    token: string;
+    fromJar: boolean;
+  }> {
+    try {
+      const cookies = await getCookies(this.site);
+      const token = cookies?.['_csrfToken']?.value?.trim();
+      if (token) {
+        this.cachedCsrfToken = token;
+        return { token, fromJar: true };
+      }
+    } catch {
+      // Fallback when host cookie reader is unavailable
+    }
+
+    if (!this.cachedCsrfToken) {
+      this.cachedCsrfToken = this.generateCsrfToken();
+      try {
+        await setCookie(this.site, {
+          name: '_csrfToken',
+          value: this.cachedCsrfToken,
+          domain: '.qidian.com',
+          path: '/',
+        });
+        return { token: this.cachedCsrfToken, fromJar: true };
+      } catch {
+        // Fallback to manual Cookie header
+      }
+    }
+
+    return { token: this.cachedCsrfToken, fromJar: false };
+  }
+
+  private async requestWebcommon(
+    endpointPath: string,
+    params: URLSearchParams,
+    referer = `${this.site}/`,
+  ): Promise<Record<string, unknown>> {
+    const csrf = await this.resolveCsrfToken();
+    params.set('_csrfToken', csrf.token);
+    const headers: Record<string, string> = { Referer: referer };
+    if (!csrf.fromJar) {
+      headers.Cookie = `_csrfToken=${csrf.token}`;
+    }
+
+    let response = await fetchApi(
+      `${this.site}${endpointPath}?${params.toString()}`,
+      { headers },
+    );
+    this.updateCsrfFromResponse(response);
+
+    if (response.status === 403) {
+      this.cachedCsrfToken = this.generateCsrfToken();
+      await setCookie(this.site, {
+        name: '_csrfToken',
+        value: this.cachedCsrfToken,
+        domain: '.qidian.com',
+        path: '/',
+      }).catch(() => undefined);
+
+      params.set('_csrfToken', this.cachedCsrfToken);
+      response = await fetchApi(
+        `${this.site}${endpointPath}?${params.toString()}`,
+        {
+          headers: {
+            Referer: referer,
+            Cookie: `_csrfToken=${this.cachedCsrfToken}`,
+          },
+        },
+      );
+      this.updateCsrfFromResponse(response);
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Qidian API request failed (${endpointPath}): HTTP ${response.status}`,
+      );
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(await response.text());
+    } catch {
+      throw new Error('Qidian returned invalid JSON data');
+    }
+
+    if (!this.isRecord(payload) || payload.code !== 0) {
+      const message =
+        this.isRecord(payload) && typeof payload.msg === 'string'
+          ? payload.msg
+          : 'Unknown response';
+      throw new Error(`Qidian API error: ${message}`);
+    }
+
+    return this.isRecord(payload.data) ? payload.data : {};
   }
 
   private parseRecordsToNovels(records: unknown[]): Plugin.NovelItem[] {
@@ -175,197 +310,65 @@ class QidianPlugin extends NekoriBasePlugin {
       if (!/^\d+$/.test(id) || !name) continue;
 
       const image =
-        (typeof record.imgUrl === 'string' && record.imgUrl) ||
-        `//bookcover.yuewen.com/qdbimg/349573/${id}/180`;
+        typeof record.imgUrl === 'string' ? record.imgUrl : undefined;
       novels.push({
         name,
         path: `/book/${id}/`,
-        cover: this.normalizeCover(image),
+        cover: this.normalizeCover(image, id),
       });
     }
     return novels;
   }
 
-  private parseNovelList(body: string): Plugin.NovelItem[] {
-    const pageData = this.extractPageData(body);
-    if (pageData) {
-      const container = this.isRecord(pageData.list)
-        ? pageData.list
-        : this.isRecord(pageData.bookInfo)
-          ? pageData.bookInfo
-          : undefined;
-      if (container && Array.isArray(container.records)) {
-        return this.parseRecordsToNovels(container.records);
-      }
-    }
-
-    const $ = loadCheerio(body);
-    const novels: Plugin.NovelItem[] = [];
-    const seen = new Set<string>();
-
-    $('a[href]').each((_index, element) => {
-      const link = $(element);
-      const href = link.attr('href');
-      if (!href) return;
-
-      const bookId = this.parseNovelId(href);
-      if (!bookId) return;
-
-      const path = `/book/${bookId}/`;
-      if (seen.has(path)) return;
-
-      const name =
-        link.find('h2').first().text().trim() ||
-        link
-          .attr('title')
-          ?.replace(/最新章节在线阅读|在线阅读/g, '')
-          .trim();
-      if (!name) return;
-
-      const image =
-        link.find('img').first().attr('data-src') ||
-        link.find('img').first().attr('data-original') ||
-        link.find('img').first().attr('src');
-
-      seen.add(path);
-      novels.push({
-        name,
-        path,
-        cover: this.normalizeCover(image),
-      });
+  private async fetchSearchResults(
+    term: string,
+    pageNo: number,
+    filters?: Plugin.PopularNovelsOptions<typeof this.filters>['filters'],
+  ): Promise<Plugin.NovelItem[]> {
+    const params = new URLSearchParams({
+      kw: term,
+      pageNum: String(pageNo),
     });
 
-    return novels;
-  }
+    if (filters) {
+      const selectedCategory = filters.category?.value || '';
+      const selectedGender = filters.gender?.value || '';
+      const isFemaleCategory = FEMALE_CATEGORIES.has(selectedCategory);
 
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-  }
-
-  private parseApiNovelList(
-    body: string,
-    searchResults = false,
-  ): Plugin.NovelItem[] {
-    let payload: unknown;
-    try {
-      payload = JSON.parse(body);
-    } catch {
-      throw new Error('Qidian returned invalid pagination data');
-    }
-
-    if (!this.isRecord(payload) || payload.code !== 0) {
-      const message =
-        this.isRecord(payload) && typeof payload.msg === 'string'
-          ? payload.msg
-          : 'Unknown response';
-      throw new Error(`Qidian pagination failed: ${message}`);
-    }
-
-    const data = payload.data;
-    const bookInfo =
-      searchResults && this.isRecord(data) ? data.bookInfo : undefined;
-    const records = this.isRecord(bookInfo)
-      ? bookInfo.records
-      : this.isRecord(data)
-        ? data.records
-        : undefined;
-
-    if (!Array.isArray(records)) {
-      throw new Error(
-        'Qidian pagination response did not contain novel records',
-      );
-    }
-
-    return this.parseRecordsToNovels(records);
-  }
-
-  private updateCsrfFromResponse(response: Response): void {
-    const setCookie =
-      response.headers.get('set-cookie') || response.headers.get('Set-Cookie');
-    const match = setCookie?.match(/(?:^|[,;\s])_csrfToken=([^;,\s]+)/);
-    if (match?.[1]) {
-      this.cachedCsrfToken = match[1];
-    }
-  }
-
-  private async resolveCsrfToken(): Promise<{
-    token: string;
-    fromJar: boolean;
-  }> {
-    try {
-      const cookies = await getCookies(this.mobileSite);
-      const token = cookies?.['_csrfToken']?.value?.trim();
-      if (token) {
-        this.cachedCsrfToken = token;
-        return { token, fromJar: true };
+      if (selectedGender === 'female' || isFemaleCategory) {
+        params.set('siteid', '0');
+      } else if (selectedGender === 'male') {
+        params.set('siteid', '1');
       }
-    } catch {
-      // Fallback when host cookie reader is unavailable
-    }
 
-    if (!this.cachedCsrfToken) {
-      try {
-        const res = await fetchApi(`${this.mobileSite}/soushu/`);
-        this.updateCsrfFromResponse(res);
-        const cookies = await getCookies(this.mobileSite).catch(
-          () => undefined,
-        );
-        const token = cookies?.['_csrfToken']?.value?.trim();
-        if (token) {
-          this.cachedCsrfToken = token;
-          return { token, fromJar: true };
-        }
-      } catch {
-        // Ignore warmup failure and use fallback token
+      if (selectedCategory) {
+        const compatibleCategory =
+          selectedGender === 'female' && !isFemaleCategory
+            ? ''
+            : selectedCategory;
+        if (compatibleCategory) params.set('catId', compatibleCategory);
       }
+
+      if (filters.sort?.value) params.set('orderBy', filters.sort.value);
+      if (filters.access?.value) params.set('vip', filters.access.value);
+      if (filters.length?.value) params.set('size', filters.length.value);
+      if (filters.status?.value) params.set('state', filters.status.value);
+      if (filters.quality?.value) params.set('sign', filters.quality.value);
+      if (filters.updated?.value) params.set('update', filters.updated.value);
     }
 
-    return {
-      token: this.cachedCsrfToken || this.defaultCsrfToken,
-      fromJar: false,
-    };
-  }
-
-  private async fetchWithCsrf(
-    endpointPath: string,
-    params: URLSearchParams,
-    referer: string,
-  ): Promise<Response> {
-    const firstCsrf = await this.resolveCsrfToken();
-    params.set('_csrfToken', firstCsrf.token);
-    const headers: Record<string, string> = { Referer: referer };
-    if (!firstCsrf.fromJar) {
-      headers.Cookie = `_csrfToken=${firstCsrf.token}`;
-    }
-
-    let response = await fetchApi(
-      `${this.mobileSite}${endpointPath}?${params.toString()}`,
-      { headers },
+    const referer = `${this.site}/so/${encodeURIComponent(term)}.html`;
+    const data = await this.requestWebcommon(
+      '/webcommon/search/list',
+      params,
+      referer,
     );
-    this.updateCsrfFromResponse(response);
-
-    if (response.status === 403) {
-      this.cachedCsrfToken = undefined;
-      try {
-        const warmup = await fetchApi(referer);
-        this.updateCsrfFromResponse(warmup);
-      } catch {
-        // Ignore warmup error
-      }
-      const retryCsrf = await this.resolveCsrfToken();
-      params.set('_csrfToken', retryCsrf.token);
-      const retryHeaders: Record<string, string> = { Referer: referer };
-      if (!retryCsrf.fromJar) {
-        retryHeaders.Cookie = `_csrfToken=${retryCsrf.token}`;
-      }
-      response = await fetchApi(
-        `${this.mobileSite}${endpointPath}?${params.toString()}`,
-        { headers: retryHeaders },
-      );
-      this.updateCsrfFromResponse(response);
+    const bookInfo = this.isRecord(data.bookInfo) ? data.bookInfo : undefined;
+    if (!bookInfo || !Array.isArray(bookInfo.records)) {
+      throw new Error('Qidian search response did not contain novel records');
     }
 
-    return response;
+    return this.parseRecordsToNovels(bookInfo.records);
   }
 
   async popularNovels(
@@ -373,34 +376,19 @@ class QidianPlugin extends NekoriBasePlugin {
     options: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
     const filters = options?.filters;
-    const selectedCategory = filters?.category?.value || '21';
+    const keyword = filters?.keyword?.value?.trim() || '';
+    if (keyword) {
+      return this.fetchSearchResults(keyword, pageNo, filters);
+    }
+
+    const selectedCategory = filters?.category?.value || '';
     const selectedGender = filters?.gender?.value || 'male';
     const isFemaleCategory = FEMALE_CATEGORIES.has(selectedCategory);
     const category =
       selectedGender === 'female' && !isFemaleCategory
         ? '80'
-        : selectedCategory;
+        : selectedCategory || '21';
     const gender = FEMALE_CATEGORIES.has(category) ? 'female' : 'male';
-
-    const routeFilters = [
-      filters?.sort?.value ? `orderby${filters.sort.value}` : '',
-      filters?.access?.value ? `isvip${filters.access.value}` : '',
-      filters?.length?.value ? `size${filters.length.value}` : '',
-      filters?.status?.value ? `isfinish${filters.status.value}` : '',
-      filters?.quality?.value ? `sign${filters.quality.value}` : '',
-      filters?.updated?.value ? `update${filters.updated.value}` : '',
-    ].filter(Boolean);
-    routeFilters.push(gender);
-    const route = routeFilters.join('-');
-    const referer = `${this.mobileSite}/category/catid${category}/${route}/`;
-
-    if (pageNo <= 1) {
-      const response = await fetchApi(referer);
-      this.updateCsrfFromResponse(response);
-      if (response.ok) {
-        return this.parseNovelList(await response.text());
-      }
-    }
 
     const params = new URLSearchParams({
       catId: category,
@@ -414,17 +402,21 @@ class QidianPlugin extends NekoriBasePlugin {
     if (filters?.quality?.value) params.set('sign', filters.quality.value);
     if (filters?.updated?.value) params.set('update', filters.updated.value);
 
-    const response = await this.fetchWithCsrf(
+    const referer =
+      gender === 'female'
+        ? `${this.site}/mm/all/chanId${category}/`
+        : `${this.site}/all/chanId${category}/`;
+
+    const data = await this.requestWebcommon(
       '/webcommon/category/list',
       params,
       referer,
     );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch popular novels: HTTP ${response.status}`,
-      );
+    if (!Array.isArray(data.records)) {
+      throw new Error('Qidian category response did not contain novel records');
     }
-    return this.parseApiNovelList(await response.text());
+
+    return this.parseRecordsToNovels(data.records);
   }
 
   async searchNovels(
@@ -433,144 +425,35 @@ class QidianPlugin extends NekoriBasePlugin {
   ): Promise<Plugin.NovelItem[]> {
     const term = searchTerm.trim();
     if (!term) return [];
-
-    const referer = `${this.mobileSite}/soushu/${encodeURIComponent(term)}.html`;
-    if (pageNo <= 1) {
-      const response = await fetchApi(referer);
-      this.updateCsrfFromResponse(response);
-      if (response.ok) {
-        return this.parseNovelList(await response.text());
-      }
-    }
-
-    const params = new URLSearchParams({
-      kw: term,
-      pageNum: String(pageNo),
-    });
-    const response = await this.fetchWithCsrf(
-      '/webcommon/search/list',
-      params,
-      referer,
-    );
-    if (!response.ok) {
-      throw new Error(`Failed to search novels: HTTP ${response.status}`);
-    }
-    return this.parseApiNovelList(await response.text(), true);
+    return this.fetchSearchResults(term, pageNo);
   }
 
-  private extractPageData(body: string): Record<string, unknown> | undefined {
-    const $ = loadCheerio(body);
-    const raw = $('script#vite-plugin-ssr_pageContext').text().trim();
-    if (!raw) return undefined;
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (!this.isRecord(parsed)) return undefined;
-      const pageContext = parsed.pageContext;
-      if (!this.isRecord(pageContext)) return undefined;
-      const pageProps = pageContext.pageProps;
-      if (!this.isRecord(pageProps)) return undefined;
-      const pageData = pageProps.pageData;
-      return this.isRecord(pageData) ? pageData : undefined;
-    } catch {
-      return undefined;
-    }
+  private formatDescription(rawDesc: string): string {
+    if (!rawDesc) return '';
+    return loadCheerio(`<div>${rawDesc.replace(/<br\s*\/?>/gi, '\n')}</div>`)
+      .text()
+      .split('\n')
+      .map(line => line.replace(/^[\s\u3000]+/, '').trim())
+      .filter(Boolean)
+      .join('\n');
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const bookId = this.parseNovelId(novelPath);
     if (!bookId) throw new Error(`Invalid Qidian novel path: ${novelPath}`);
 
-    const [detailResponse, catalogResponse] = await Promise.all([
-      fetchApi(`${this.mobileSite}/book/${bookId}/`),
-      fetchApi(`${this.mobileSite}/book/${bookId}/catalog/`),
-    ]);
-    if (!detailResponse.ok) {
-      throw new Error(`Failed to fetch novel: HTTP ${detailResponse.status}`);
-    }
-    if (!catalogResponse.ok) {
-      throw new Error(
-        `Failed to fetch catalog: HTTP ${catalogResponse.status}`,
-      );
-    }
-
-    const detailBody = await detailResponse.text();
-    const catalogBody = await catalogResponse.text();
-    const $ = loadCheerio(detailBody);
-    const detailData = this.extractPageData(detailBody);
-    const catalogData = this.extractPageData(catalogBody);
-    const bookInfo =
-      detailData && this.isRecord(detailData.bookInfo)
-        ? detailData.bookInfo
-        : undefined;
-
-    const name =
-      (typeof bookInfo?.bookName === 'string' && bookInfo.bookName.trim()) ||
-      $('meta[property="og:title"]').attr('content')?.trim() ||
-      $('h1').first().text().trim() ||
-      `Qidian ${bookId}`;
-    const author =
-      (typeof bookInfo?.authorName === 'string' &&
-        bookInfo.authorName.trim()) ||
-      $('meta[name="author"]').attr('content')?.trim() ||
-      detailBody.match(/"authorName":"([^"]+)"/)?.[1] ||
-      $('a[href*="/author"]').first().text().trim();
-
-    const rawDesc =
-      typeof bookInfo?.desc === 'string' ? bookInfo.desc.trim() : '';
-    const descFromBookInfo = rawDesc
-      ? loadCheerio(`<div>${rawDesc.replace(/<br\s*\/?>/gi, '\n')}</div>`)
-          .text()
-          .split('\n')
-          .map(line => line.replace(/^[\s\u3000]+/, '').trim())
-          .filter(Boolean)
-          .join('\n')
-      : '';
-    const summary =
-      descFromBookInfo ||
-      $('meta[name="description"]').attr('content')?.trim() ||
-      $('meta[property="og:description"]').attr('content')?.trim();
-    const cover =
-      $('meta[property="og:image"]').attr('content') ||
-      $('link[rel="preload"][as="image"]').attr('href') ||
-      $('img').first().attr('src');
-
-    const genresList: string[] = [];
-    if (typeof bookInfo?.chanName === 'string' && bookInfo.chanName.trim()) {
-      genresList.push(bookInfo.chanName.trim());
-    }
-    if (
-      typeof bookInfo?.subCateName === 'string' &&
-      bookInfo.subCateName.trim()
-    ) {
-      genresList.push(bookInfo.subCateName.trim());
-    }
-    if (Array.isArray(bookInfo?.bookLabels)) {
-      for (const label of bookInfo.bookLabels) {
-        if (
-          this.isRecord(label) &&
-          typeof label.tag === 'string' &&
-          label.tag.trim()
-        ) {
-          genresList.push(label.tag.trim());
-        }
-      }
-    }
-
-    const statusText =
-      (typeof bookInfo?.bookStatus === 'string' && bookInfo.bookStatus) ||
-      (typeof bookInfo?.actionStatus === 'string' && bookInfo.actionStatus) ||
-      (typeof catalogData?.bookStatus === 'string' && catalogData.bookStatus) ||
-      (typeof catalogData?.actionStatus === 'string' &&
-        catalogData.actionStatus) ||
-      '';
-    const isCompleted = statusText
-      ? /完结|完本/.test(statusText)
-      : /"bookStatus":"完本"|"actionStatus":"完本"/.test(detailBody);
+    const referer = `${this.site}/book/${bookId}/`;
+    const catalogData = await this.requestWebcommon(
+      '/webcommon/book/mCategory',
+      new URLSearchParams({ bookId }),
+      referer,
+    );
 
     const chapters: Plugin.ChapterItem[] = [];
     const seen = new Set<string>();
+    let firstChapterId: string | undefined;
 
-    if (catalogData && Array.isArray(catalogData.vs)) {
+    if (Array.isArray(catalogData.vs)) {
       for (const volume of catalogData.vs) {
         if (!this.isRecord(volume) || !Array.isArray(volume.cs)) continue;
         const isVipVolume = volume.vS === 1;
@@ -583,6 +466,8 @@ class QidianPlugin extends NekoriBasePlugin {
           const cName = typeof chap.cN === 'string' ? chap.cN.trim() : '';
           if (!cid || !cName || seen.has(cid)) continue;
           seen.add(cid);
+          if (!firstChapterId) firstChapterId = cid;
+
           const isLocked = chap.sS === 0 || (isVipVolume && chap.sS !== 1);
           const releaseTime =
             typeof chap.uT === 'string' && chap.uT.trim()
@@ -597,54 +482,74 @@ class QidianPlugin extends NekoriBasePlugin {
       }
     }
 
-    if (!chapters.length) {
-      const $catalog = loadCheerio(catalogBody);
-      $catalog('.y-list__content a[href*="/chapter/"]').each(
-        (_index, element) => {
-          const link = $catalog(element);
-          const href = link.attr('href');
-          const cid = href ? this.parseChapterId(href) : undefined;
-          if (!cid || seen.has(cid)) return;
-          const chapterName =
-            link.find('h2').first().text().trim() ||
-            link
-              .attr('title')
-              ?.replace(/.*?\s/, '')
-              .replace(/在线阅读$/, '')
-              .trim();
-          if (!chapterName) return;
-          seen.add(cid);
-
-          const className = link.attr('class') || '';
-          const isLocked = className.includes('_unPay_');
-          const alt = link.attr('alt') || '';
-          const releaseMatch = alt.match(
-            /首发时间:\s*(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2})?)/,
-          );
-          chapters.push({
-            name: isLocked ? `🔒 ${chapterName}` : chapterName,
-            path: `/chapter/${bookId}/${cid}/`,
-            releaseTime: releaseMatch?.[1] || null,
-          });
-        },
-      );
+    let bookInfo: Record<string, unknown> | undefined;
+    if (firstChapterId) {
+      const chapterData = await this.requestWebcommon(
+        '/webcommon/chapter/getMChapterInfo',
+        new URLSearchParams({ bookId, chapterId: firstChapterId }),
+        referer,
+      ).catch(() => undefined);
+      if (chapterData && this.isRecord(chapterData.bookInfo)) {
+        bookInfo = chapterData.bookInfo;
+      }
     }
+
+    const name =
+      (typeof bookInfo?.bookName === 'string' && bookInfo.bookName.trim()) ||
+      (typeof catalogData.bookName === 'string' &&
+        catalogData.bookName.trim()) ||
+      `Qidian ${bookId}`;
+    const author =
+      (typeof bookInfo?.authorName === 'string' &&
+        bookInfo.authorName.trim()) ||
+      (this.isRecord(catalogData.authorInfo) &&
+      typeof catalogData.authorInfo.authorName === 'string'
+        ? catalogData.authorInfo.authorName.trim()
+        : '');
+    const summary =
+      typeof bookInfo?.desc === 'string'
+        ? this.formatDescription(bookInfo.desc.trim())
+        : '';
+
+    const genresSet = new Set<string>();
+    const addGenre = (value: unknown) => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed) genresSet.add(trimmed);
+      }
+    };
+    addGenre(bookInfo?.chanName);
+    addGenre(bookInfo?.subCateName);
+    if (this.isRecord(bookInfo?.bookTag)) {
+      addGenre(bookInfo.bookTag.tagName);
+    }
+    if (Array.isArray(bookInfo?.bookLabels)) {
+      for (const label of bookInfo.bookLabels) {
+        if (this.isRecord(label)) {
+          addGenre(label.tag);
+        }
+      }
+    }
+
+    const statusText =
+      (typeof bookInfo?.bookStatus === 'string' && bookInfo.bookStatus) ||
+      (typeof bookInfo?.actionStatus === 'string' && bookInfo.actionStatus) ||
+      (typeof catalogData.bookStatus === 'string' && catalogData.bookStatus) ||
+      (typeof catalogData.actionStatus === 'string' &&
+        catalogData.actionStatus) ||
+      '';
+    const isCompleted = /完结|完本/.test(statusText);
 
     return {
       name,
       path: `/book/${bookId}/`,
-      cover: this.normalizeCover(cover),
+      cover: this.normalizeCover(undefined, bookId),
       author: author || undefined,
       summary: summary || undefined,
-      genres: genresList.length ? genresList.join(', ') : undefined,
+      genres: genresSet.size ? [...genresSet].join(', ') : undefined,
       status: isCompleted ? NovelStatus.Completed : NovelStatus.Ongoing,
       chapters,
     };
-  }
-
-  private parseChapterId(path: string): string | undefined {
-    const match = path.match(/\/chapter\/\d+\/(\d+)/);
-    return match?.[1];
   }
 
   async parseChapter(
@@ -654,22 +559,36 @@ class QidianPlugin extends NekoriBasePlugin {
     if (!match) throw new Error(`Invalid Qidian chapter path: ${chapterPath}`);
 
     const [, bookId, chapterId] = match;
-    const response = await fetchApi(
-      `${this.mobileSite}/chapter/${bookId}/${chapterId}/`,
+    const data = await this.requestWebcommon(
+      '/webcommon/chapter/getMChapterInfo',
+      new URLSearchParams({ bookId, chapterId }),
+      `${this.site}/chapter/${bookId}/${chapterId}/`,
     );
-    if (!response.ok) {
-      throw new Error(`Failed to fetch chapter: HTTP ${response.status}`);
-    }
 
-    const $ = loadCheerio(await response.text());
+    const chapterInfo = this.isRecord(data.chapterInfo)
+      ? data.chapterInfo
+      : undefined;
+    const rawContent =
+      typeof chapterInfo?.content === 'string'
+        ? chapterInfo.content.trim()
+        : '';
+
+    const $ = loadCheerio(`<div>${rawContent}</div>`);
     const paragraphs: string[] = [];
     $('p').each((_index, element) => {
       const text = $(element)
         .text()
-        .replace(/\u00a0/g, ' ')
+        .replace(/[\u00a0\u3000]+/g, ' ')
         .trim();
-      if (text && text.length >= 2) paragraphs.push(text);
+      if (text) paragraphs.push(text);
     });
+
+    if (!paragraphs.length && rawContent) {
+      for (const line of $.text().split('\n')) {
+        const text = line.replace(/[\u00a0\u3000]+/g, ' ').trim();
+        if (text) paragraphs.push(text);
+      }
+    }
 
     if (!paragraphs.length) {
       throw new Error('Qidian chapter content was empty or unavailable');

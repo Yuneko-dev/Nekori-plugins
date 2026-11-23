@@ -1,0 +1,34 @@
+#nekori-reader:has(.yurineko-pages) {
+  --reader-margin-right: 0px;
+  --reader-margin-left: 0px;
+}
+
+#nekori-reader .yurineko-pages {
+  margin: 0;
+  padding: 0;
+}
+
+#nekori-reader .yurineko-pages figure {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  width: calc(100% + (var(--readerSettings-padding) * 2)) !important;
+  max-width: none !important;
+  margin-left: calc(-1 * var(--readerSettings-padding)) !important;
+  margin-right: calc(-1 * var(--readerSettings-padding)) !important;
+  overflow: hidden;
+}
+
+#nekori-reader .yurineko-pages figure img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#nekori-reader img {
+  max-width: 100% !important;
+  height: auto !important;
+}

@@ -1,0 +1,1 @@
+(()=>{(async()=>{let e=window.nekori;if(!e)throw new Error("Reader is unavailable");await e.ready,document.querySelector(".truyenkira-pages")&&document.documentElement.classList.add("truyenkira-manga")})().catch(e=>window.nekori?.error(String(e)));})();

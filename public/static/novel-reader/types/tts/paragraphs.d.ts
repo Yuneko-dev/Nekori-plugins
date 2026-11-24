@@ -1,0 +1,10 @@
+import type { ReaderConfig } from '../protocol/reader-config.ts';
+export type TtsNormalizationRule = NonNullable<ReaderConfig['ttsNormalizationRules']>[number];
+export type TtsTextNormalizer = (text: string) => string;
+export declare function createTtsTextNormalizer(rules?: ReadonlyArray<TtsNormalizationRule>): TtsTextNormalizer;
+export declare function readableParagraphs(root: ParentNode, chapterId: string | null, rules?: ReadonlyArray<TtsNormalizationRule>): HTMLElement[];
+export declare function extractParagraphText(root: ParentNode, chapterId: string | null, rules?: ReadonlyArray<TtsNormalizationRule>): string;
+export declare function firstVisibleParagraph(root: HTMLElement, chapterId: string | null, rules?: ReadonlyArray<TtsNormalizationRule>): number;
+export declare function taggedParagraph(root: HTMLElement, chapterId: string | null, rules?: ReadonlyArray<TtsNormalizationRule>): number;
+export declare function readableBlocks(root: ParentNode, normalize?: TtsTextNormalizer): HTMLElement[];
+export declare function readableBlockAtPoint(root: HTMLElement, x: number, y: number, rules?: ReadonlyArray<TtsNormalizationRule>): HTMLElement | null;

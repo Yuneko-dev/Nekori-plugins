@@ -12,7 +12,7 @@ const LNREADER_IMPORTS = [
   '@libs/fetch',
   '@libs/isAbsoluteUrl',
   '@libs/filterInputs',
-  '@libs/defaultCover',
+  '@libs/pluginError',
   '@libs/aes',
   '@libs/utils',
   '@libs/storage',

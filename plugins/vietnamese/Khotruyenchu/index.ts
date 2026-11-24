@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -13,7 +12,7 @@ class KhotruyenchuPlugin extends NekoriPagePlugin {
   name = 'Khotruyenchu';
   icon = 'icon.png';
   site = 'https://khotruyenchu.fun';
-  version = '1.0.0';
+  version = '1.0.1';
   filters: Filters | undefined = undefined;
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.SAFE;
@@ -63,7 +62,7 @@ class KhotruyenchuPlugin extends NekoriPagePlugin {
         path: href.replace(this.site, ''),
         cover: cover.startsWith('/')
           ? this.site + cover
-          : cover || defaultCover,
+          : cover || undefined,
       });
     });
 

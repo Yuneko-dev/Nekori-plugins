@@ -5,7 +5,7 @@ import {
   FilterTypes,
 } from '@libs/filterInputs';
 import { RotateCcw } from 'lucide-react';
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,9 +17,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { getValueFor } from '@/lib/filter-utils';
+import type { Plugin } from '@/types/plugin';
 
 import { CheckboxFilter } from './checkbox-filter';
 import { ExcludableCheckboxFilter } from './excludable-checkbox-filter';
+import { MultiTextFilter } from './multi-text-filter';
 import { PickerFilter } from './picker-filter';
 import { SwitchFilter } from './switch-filter';
 import { TextFilter } from './text-filter';
@@ -28,6 +30,8 @@ const renderFilters = (
   filters: Filters | undefined,
   values: FilterToValues<Filters> | undefined,
   set: (key: string, v: AnyFilterValue) => void,
+  plugin: Plugin.PluginSource | undefined,
+  resetVersion: number,
 ): React.ReactNode => {
   if (!filters || !values) return null;
 
@@ -68,7 +72,20 @@ const renderFilters = (
                 filter={{ key, filter }}
                 set={newValue => set(key, newValue)}
                 value={value}
-                key={`text_filter_${key}`}
+                plugin={plugin}
+                key={`text_filter_${key}_${resetVersion}`}
+              />
+            );
+          }
+          case FilterTypes.MultiText: {
+            const value = getValueFor<typeof filter.type>(filter, values[key]);
+            return (
+              <MultiTextFilter
+                filter={{ key, filter }}
+                set={newValue => set(key, newValue)}
+                value={value}
+                plugin={plugin}
+                key={`multitext_filter_${key}_${resetVersion}`}
               />
             );
           }
@@ -90,7 +107,7 @@ const renderFilters = (
                 filter={{ key, filter }}
                 set={newValue => set(key, newValue)}
                 value={value}
-                key={`xcheсkbox_filter_${key}`}
+                key={`xcheckbox_filter_${key}`}
               />
             );
           }
@@ -105,6 +122,7 @@ type FiltersSheetProps = {
   onOpenChange: (open: boolean) => void;
   values: FilterToValues<Filters> | undefined;
   filters: Filters | undefined;
+  plugin?: Plugin.PluginSource;
   setValues: React.Dispatch<
     React.SetStateAction<FilterToValues<Filters> | undefined>
   >;
@@ -117,9 +135,10 @@ export function FiltersSheet({
   values,
   setValues,
   filters,
+  plugin,
   refetch,
 }: FiltersSheetProps) {
-  const [filterElements, setFilterElements] = useState<ReactNode>(null);
+  const [resetVersion, setResetVersion] = useState(0);
 
   const setFilterWithKey = (key: string, newValue: AnyFilterValue) =>
     setValues(fValues =>
@@ -144,12 +163,17 @@ export function FiltersSheet({
         };
       }
       setValues(resetValues);
+      setResetVersion(v => v + 1);
     }
   };
 
-  useEffect(() => {
-    setFilterElements(renderFilters(filters, values, setFilterWithKey));
-  }, [values, filters]);
+  const filterElements = renderFilters(
+    filters,
+    values,
+    setFilterWithKey,
+    plugin,
+    resetVersion,
+  );
 
   const handleApply = () => {
     refetch();

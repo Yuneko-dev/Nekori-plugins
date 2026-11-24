@@ -1,7 +1,8 @@
 import { Copy, ExternalLink, FileText } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { PluginErrorAlert } from '@/components/plugin-error-alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -33,15 +34,18 @@ export default function ParseChapterSection() {
     useState<Plugin.ChapterContent | null>(null);
   const chapterText = chapterContent?.html || '';
   const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState('');
+  const [fetchError, setFetchError] = useState<unknown>(null);
+  const requestGenRef = useRef(0);
 
   const fetchChapterByPath = async (path: string) => {
     if (plugin && path.trim()) {
+      const gen = ++requestGenRef.current;
       setLoading(true);
-      setFetchError('');
+      setFetchError(null);
       setChapterContent(null);
       try {
         const result = await plugin.parseChapter(path);
+        if (requestGenRef.current !== gen) return;
         const content = normalizeChapterContent(
           result,
           plugin.isNekoriPlugin === true,
@@ -54,15 +58,23 @@ export default function ParseChapterSection() {
           );
         return content;
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to fetch chapter';
-        setFetchError(errorMessage);
+        if (requestGenRef.current !== gen) return;
+        setFetchError(error);
         console.error('Error parsing chapter:', error);
       } finally {
-        setLoading(false);
+        if (requestGenRef.current === gen) {
+          setLoading(false);
+        }
       }
     }
   };
+
+  useEffect(() => {
+    requestGenRef.current += 1;
+    setChapterContent(null);
+    setFetchError(null);
+    setLoading(false);
+  }, [plugin]);
 
   const fetchChapter = async () => {
     await fetchChapterByPath(chapterPath);
@@ -209,11 +221,7 @@ export default function ParseChapterSection() {
           </Button>
         </div>
 
-        {fetchError && (
-          <div className="p-4 mb-6 border border-destructive/50 bg-destructive/10 rounded-lg">
-            <p className="text-sm text-destructive">{fetchError}</p>
-          </div>
-        )}
+        <PluginErrorAlert error={fetchError} className="mb-6" />
 
         {loading && !chapterText ? (
           <div className="space-y-6">
@@ -353,7 +361,7 @@ export default function ParseChapterSection() {
                 size="sm"
                 onClick={() => {
                   setChapterContent(null);
-                  setFetchError('');
+                  setFetchError(null);
                   setChapterPath('');
                   setChapterTitle('');
                 }}

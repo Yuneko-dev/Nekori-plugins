@@ -1,4 +1,4 @@
-import type { Filters, FilterToValues } from '@libs/filterInputs';
+import type { FilterOption, Filters, FilterToValues } from '@libs/filterInputs';
 
 import type { ContentType, ContentWarning } from './constants';
 export namespace Plugin {
@@ -145,6 +145,10 @@ export namespace Plugin {
      */
     parseNovel(novelPath: string): Promise<SourceNovel>;
     searchNovels(searchTerm: string, pageNo: number): Promise<NovelItem[]>;
+    getFilterSuggestions?(
+      filterKey: string,
+      query: string,
+    ): Promise<FilterOption[]>;
     resolveUrl?(path: string, isNovel?: boolean): string;
   };
 

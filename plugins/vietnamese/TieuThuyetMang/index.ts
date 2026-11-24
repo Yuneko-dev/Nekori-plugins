@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -24,7 +23,7 @@ class TieuThuyetMangPlugin extends NekoriBasePlugin {
   name = 'Tiểu Thuyết Mạng';
   icon = 'icon.png';
   site = 'https://tieuthuyetmang.com';
-  version = '1.1.0';
+  version = '1.1.1';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -42,9 +41,9 @@ class TieuThuyetMangPlugin extends NekoriBasePlugin {
     });
   }
 
-  private normalizeCoverUrl(rawUrl?: string): string {
+  private normalizeCoverUrl(rawUrl?: string): string | undefined {
     if (!rawUrl) {
-      return defaultCover;
+      return undefined;
     }
 
     try {

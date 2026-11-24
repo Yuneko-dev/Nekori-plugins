@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -15,7 +14,7 @@ class JukaNovelPlugin extends NekoriBasePlugin {
   icon = 'icon.png';
   site = 'https://sangtacviet.online';
   // 'https://jukaza.site';
-  version = '1.1.0';
+  version = '1.1.1';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {
@@ -55,7 +54,7 @@ class JukaNovelPlugin extends NekoriBasePlugin {
     const novel: Plugin.SourceNovel = {
       path: novelPath,
       name: $('h1').text().trim() || 'Untitled',
-      cover: $('[class*="aspect"]').find('img').attr('src') || defaultCover,
+      cover: $('[class*="aspect"]').find('img').attr('src') || undefined,
       author:
         $('.text-sm.text-paper-muted.font-mono').text().trim() || 'Unknown',
       status: $('.flex-1')
@@ -378,7 +377,7 @@ class JukaNovelPlugin extends NekoriBasePlugin {
         novels.push({
           name,
           path: path.replace(this.site, ''),
-          cover: cover || defaultCover,
+          cover: cover || undefined,
         });
       }
     });

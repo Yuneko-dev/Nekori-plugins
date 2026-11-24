@@ -21,7 +21,8 @@ Function(
   'exports',
   bundle.outputFiles[0].text,
 )(module, module.exports);
-const { FilterTypes, isFilterValue, getValueFor } = module.exports;
+const { FilterTypes, isFilterValue, getValueFor, addMultiTextValues } =
+  module.exports;
 const cases = [
   [FilterTypes.TextInput, 'default', '', [false, [], {}, null]],
   [FilterTypes.Picker, 'default', 'selected', [false, [], {}, null]],
@@ -33,6 +34,7 @@ const cases = [
     {},
     ['', false, [], null],
   ],
+  [FilterTypes.MultiText, ['default'], ['a, b'], ['', false, {}, null]],
 ];
 
 for (const [type, defaultValue, selected, invalidValues] of cases) {
@@ -53,6 +55,14 @@ for (const [type, defaultValue, selected, invalidValues] of cases) {
     assert.equal(getValueFor(filter, value), defaultValue);
   }
 }
+
+assert.deepEqual(
+  addMultiTextValues(
+    ['Action'],
+    'Slice of Life, Comedy\nAction\n\n  Fantasy  ',
+  ),
+  ['Action', 'Slice of Life, Comedy', 'Fantasy'],
+);
 
 // Optional sibling checkout check keeps the app and authoring contracts aligned.
 if (process.argv[2]) {

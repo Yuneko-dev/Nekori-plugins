@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { NekoriBasePlugin } from '@nekori/plugin';
@@ -12,7 +11,7 @@ class PhimFunPlugin extends NekoriBasePlugin {
   name = 'PhimFun';
   icon = 'icon.png';
   site = 'https://phimfun.net';
-  version = '1.0.5';
+  version = '1.0.6';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
 
@@ -46,10 +45,9 @@ class PhimFunPlugin extends NekoriBasePlugin {
       let cover =
         $img.attr('src') ||
         $img.attr('data-src') ||
-        $img.attr('data-lazy-src') ||
-        defaultCover;
+        $img.attr('data-lazy-src');
 
-      if (!cover.startsWith('http')) {
+      if (cover && !cover.startsWith('http')) {
         cover = this.site + cover;
       }
 
@@ -89,10 +87,9 @@ class PhimFunPlugin extends NekoriBasePlugin {
       let cover =
         $img.attr('src') ||
         $img.attr('data-src') ||
-        $img.attr('data-lazy-src') ||
-        defaultCover;
+        $img.attr('data-lazy-src');
 
-      if (!cover.startsWith('http')) {
+      if (cover && !cover.startsWith('http')) {
         cover = this.site + cover;
       }
 
@@ -116,10 +113,10 @@ class PhimFunPlugin extends NekoriBasePlugin {
       name = $('meta[property="og:title"]').attr('content')?.trim() || '';
     }
 
-    let cover = $('.TPostBg').attr('src') || $('.Image figure img').attr('src');
-    if (!cover) {
-      cover = $('meta[property="og:image"]').attr('content') || defaultCover;
-    }
+    let cover =
+      $('.TPostBg').attr('src') ||
+      $('.Image figure img').attr('src') ||
+      $('meta[property="og:image"]').attr('content');
     if (cover && !cover.startsWith('http')) {
       cover = this.site + cover;
     }

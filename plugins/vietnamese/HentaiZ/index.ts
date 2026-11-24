@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
@@ -346,7 +345,7 @@ class HentaiZPlugin extends NekoriBasePlugin {
   name = 'HentaiZ';
   icon = 'icon.png';
   site = SITE;
-  version = '1.1.4';
+  version = '1.1.5';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
   contentWarning = ContentWarning.NSFW;
@@ -421,7 +420,7 @@ class HentaiZPlugin extends NekoriBasePlugin {
         ? STORAGE_URL + ep.posterImage.filePath
         : ep.backdropImage?.filePath
           ? STORAGE_URL + ep.backdropImage.filePath
-          : defaultCover;
+          : undefined;
 
       novels.push({
         name: ep.title,
@@ -512,7 +511,7 @@ class HentaiZPlugin extends NekoriBasePlugin {
       ? STORAGE_URL + ep.posterImage.filePath
       : ep.backdropImage?.filePath
         ? STORAGE_URL + ep.backdropImage.filePath
-        : defaultCover;
+        : undefined;
 
     if (ep.genres && Array.isArray(ep.genres)) {
       novel.genres = ep.genres
@@ -574,7 +573,7 @@ class HentaiZPlugin extends NekoriBasePlugin {
 
     if (seriesEps.length > 0) {
       // Detail endpoint may not carry images; take them from the list instead
-      if (novel.cover === defaultCover) {
+      if (!novel.cover) {
         const firstEp = seriesEps[0];
         if (firstEp.backdropImage?.filePath) {
           novel.cover = STORAGE_URL + firstEp.backdropImage.filePath;

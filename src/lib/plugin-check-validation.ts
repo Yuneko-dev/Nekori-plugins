@@ -1,6 +1,7 @@
 import type { Plugin } from '@/types/plugin';
 
 import { requireReadyChapter } from './chapter-content';
+import { isPluginError, PluginError } from './pluginError';
 
 export type CheckStatus =
   | 'passed'
@@ -100,7 +101,17 @@ export function validateChapter(
   return value;
 }
 
+const BLOCKED_PLUGIN_ERROR_CODES = new Set<string>([
+  PluginError.Captcha,
+  PluginError.Cloudflare,
+  PluginError.RateLimited,
+  PluginError.AuthRequired,
+]);
+
 export function classifyError(error: unknown): CheckStatus {
+  if (isPluginError(error) && BLOCKED_PLUGIN_ERROR_CODES.has(error.code)) {
+    return 'blocked';
+  }
   const message = error instanceof Error ? error.message : String(error);
   const text = message.toLowerCase();
   if (text.includes('check_blocked')) return 'blocked';

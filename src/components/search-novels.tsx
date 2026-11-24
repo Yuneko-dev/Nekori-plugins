@@ -1,7 +1,8 @@
 import { Search as SearchIcon } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { NovelCard } from '@/components/novel-card';
+import { PluginErrorAlert } from '@/components/plugin-error-alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,32 +24,38 @@ export default function SearchNovelsSection({
   const [currentPage, setCurrentPage] = useState(1);
   const [novels, setNovels] = useState<Plugin.NovelItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState('');
+  const [fetchError, setFetchError] = useState<unknown>(null);
+  const requestGenRef = useRef(0);
 
   const fetchNovels = async (page: number) => {
     if (plugin && searchTerm.trim()) {
+      const gen = ++requestGenRef.current;
       setLoading(true);
-      setFetchError('');
+      setFetchError(null);
       try {
         const results = await plugin.searchNovels(searchTerm, page);
+        if (requestGenRef.current !== gen) return;
         setNovels(results);
         setCurrentPage(page);
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to fetch novels';
-        setFetchError(errorMessage);
+        if (requestGenRef.current !== gen) return;
+        setFetchError(error);
         console.error('Error searching novels:', error);
       } finally {
-        setLoading(false);
+        if (requestGenRef.current === gen) {
+          setLoading(false);
+        }
       }
     }
   };
 
   useEffect(() => {
+    requestGenRef.current += 1;
     setCurrentPage(1);
     setNovels([]);
     setSearchTerm('');
-    setFetchError('');
+    setFetchError(null);
+    setLoading(false);
   }, [plugin]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -105,11 +112,7 @@ export default function SearchNovelsSection({
           </Button>
         </div>
 
-        {fetchError && (
-          <div className="p-4 mb-6 border border-destructive/50 bg-destructive/10 rounded-lg">
-            <p className="text-sm text-destructive">{fetchError}</p>
-          </div>
-        )}
+        <PluginErrorAlert error={fetchError} className="mb-6" />
 
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 lg:gap-4">

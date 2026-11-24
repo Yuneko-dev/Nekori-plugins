@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 import { NovelStatus } from '@libs/novelStatus';
@@ -19,7 +18,7 @@ class YanHH3DPlugin extends NekoriBasePlugin {
   name = 'YanHH3D';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.0';
+  version = '1.0.1';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
   filters = filters;
@@ -112,7 +111,7 @@ class YanHH3DPlugin extends NekoriBasePlugin {
       novels.push({
         name,
         path: this.urlToPath(href),
-        cover: this.normalizeUrl(img) || defaultCover,
+        cover: this.normalizeUrl(img) || undefined,
       });
     });
     return novels;
@@ -158,7 +157,7 @@ class YanHH3DPlugin extends NekoriBasePlugin {
       novels.push({
         name,
         path: this.urlToPath(href),
-        cover: this.normalizeUrl(img) || defaultCover,
+        cover: this.normalizeUrl(img) || undefined,
       });
     });
     return novels;
@@ -187,8 +186,7 @@ class YanHH3DPlugin extends NekoriBasePlugin {
     const cover =
       $('meta[property="og:image"]').attr('content') ||
       $('img.film-poster-img').first().attr('data-src') ||
-      $('img.film-poster-img').first().attr('src') ||
-      defaultCover;
+      $('img.film-poster-img').first().attr('src') || undefined;
     const summary =
       $('.film-description .text').first().text().trim() ||
       $('meta[property="og:description"]').attr('content')?.trim() ||

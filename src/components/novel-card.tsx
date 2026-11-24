@@ -27,6 +27,10 @@ export function NovelCard({ novel, onParse }: NovelCardProps) {
         <img
           src={novel.cover || '/static/coverNotAvailable.webp'}
           alt={novel.name}
+          onError={e => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = '/static/coverNotAvailable.webp';
+          }}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>

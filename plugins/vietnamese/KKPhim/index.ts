@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
@@ -48,10 +47,9 @@ function statusOf(value: string | undefined): string {
 
 function imageOf(
   url: string | undefined,
-  fallback: string,
   cdn = 'https://phimimg.com/',
-): string {
-  if (!url) return fallback;
+): string | undefined {
+  if (!url) return undefined;
   return url.startsWith('http')
     ? url
     : new URL(url, `${cdn.replace(/\/$/, '')}/`).toString();
@@ -63,14 +61,13 @@ function parseList(response: ListResponse): Plugin.NovelItem[] {
     response.data?.APP_DOMAIN_CDN_IMAGE ||
     response.APP_DOMAIN_CDN_IMAGE ||
     'https://phimimg.com';
-  const fallback = defaultCover;
   return items.flatMap(movie => {
     if (!movie.slug || !movie.name) return [];
     return [
       {
         name: movie.name,
         path: `/phim/${movie.slug}`,
-        cover: imageOf(movie.thumb_url || movie.poster_url, fallback, cdn),
+        cover: imageOf(movie.thumb_url || movie.poster_url, cdn),
       },
     ];
   });
@@ -81,7 +78,7 @@ class KKPhimPlugin extends NekoriBasePlugin {
   name = 'KKPhim';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.8';
+  version = '1.0.9';
   minApiVersion = 2;
   customJS = 'player.js';
   contentType = ContentType.VIDEO;
@@ -185,7 +182,7 @@ class KKPhimPlugin extends NekoriBasePlugin {
     return {
       path: novelPath,
       name: movie.name,
-      cover: imageOf(movie.thumb_url || movie.poster_url, defaultCover),
+      cover: imageOf(movie.thumb_url || movie.poster_url),
       summary: movie.content?.replace(/<[^>]*>/g, '').trim() || '',
       author: movie.director?.join(', ') || 'Đang cập nhật',
       genres: tags.join(', '),

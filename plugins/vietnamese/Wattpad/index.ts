@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi, fetchText } from '@libs/fetch';
 import type { Filters } from '@libs/filterInputs';
 import { FilterTypes } from '@libs/filterInputs';
@@ -206,7 +205,7 @@ class WattpadPlugin extends NekoriBasePlugin {
   name = 'Wattpad';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.3';
+  version = '1.0.4';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 
@@ -279,7 +278,7 @@ class WattpadPlugin extends NekoriBasePlugin {
           {
             name: story.title,
             path: String(story.id),
-            cover: story.cover || defaultCover,
+            cover: story.cover || undefined,
           },
         ];
       });
@@ -322,7 +321,7 @@ class WattpadPlugin extends NekoriBasePlugin {
     return {
       name: story.title ?? storyId,
       path: String(story.id),
-      cover: story.cover || defaultCover,
+      cover: story.cover || undefined,
       author: story.user?.name,
       summary: story.description,
       genres: Array.isArray(story.tags) ? story.tags.join(', ') : undefined,

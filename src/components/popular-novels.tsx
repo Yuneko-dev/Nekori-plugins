@@ -1,9 +1,10 @@
 import { Filters, FilterToValues } from '@libs/filterInputs';
 import { BookOpen, Filter } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { FiltersSheet } from '@/components/filters/filters-sheet';
 import { NovelCard } from '@/components/novel-card';
+import { PluginErrorAlert } from '@/components/plugin-error-alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -30,15 +31,20 @@ export default function PopularNovelsSection({
   const [filterValues, setFilterValues] = useState<
     FilterToValues<Filters> | undefined
   >();
+  const [fetchError, setFetchError] = useState<unknown>(null);
+  const requestGenRef = useRef(0);
 
   const fetchNovelsByIndex = async (index: number) => {
     if (plugin && index) {
+      const gen = ++requestGenRef.current;
       setLoading(true);
+      setFetchError(null);
       try {
         const fetchedNovels = await plugin.popularNovels(index, {
           filters: filterValues || {},
           showLatestNovels: isLatest,
         });
+        if (requestGenRef.current !== gen) return;
         if (fetchedNovels.length !== 0) {
           setCurrentIndex(index);
           if (index > maxIndex) {
@@ -47,9 +53,13 @@ export default function PopularNovelsSection({
           setNovels(fetchedNovels);
         }
       } catch (error) {
+        if (requestGenRef.current !== gen) return;
+        setFetchError(error);
         console.error('Error fetching novels:', error);
       } finally {
-        setLoading(false);
+        if (requestGenRef.current === gen) {
+          setLoading(false);
+        }
       }
     }
   };
@@ -64,9 +74,12 @@ export default function PopularNovelsSection({
 
   useEffect(() => {
     // Reset when changing plugins
+    requestGenRef.current += 1;
     setCurrentIndex(0);
     setMaxIndex(0);
     setNovels([]);
+    setFetchError(null);
+    setLoading(false);
 
     if (plugin?.filters) {
       const filters: FilterToValues<typeof plugin.filters> = {};
@@ -77,6 +90,8 @@ export default function PopularNovelsSection({
         };
       }
       setFilterValues(filters);
+    } else {
+      setFilterValues(undefined);
     }
   }, [plugin]);
 
@@ -165,6 +180,8 @@ export default function PopularNovelsSection({
           )}
         </div>
 
+        <PluginErrorAlert error={fetchError} className="mb-6" />
+
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 lg:gap-6">
             {Array.from({ length: 12 }).map((_, index) => (
@@ -211,6 +228,7 @@ export default function PopularNovelsSection({
         onOpenChange={setFiltersOpen}
         values={filterValues}
         filters={plugin?.filters}
+        plugin={plugin}
         setValues={setFilterValues}
         refetch={() => fetchNovelsByIndex(1)}
       />

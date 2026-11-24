@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -207,7 +206,7 @@ class MotTruyenPlugin extends NekoriBasePlugin {
   name = 'Mọt Truyện';
   icon = 'icon.png';
   site = WEB_HOST;
-  version = '1.0.5';
+  version = '1.0.6';
 
   async popularNovels(
     pageNo: number,
@@ -225,7 +224,7 @@ class MotTruyenPlugin extends NekoriBasePlugin {
     return list.map(story => ({
       name: story.name || '',
       path: String(story.id),
-      cover: imageUrl(story.image || story.imageUrl || '') || defaultCover,
+      cover: imageUrl(story.image || story.imageUrl || '') || undefined,
     }));
   }
 
@@ -267,7 +266,7 @@ class MotTruyenPlugin extends NekoriBasePlugin {
     const novel: Plugin.SourceNovel = {
       path: novelPath,
       name: story.name || '',
-      cover: imageUrl(story.image || story.imageUrl || '') || defaultCover,
+      cover: imageUrl(story.image || story.imageUrl || '') || undefined,
       author: authorName,
       genres,
       summary: story.introduce ? load(story.introduce).text() : '',
@@ -345,7 +344,7 @@ class MotTruyenPlugin extends NekoriBasePlugin {
     return list.map(story => ({
       name: story.name || '',
       path: String(story.id),
-      cover: imageUrl(story.image || story.imageUrl || '') || defaultCover,
+      cover: imageUrl(story.image || story.imageUrl || '') || undefined,
     }));
   }
 

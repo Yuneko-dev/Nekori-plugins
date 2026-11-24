@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { CheerioAPI, load as loadCheerio } from 'cheerio';
@@ -10,7 +9,7 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
   name = 'Valvrareteam';
   icon = 'icon.png';
   site = 'https://valvrareteam.net';
-  version = '1.0.15';
+  version = '1.0.16';
 
   api = 'https://val-ssr-2kzit.ondigitalocean.app/api';
 
@@ -59,7 +58,7 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
       if (title && path) {
         novels.push({
           name: title,
-          cover: thumbnail || defaultCover,
+          cover: thumbnail || undefined,
           path: path,
         });
       }
@@ -185,7 +184,7 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
         ? descriptionParagraphs.join('\\n\\n')
         : this.normalizeInline($('.rd-description-content').first().text());
 
-    const thumbnail = $('.rd-cover-image').attr('src') || defaultCover;
+    const thumbnail = $('.rd-cover-image').attr('src') || undefined;
 
     let chapters = this.extractChaptersByVolume($);
 
@@ -287,7 +286,7 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
         // status, totalChapters
       }) => ({
         name: novel.title,
-        cover: novel.illustration || defaultCover,
+        cover: novel.illustration || undefined,
         // Idk???
         path: `/truyen/${this.normalizeName(novel.title, novel._id)}`,
       }),

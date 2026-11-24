@@ -3,7 +3,6 @@ import { fetchApi, fetchProto, fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { Filters } from '@libs/filterInputs';
 import { load as loadCheerio } from 'cheerio';
-import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage, localStorage, sessionStorage } from '@libs/storage';
 import { utf8ToBytes, bytesToUtf8 } from '@libs/utils';
@@ -88,7 +87,7 @@ class TemplatePlugin extends NekoriBasePlugin {
     novels.push({
       name: `Novel${pageNo}`, // Tên truyện
       path: `/novels/${pageNo}`, // Đường dẫn đến truyện
-      cover: defaultCover, // Image thumbnail của truyện. Có thể để trống hoặc sử dụng defaultCover nếu không có ảnh.
+      // cover: 'https://example.com/cover.jpg', // Tuỳ chọn — bỏ trống nếu không có ảnh bìa; app sẽ hiển thị ảnh mặc định.
     });
     return novels;
   }
@@ -105,7 +104,7 @@ class TemplatePlugin extends NekoriBasePlugin {
 
     novel.artist = '';
     novel.author = '';
-    novel.cover = defaultCover;
+    // novel.cover = 'https://example.com/cover.jpg'; // Bỏ trống nếu không có ảnh bìa.
     // Thể loại, là một chuỗi phân tách bằng dấu phẩy. Ví dụ: "Action,Adventure,Comedy"
     novel.genres = '';
     // Trạng thái của truyện, sử dụng Enum NovelStatus đã được định nghĩa ở trên.

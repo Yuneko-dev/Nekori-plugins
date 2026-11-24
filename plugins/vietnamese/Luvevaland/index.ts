@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -11,7 +10,7 @@ class LuvevalandPlugin implements Plugin.PluginBase {
   name = 'Luvevaland';
   icon = 'icon.png';
   site = 'https://luvevalandn1.co';
-  version = '1.0.7';
+  version = '1.0.8';
   filters: Filters | undefined = undefined;
 
   async popularNovels(
@@ -80,7 +79,7 @@ class LuvevalandPlugin implements Plugin.PluginBase {
         .first()
         .children()
         .first()
-        .attr('src') || defaultCover;
+        .attr('src') || undefined;
     novel.summary = loadedCheerio('.tab-comic-description')
       .html()
       ?.trim()

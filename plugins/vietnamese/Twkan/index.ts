@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { NekoriBasePlugin } from '@nekori/plugin';
@@ -12,7 +11,7 @@ class TwkanPlugin extends NekoriBasePlugin {
   name = 'Twkan';
   icon = 'icon.png';
   site = 'https://twkan.com';
-  version = '1.0.0';
+  version = '1.0.1';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.SAFE;
 
@@ -65,7 +64,7 @@ class TwkanPlugin extends NekoriBasePlugin {
           path: novelLink.replace(this.site, ''),
           cover: cover.startsWith('/')
             ? this.site + cover
-            : cover || defaultCover,
+            : cover || undefined,
         });
       });
     }
@@ -95,7 +94,7 @@ class TwkanPlugin extends NekoriBasePlugin {
       path: novelPath,
       name:
         ogTitle || $('h1 a, h1').first().text().trim() || 'Không có tiêu đề',
-      cover: ogImage || defaultCover,
+      cover: ogImage || undefined,
       summary: ogDesc || '',
       author: ogAuthor || '',
       artist: '',

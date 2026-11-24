@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -104,7 +103,7 @@ class MeTruyenCVPlugin extends NekoriBasePlugin {
   name = 'MeTruyenCV';
   icon = 'icon.png';
   site = 'https://metruyencv.com';
-  version = '1.0.7';
+  version = '1.0.8';
 
   async popularNovels(
     pageNo: number,
@@ -123,7 +122,7 @@ class MeTruyenCVPlugin extends NekoriBasePlugin {
     return json.data.map(book => ({
       name: book.name,
       path: String(book.id),
-      cover: book.poster?.['300'] || book.poster?.default || defaultCover,
+      cover: book.poster?.['300'] || book.poster?.default || undefined,
     }));
   }
 
@@ -167,8 +166,7 @@ class MeTruyenCVPlugin extends NekoriBasePlugin {
       cover:
         book?.poster?.['600'] ||
         book?.poster?.['300'] ||
-        book?.poster?.default ||
-        defaultCover,
+        book?.poster?.default || undefined,
       author: authorName,
       genres,
       summary: book?.synopsis || '',
@@ -224,7 +222,7 @@ class MeTruyenCVPlugin extends NekoriBasePlugin {
     return json.data.map(book => ({
       name: book.name,
       path: String(book.id),
-      cover: book.poster?.['300'] || book.poster?.default || defaultCover,
+      cover: book.poster?.['300'] || book.poster?.default || undefined,
     }));
   }
 

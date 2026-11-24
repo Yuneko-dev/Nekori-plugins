@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -16,7 +15,7 @@ class AnimeVsubPlugin extends NekoriBasePlugin {
   name = 'AnimeVsub';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.5';
+  version = '1.0.6';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
 
@@ -98,15 +97,14 @@ class AnimeVsubPlugin extends NekoriBasePlugin {
       const cover =
         imgEl.attr('src') ||
         imgEl.attr('data-src') ||
-        imgEl.attr('data-lazy-src') ||
-        defaultCover;
+        imgEl.attr('data-lazy-src');
       const ep = $(el).find('.movie-episode-last').text().trim();
 
       if (name && link) {
         novels.push({
           name: ep ? `[${ep}] ${name}` : name,
           path: link.replace(SITE, ''),
-          cover: this.normalizeUrl(cover),
+          cover: cover ? this.normalizeUrl(cover) : undefined,
         });
       }
     });
@@ -131,10 +129,10 @@ class AnimeVsubPlugin extends NekoriBasePlugin {
       .trim();
 
     const originalName = $('h2.movie-original-title').text().trim();
-    let cover =
+    const rawCover =
       $('.movie-box-img img.thumbnail').attr('src') ||
       $('meta[property="og:image"]').attr('content');
-    cover = this.normalizeUrl(cover || defaultCover);
+    const cover = rawCover ? this.normalizeUrl(rawCover) : undefined;
 
     const descEl = $('.content-detail').first();
     descEl.find('h2').remove();
@@ -240,15 +238,14 @@ class AnimeVsubPlugin extends NekoriBasePlugin {
       const cover =
         imgEl.attr('src') ||
         imgEl.attr('data-src') ||
-        imgEl.attr('data-lazy-src') ||
-        defaultCover;
+        imgEl.attr('data-lazy-src');
       const ep = $(el).find('.movie-episode-last').text().trim();
 
       if (name && link) {
         novels.push({
           name: ep ? `[${ep}] ${name}` : name,
           path: link.replace(SITE, ''),
-          cover: this.normalizeUrl(cover),
+          cover: cover ? this.normalizeUrl(cover) : undefined,
         });
       }
     });

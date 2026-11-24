@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { NekoriBasePlugin } from '@nekori/plugin';
@@ -12,7 +11,7 @@ class MotchillPlugin extends NekoriBasePlugin {
   name = 'Motchill';
   icon = 'icon.png';
   site = 'https://envasion.net';
-  version = '1.0.5';
+  version = '1.0.6';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
 
@@ -51,10 +50,9 @@ class MotchillPlugin extends NekoriBasePlugin {
       let cover =
         $img.attr('src') ||
         $img.attr('data-src') ||
-        $img.attr('data-lazy-src') ||
-        defaultCover;
+        $img.attr('data-lazy-src');
 
-      if (!cover.startsWith('http')) {
+      if (cover && !cover.startsWith('http')) {
         cover = this.site + cover;
       }
 
@@ -100,10 +98,9 @@ class MotchillPlugin extends NekoriBasePlugin {
       let cover =
         $img.attr('src') ||
         $img.attr('data-src') ||
-        $img.attr('data-lazy-src') ||
-        defaultCover;
+        $img.attr('data-lazy-src');
 
-      if (!cover.startsWith('http')) {
+      if (cover && !cover.startsWith('http')) {
         cover = this.site + cover;
       }
 
@@ -130,10 +127,10 @@ class MotchillPlugin extends NekoriBasePlugin {
     name = name.replace(/\s*Full\s+HD\s+Vietsub\s*-\s*Motchill\s*$/i, '');
     name = name.replace(/\s*-\s*Motchill\s*$/i, '');
 
-    let cover = $('.sheader .poster img').first().attr('src') || '';
-    if (!cover) {
-      cover = $('meta[property="og:image"]').attr('content') || defaultCover;
-    }
+    const cover =
+      $('.sheader .poster img').first().attr('src') ||
+      $('meta[property="og:image"]').attr('content') ||
+      undefined;
 
     const summary =
       $('#info .wp-content p, .wp-content p').first().text().trim() ||

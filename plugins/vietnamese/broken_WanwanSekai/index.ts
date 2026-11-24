@@ -3,7 +3,6 @@ import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';
-import { defaultCover } from '@libs/defaultCover';
 
 class WanwanSekaiPlugin extends NekoriBasePlugin {
   id = 'wanwansekai';
@@ -48,7 +47,7 @@ class WanwanSekaiPlugin extends NekoriBasePlugin {
       if (name && path) {
         novels.push({
           name,
-          cover: cover || defaultCover,
+          cover: cover || undefined,
           path: path.replace(this.site, ''),
         });
       }
@@ -85,8 +84,7 @@ class WanwanSekaiPlugin extends NekoriBasePlugin {
       cover:
         $('.summary_image img').attr('data-src') ||
         $('.summary_image img').attr('data-srcset')?.split(' ')[0] ||
-        $('.summary_image img').attr('src') ||
-        defaultCover,
+        $('.summary_image img').attr('src') || undefined,
       summary: $('.summary__content').text().trim(),
       author: $('.author-content a')
         .map((i, el) => $(el).text().trim())

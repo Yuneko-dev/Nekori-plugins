@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi, fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { NekoriBasePlugin } from '@nekori/plugin';
@@ -63,8 +62,8 @@ type ChapterDetailDto = ChapterDto & {
   images?: { url: string; order?: number }[];
 };
 
-function coverUrl(path?: string | null): string {
-  if (!path) return defaultCover;
+function coverUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
   if (path.startsWith('http')) return path;
   return `${CDN}/${path.replace(/^\/+/, '')}`;
 }
@@ -89,7 +88,7 @@ class YuriNekoPlugin extends NekoriBasePlugin {
   name = 'YuriNeko';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.0';
+  version = '1.0.1';
   contentType = ContentType.MIXED;
   contentWarning = ContentWarning.MIXED;
 

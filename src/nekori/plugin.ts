@@ -9,6 +9,7 @@ type PluginOptionalProperties = Pick<
   | 'customCSS'
   | 'customJS'
   | 'filters'
+  | 'getFilterSuggestions'
   | 'imageRequestInit'
   | 'pluginSettings'
   | 'webStorageUtilized'

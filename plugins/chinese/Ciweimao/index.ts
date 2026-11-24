@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { type Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -164,7 +163,7 @@ class Ciweimao extends NekoriBasePlugin {
   name = 'Ciweimao';
   icon = 'icon.svg';
   site = 'https://www.ciweimao.com';
-  version = '1.0.3';
+  version = '1.0.4';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
   imageRequestInit = {
@@ -290,7 +289,7 @@ class Ciweimao extends NekoriBasePlugin {
       const cover =
         rawCover && !rawCover.includes('/resources/images/cover.jpg')
           ? new URL(rawCover, this.site).href
-          : defaultCover;
+          : undefined;
 
       seen.add(path);
       novels.push({ name, path, cover });
@@ -411,7 +410,7 @@ class Ciweimao extends NekoriBasePlugin {
     const cover =
       coverUrl && !coverUrl.includes('/resources/images/cover.jpg')
         ? new URL(coverUrl, this.site).href
-        : defaultCover;
+        : undefined;
     const intro = info.find('.intro').text() || $('.book-info').text();
     const status = intro.includes('已完结')
       ? NovelStatus.Completed

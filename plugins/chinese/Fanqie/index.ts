@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -141,7 +140,7 @@ class FanqiePlugin extends NekoriBasePlugin {
   name = 'Fanqie';
   icon = 'icon.png';
   site = SITE;
-  version = '1.0.0';
+  version = '1.0.1';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.UNSPECIFIED;
 
@@ -256,8 +255,8 @@ class FanqiePlugin extends NekoriBasePlugin {
     return /^https?:\/\//i.test(url) ? url : undefined;
   }
 
-  private normalizeCover(raw: unknown): string {
-    return this.normalizeImageUrl(raw) || defaultCover;
+  private normalizeCover(raw: unknown): string | undefined {
+    return this.normalizeImageUrl(raw) || undefined;
   }
 
   private resolveChapterImageSrc(rawSrc: string): string | undefined {
@@ -583,7 +582,7 @@ class FanqiePlugin extends NekoriBasePlugin {
       const cover =
         this.normalizeImageUrl(row.thumb_url) ||
         this.normalizeImageUrl(row.audio_thumb_uri) ||
-        defaultCover;
+        undefined;
 
       novels.push({
         name: title,

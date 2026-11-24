@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { NekoriBasePlugin } from '@nekori/plugin';
@@ -59,7 +58,7 @@ class TruyenKiraPlugin extends NekoriBasePlugin {
   name = 'TruyenKira';
   site = SITE;
   icon = 'icon.png';
-  version = '1.0.0';
+  version = '1.0.1';
   customCSS = 'style.css';
   customJS = 'index.js';
   contentType = ContentType.MIXED;
@@ -84,7 +83,7 @@ class TruyenKiraPlugin extends NekoriBasePlugin {
     return {
       name: c.title,
       path: `/comics/${c.id}`,
-      cover: c.thumbnail || defaultCover,
+      cover: c.thumbnail || undefined,
     };
   }
 
@@ -123,7 +122,7 @@ class TruyenKiraPlugin extends NekoriBasePlugin {
     const novel: Plugin.SourceNovel = {
       path: `/comics/${data.id}`,
       name: data.title,
-      cover: data.thumbnail || defaultCover,
+      cover: data.thumbnail || undefined,
       author: data.author?.name || data.authors || '',
       summary: data.description || '',
       genres: (data.genres || []).map(g => g.name).join(','),

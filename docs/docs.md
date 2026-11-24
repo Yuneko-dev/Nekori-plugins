@@ -254,6 +254,19 @@ searchNovels(searchTerm: string, pageNo: number): Promise<Plugin.NovelItem[]>
 
 If the site's search has no pagination, `if (pageNo > 1) return [];`.
 
+### getFilterSuggestions — optional
+
+```ts
+getFilterSuggestions(
+  filterKey: string,
+  query: string,
+): Promise<FilterOption[]>
+```
+
+Returns autocomplete suggestions for `TextInput` or `MultiText` filters declared
+with `autocomplete: true`. Omit it if your plugin does not need autocomplete;
+hosts degrade cleanly to plain free text.
+
 ### resolveUrl — optional
 
 ```ts
@@ -275,8 +288,8 @@ Import via `import { Plugin } from '@/types/plugin';`
 | `path` | `string` | yes | Internal path, usually the site path without the origin. |
 | `cover` | `string` | no | Cover image URL. |
 
-> Entities use **`path`**, not `url`. Use `import { defaultCover } from '@libs/defaultCover';`
-> when a cover is missing.
+> Entities use **`path`**, not `url`. Omit `cover` (or leave it `undefined`) when a cover is missing — the app renders its default cover placeholder (`@libs/defaultCover` has been removed).
+
 
 ### SourceNovel
 
@@ -345,7 +358,8 @@ also take `options`.
 
 | `FilterTypes` | UI | `value` type |
 | --- | --- | --- |
-| `TextInput` | Free text field | `string` |
+| `TextInput` | Free text field (supports optional `autocomplete: true`) | `string` |
+| `MultiText` | Multi-value chip input (supports optional `autocomplete: true`) | `string[]` |
 | `Picker` | Single choice | `string` |
 | `Switch` | Toggle | `boolean` |
 | `CheckboxGroup` | Multi-select | `string[]` |
@@ -418,7 +432,7 @@ Current allowlist:
 
 | Namespace | Exports / modules |
 | --- | --- |
-| `@libs/*` | `fetch`, `storage`, `filterInputs`, `novelStatus`, `defaultCover`, `isAbsoluteUrl` |
+| `@libs/*` | `fetch`, `storage`, `filterInputs`, `novelStatus`, `pluginError`, `isAbsoluteUrl` |
 | `@libs/aes` | `gcm` |
 | `@libs/utils` | `utf8ToBytes`, `bytesToUtf8` |
 | `@nekori/plugin` | `NekoriBasePlugin`, `NekoriPagePlugin` |

@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { NekoriBasePlugin } from '@nekori/plugin';
@@ -12,7 +11,7 @@ class YeuAnimePlugin extends NekoriBasePlugin {
   name = 'Yêu Anime';
   icon = 'icon.png';
   site = 'https://yeuanime.buzz';
-  version = '1.0.6';
+  version = '1.0.7';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
 
@@ -144,7 +143,7 @@ class YeuAnimePlugin extends NekoriBasePlugin {
           novels.push({
             name: tag && tag !== mName ? `${mName} (${tag})` : mName,
             path: path,
-            cover: m.poster_url || m.thumb_url || m.image || defaultCover,
+            cover: m.poster_url || m.thumb_url || m.image || undefined,
           });
         }
       }
@@ -181,9 +180,11 @@ class YeuAnimePlugin extends NekoriBasePlugin {
             novels.push({
               name: tag && tag !== name ? `${name} (${tag})` : name,
               path,
-              cover: cover?.startsWith('http')
-                ? cover
-                : this.site + cover || defaultCover,
+              cover: cover
+                ? cover.startsWith('http')
+                  ? cover
+                  : this.site + cover
+                : undefined,
             });
           }
         }
@@ -224,7 +225,7 @@ class YeuAnimePlugin extends NekoriBasePlugin {
           novels.push({
             name: tag && tag !== mName ? `${mName} (${tag})` : mName,
             path: path,
-            cover: m.poster_url || m.thumb_url || m.image || defaultCover,
+            cover: m.poster_url || m.thumb_url || m.image || undefined,
           });
         }
       }
@@ -261,9 +262,11 @@ class YeuAnimePlugin extends NekoriBasePlugin {
             novels.push({
               name: tag && tag !== name ? `${name} (${tag})` : name,
               path,
-              cover: cover?.startsWith('http')
-                ? cover
-                : this.site + cover || defaultCover,
+              cover: cover
+                ? cover.startsWith('http')
+                  ? cover
+                  : this.site + cover
+                : undefined,
             });
           }
         }
@@ -323,7 +326,7 @@ class YeuAnimePlugin extends NekoriBasePlugin {
       cover =
         $(`img[alt="${name}"]`).attr('src') ||
         $('img[src*="/posters/"]').attr('src') ||
-        defaultCover;
+        '';
       if (cover && !cover.startsWith('http')) cover = this.site + cover;
     }
     if (!summary) {

@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
@@ -132,7 +131,7 @@ class M3UPlayerPlugin extends NekoriBasePlugin {
   id = 'yuneko.m3uplayer';
   name = 'M3U Player';
   icon = 'icon.png';
-  version = '1.1.1';
+  version = '1.1.2';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
 
@@ -181,7 +180,7 @@ class M3UPlayerPlugin extends NekoriBasePlugin {
       return {
         name: item.name,
         path: `/m3u?${params.toString()}`,
-        cover: item.tvg.logo || defaultCover,
+        cover: item.tvg.logo || undefined,
       };
     });
   }
@@ -203,7 +202,7 @@ class M3UPlayerPlugin extends NekoriBasePlugin {
     }
     const params = new URLSearchParams(novelPath.split('?')[1]);
     const name = params.get('name') || 'Unknown';
-    const cover = params.get('logo') || defaultCover;
+    const cover = params.get('logo') || undefined;
 
     return {
       path: novelPath,

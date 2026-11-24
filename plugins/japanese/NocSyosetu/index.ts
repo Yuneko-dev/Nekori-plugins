@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -18,7 +17,7 @@ class NocSyosetu extends NekoriPagePlugin {
   name = 'NocSyosetu';
   icon = 'icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.2.0';
+  version = '1.2.1';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.NSFW;
 
@@ -213,7 +212,6 @@ class NocSyosetu extends NekoriPagePlugin {
         novels.push({
           name,
           path: novelUrl,
-          cover: defaultCover,
         });
       }
     });
@@ -386,7 +384,6 @@ class NocSyosetu extends NekoriPagePlugin {
       summary,
       artist: '',
       genres,
-      cover: defaultCover,
       status,
       chapters,
       totalPages: lastPageNum,

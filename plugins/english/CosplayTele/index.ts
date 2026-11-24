@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
@@ -87,8 +86,7 @@ function parseNovelCards(
     let cover =
       $box.find('.box-image img').attr('data-src') ||
       $box.find('.box-image img').attr('src') ||
-      $box.find('img').first().attr('src') ||
-      defaultCover;
+      $box.find('img').first().attr('src') || undefined;
     if (cover && !isUrlAbsolute(cover)) {
       cover = SITE + cover;
     }
@@ -173,7 +171,7 @@ class CosplayTelePlugin extends NekoriBasePlugin {
   name = 'CosplayTele';
   icon = 'icon.png';
   site = SITE;
-  version = '1.1.1';
+  version = '1.1.2';
   minApiVersion = 2;
   contentType = ContentType.MIXED;
   contentWarning = ContentWarning.NSFW;
@@ -250,8 +248,7 @@ class CosplayTelePlugin extends NekoriBasePlugin {
 
     let cover =
       $('meta[property="og:image"]').attr('content') ||
-      $('.entry-content figure img').first().attr('src') ||
-      defaultCover;
+      $('.entry-content figure img').first().attr('src') || undefined;
     if (cover && !isUrlAbsolute(cover)) cover = SITE + cover;
 
     const summary = extractDownloadSummary($);

@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -13,7 +12,7 @@ class PixivNovelPlugin extends NekoriPagePlugin {
   name = 'Pixiv Novel';
   icon = 'icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.1.0';
+  version = '1.1.1';
   contentType = ContentType.NOVEL;
   contentWarning = ContentWarning.MIXED;
 
@@ -81,8 +80,7 @@ class PixivNovelPlugin extends NekoriPagePlugin {
     for (const series of seriesList) {
       const coverUrl =
         series.cover?.urls?.['480mw'] ||
-        series.cover?.urls?.['240mw'] ||
-        defaultCover;
+        series.cover?.urls?.['240mw'] || undefined;
       const isOneshot = series.isOneshot === true;
       const path = isOneshot
         ? `/novel/show.php?id=${series.novelId}`
@@ -139,8 +137,7 @@ class PixivNovelPlugin extends NekoriPagePlugin {
     const coverUrl =
       seriesBody.cover?.urls?.['480mw'] ||
       seriesBody.cover?.urls?.['240mw'] ||
-      seriesBody.firstEpisode?.url ||
-      defaultCover;
+      seriesBody.firstEpisode?.url || undefined;
 
     // Parse chapters from page.seriesContents
     const seriesContents = contentBody?.page?.seriesContents || [];
@@ -197,7 +194,7 @@ class PixivNovelPlugin extends NekoriPagePlugin {
       `${this.site}/ajax/novel/${novelId}?lang=en`,
     );
 
-    const coverUrl = body.coverUrl || defaultCover;
+    const coverUrl = body.coverUrl || undefined;
     const tags: string[] = (body.tags?.tags || []).map((t: any) => t.tag || '');
 
     // Clean summary
@@ -309,7 +306,7 @@ class PixivNovelPlugin extends NekoriPagePlugin {
       novels.push({
         name: item.title || 'Untitled',
         path,
-        cover: item.url || defaultCover,
+        cover: item.url || undefined,
       });
     }
 

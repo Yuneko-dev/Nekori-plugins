@@ -257,6 +257,19 @@ searchNovels(searchTerm: string, pageNo: number): Promise<Plugin.NovelItem[]>
 
 Nếu trang tìm kiếm không hỗ trợ phân trang: `if (pageNo > 1) return [];`
 
+### getFilterSuggestions — tuỳ chọn
+
+```ts
+getFilterSuggestions(
+  filterKey: string,
+  query: string,
+): Promise<FilterOption[]>
+```
+
+Trả về danh sách gợi ý tự động điền cho bộ lọc `TextInput` hoặc `MultiText` có
+`autocomplete: true`. Bỏ qua nếu plugin không cần gợi ý; ứng dụng sẽ tự động
+dùng ô nhập văn bản thường.
+
 ### resolveUrl — tuỳ chọn
 
 ```ts
@@ -278,8 +291,8 @@ Import bằng `import { Plugin } from '@/types/plugin';`
 | `path` | `string` | có | Đường dẫn nội bộ, thường là path của web bỏ phần origin. |
 | `cover` | `string` | không | URL ảnh bìa. |
 
-> Các entity dùng **`path`**, không phải `url`. Khi không có ảnh bìa, dùng
-> `import { defaultCover } from '@libs/defaultCover';`
+> Các entity dùng **`path`**, không phải `url`. Khi không có ảnh bìa, hãy bỏ trống `cover` (hoặc để `undefined`) — ứng dụng sẽ tự hiển thị ảnh mặc định (`@libs/defaultCover` đã được gỡ bỏ).
+
 
 ### SourceNovel
 
@@ -348,7 +361,8 @@ cần thêm `options`.
 
 | `FilterTypes` | Giao diện | Kiểu `value` |
 | --- | --- | --- |
-| `TextInput` | Ô nhập văn bản | `string` |
+| `TextInput` | Ô nhập văn bản (hỗ trợ `autocomplete: true`) | `string` |
+| `MultiText` | Nhập nhiều thẻ/chip (hỗ trợ `autocomplete: true`) | `string[]` |
 | `Picker` | Chọn một | `string` |
 | `Switch` | Công tắc | `boolean` |
 | `CheckboxGroup` | Chọn nhiều | `string[]` |
@@ -421,7 +435,7 @@ Allowlist hiện tại:
 
 | Namespace | Exports / modules |
 | --- | --- |
-| `@libs/*` | `fetch`, `storage`, `filterInputs`, `novelStatus`, `defaultCover`, `isAbsoluteUrl` |
+| `@libs/*` | `fetch`, `storage`, `filterInputs`, `novelStatus`, `pluginError`, `isAbsoluteUrl` |
 | `@libs/aes` | `gcm` |
 | `@libs/utils` | `utf8ToBytes`, `bytesToUtf8` |
 | `@nekori/plugin` | `NekoriBasePlugin`, `NekoriPagePlugin` |

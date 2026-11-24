@@ -6,10 +6,11 @@ import {
   Copy,
   Download,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TableVirtuoso } from 'react-virtuoso';
 import { toast } from 'sonner';
 
+import { PluginErrorAlert } from '@/components/plugin-error-alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -45,7 +46,8 @@ export default function ParseNovelSection({
   const [chapters, setChapters] = useState<Plugin.ChapterItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [fetchError, setFetchError] = useState('');
+  const [fetchError, setFetchError] = useState<unknown>(null);
+  const requestGenRef = useRef(0);
 
   const { exportEpub, isExporting } = useEpubExport({
     plugin: plugin || null,
@@ -56,20 +58,23 @@ export default function ParseNovelSection({
 
   const fetchNovelByPath = async (path: string) => {
     if (plugin && path.trim()) {
+      const gen = ++requestGenRef.current;
       setLoading(true);
-      setFetchError('');
+      setFetchError(null);
       try {
         const result = await plugin.parseNovel(path);
+        if (requestGenRef.current !== gen) return;
         setSourceNovel(result);
         setChapters(result.chapters || []);
         setCurrentPage(1);
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to fetch novel';
-        setFetchError(errorMessage);
+        if (requestGenRef.current !== gen) return;
+        setFetchError(error);
         console.error('Error parsing novel:', error);
       } finally {
-        setLoading(false);
+        if (requestGenRef.current === gen) {
+          setLoading(false);
+        }
       }
     }
   };
@@ -80,25 +85,37 @@ export default function ParseNovelSection({
 
   const fetchPage = async (page: number) => {
     if (plugin && novelPath && sourceNovel?.totalPages) {
+      const gen = ++requestGenRef.current;
       setLoading(true);
-      setFetchError('');
+      setFetchError(null);
       try {
         const result = await (plugin as Plugin.PagePlugin).parsePage(
           novelPath,
           page.toString(),
         );
+        if (requestGenRef.current !== gen) return;
         setChapters(result.chapters);
         setCurrentPage(page);
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to fetch page';
-        setFetchError(errorMessage);
+        if (requestGenRef.current !== gen) return;
+        setFetchError(error);
         console.error('Error fetching page:', error);
       } finally {
-        setLoading(false);
+        if (requestGenRef.current === gen) {
+          setLoading(false);
+        }
       }
     }
   };
+
+  useEffect(() => {
+    requestGenRef.current += 1;
+    setSourceNovel(undefined);
+    setChapters([]);
+    setCurrentPage(1);
+    setFetchError(null);
+    setLoading(false);
+  }, [plugin]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && novelPath.trim()) {
@@ -178,11 +195,7 @@ export default function ParseNovelSection({
           </Button>
         </div>
 
-        {fetchError && (
-          <div className="p-4 mb-6 border border-destructive/50 bg-destructive/10 rounded-lg">
-            <p className="text-sm text-destructive">{fetchError}</p>
-          </div>
-        )}
+        <PluginErrorAlert error={fetchError} className="mb-6" />
 
         {loading && !sourceNovel ? (
           <div className="space-y-6">
@@ -223,8 +236,9 @@ export default function ParseNovelSection({
               <div className="md:col-span-2 space-y-4">
                 <div className="flex gap-4">
                   <div
-                    className="cursor-pointer"
+                    className={sourceNovel.cover ? 'cursor-pointer' : undefined}
                     onClick={() =>
+                      sourceNovel.cover &&
                       copyToClipboard(sourceNovel.cover, 'Cover URL')
                     }
                   >
@@ -233,8 +247,16 @@ export default function ParseNovelSection({
                         sourceNovel.cover || '/static/coverNotAvailable.webp'
                       }
                       alt={sourceNovel.name}
-                      className="w-32 h-48 rounded-lg object-cover hover:opacity-80 transition-opacity"
-                      title="Click to copy cover URL"
+                      onError={e => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/static/coverNotAvailable.webp';
+                      }}
+                      className={`w-32 h-48 rounded-lg object-cover ${sourceNovel.cover ? 'hover:opacity-80 transition-opacity' : ''}`}
+                      title={
+                        sourceNovel.cover
+                          ? 'Click to copy cover URL'
+                          : 'No cover URL'
+                      }
                     />
                   </div>
                   <div className="flex-1">

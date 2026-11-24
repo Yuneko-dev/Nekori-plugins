@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -129,7 +128,7 @@ class ZumiNovelPlugin extends NekoriBasePlugin {
   name = 'ZumiNovel';
   icon = 'icon.png';
   site = SITE;
-  version = '1.1.0';
+  version = '1.1.1';
 
   pluginSettings: Plugin.PluginSettings = {
     showRaw: {
@@ -145,8 +144,8 @@ class ZumiNovelPlugin extends NekoriBasePlugin {
 
   private novelIdCache = new Map<string, string>();
 
-  resolveCover(url: string | undefined): string {
-    if (!url) return defaultCover;
+  resolveCover(url: string | undefined): string | undefined {
+    if (!url) return undefined;
     if (/^https?:\/\//i.test(url)) return url;
     return this.site + (url.startsWith('/') ? url : '/' + url);
   }

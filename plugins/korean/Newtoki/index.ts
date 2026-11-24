@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi, fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -22,7 +21,7 @@ class NewtokiPlugin extends NekoriBasePlugin {
   name = 'Newtoki';
   icon = 'icon.png';
   site = SITE;
-  version = '1.1.1';
+  version = '1.1.2';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -87,7 +86,7 @@ class NewtokiPlugin extends NekoriBasePlugin {
       const $el = $(el);
       const path = $el.attr('href') || '';
       const name = $el.find('.nv-title').text().trim();
-      const cover = $el.find('.nv-thumb img').attr('src') || defaultCover;
+      const cover = $el.find('.nv-thumb img').attr('src') || undefined;
 
       if (name && path) {
         novels.push({ name, path, cover });
@@ -213,7 +212,7 @@ class NewtokiPlugin extends NekoriBasePlugin {
     // Parse novel info
     const name = $('section.novel-detail .nd-info h1').text().trim();
     const cover =
-      $('section.novel-detail .nd-thumb img').attr('src') || defaultCover;
+      $('section.novel-detail .nd-thumb img').attr('src') || undefined;
     const authorText = $('section.novel-detail .nd-meta span')
       .first()
       .text()

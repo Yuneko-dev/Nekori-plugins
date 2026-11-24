@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 // VNExpress - Vietnamese news via RSS (https://vnexpress.net/rss)
 import { fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
@@ -20,7 +19,7 @@ class VnExpressPlugin extends NekoriBasePlugin {
   name = 'VNExpress';
   icon = 'icon.png';
   site = 'https://vnexpress.net';
-  version = '1.0.3';
+  version = '1.0.4';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {
@@ -114,14 +113,12 @@ class VnExpressPlugin extends NekoriBasePlugin {
         return;
       }
       // Ảnh nằm trong <enclosure> hoặc thẻ <img> đầu tiên trong description CDATA
-      const enclosureUrl = item.find('enclosure').attr('url');
-      let cover = enclosureUrl || defaultCover;
-      if (cover === defaultCover) {
+      let cover = item.find('enclosure').attr('url');
+      if (!cover) {
         const descriptionHtml = item.find('description').first().text();
-        const imgSrc = loadCheerio(descriptionHtml, { xmlMode: true })(
-          'img',
-        ).attr('src');
-        cover = imgSrc || defaultCover;
+        cover = loadCheerio(descriptionHtml, { xmlMode: true })('img').attr(
+          'src',
+        );
       }
       novels.push({
         name: title,
@@ -187,7 +184,7 @@ class VnExpressPlugin extends NekoriBasePlugin {
       article.find('figure img[data-src]').first().attr('data-src') ||
       article.find('img[itemprop="contentUrl"]').first().attr('src') ||
       $('meta[property="og:image"]').attr('content');
-    novel.cover = firstImage || defaultCover;
+    novel.cover = firstImage || undefined;
 
     // Thể loại: mục đầu tiên trong breadcrumb
     novel.genres = $('ul.breadcrumb li a').first().text().trim() || '';

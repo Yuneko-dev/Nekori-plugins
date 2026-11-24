@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi, fetchText } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
@@ -310,7 +309,7 @@ class SangTacVietPlugin extends NekoriBasePlugin {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.1.2';
+  version = '1.1.3';
   minApiVersion = 2;
   webStorageUtilized = true;
 
@@ -479,8 +478,8 @@ class SangTacVietPlugin extends NekoriBasePlugin {
     return this.parseNovelsFromHTML(html);
   }
 
-  fixCoverUrl(url: any): string {
-    if (!url) return defaultCover;
+  fixCoverUrl(url: any): string | undefined {
+    if (!url) return undefined;
     if (typeof url === 'string' && url.startsWith('http://'))
       return url.replace(/^http:/, 'https:');
     return url as string;
@@ -945,7 +944,7 @@ class SangTacVietPlugin extends NekoriBasePlugin {
         }
         const path = `/truyen/${detected.host}/1/${bookid}/`;
         let name = `${detected.host} | ${bookid}`;
-        let cover: string = defaultCover;
+        let cover: string | undefined;
         try {
           const infoUrl = new URL(`${this.site}/mobile/bookinfo.php`);
           infoUrl.searchParams.set('host', detected.host);

@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
@@ -65,7 +64,7 @@ class OneDrivePlugin extends NekoriBasePlugin {
   name = 'OneDrive';
   icon = 'icon.png';
   site = 'https://onedrive.live.com';
-  version = '1.0.4';
+  version = '1.0.5';
   minApiVersion = 2;
   contentType = ContentType.VIDEO;
 
@@ -360,7 +359,9 @@ class OneDrivePlugin extends NekoriBasePlugin {
     return name.replace(/\.(mp4|mkv|ts)$/i, '');
   }
 
-  private async folderCoverUrl(folder: FolderEntry): Promise<string> {
+  private async folderCoverUrl(
+    folder: FolderEntry,
+  ): Promise<string | undefined> {
     const contents = await this.listFolderContents(
       `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(folder.item.id)}/children`,
       folder.path,
@@ -370,11 +371,11 @@ class OneDrivePlugin extends NekoriBasePlugin {
         `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(folder.item.id)}/children`,
       )
     ).find(item => /^cover\.(png|jpe?g|webp)$/i.test(item.name));
-    if (cover) return (await this.itemDownloadUrl(cover)) || defaultCover;
+    if (cover) return (await this.itemDownloadUrl(cover)) || undefined;
     const firstVideo = contents.videos[0];
     if (firstVideo)
-      return (await this.videoThumbnailUrl(firstVideo.item)) || defaultCover;
-    return defaultCover;
+      return (await this.videoThumbnailUrl(firstVideo.item)) || undefined;
+    return undefined;
   }
 
   private async listVideosRecursively(
@@ -421,7 +422,7 @@ class OneDrivePlugin extends NekoriBasePlugin {
         contents.videos.map(async ({ item, path }) => ({
           name: this.videoDisplayName(item.name),
           path: this.pathFor(item, path, 'video'),
-          cover: (await this.videoThumbnailUrl(item)) || defaultCover,
+          cover: (await this.videoThumbnailUrl(item)) || undefined,
         })),
       )),
     ];
@@ -470,7 +471,7 @@ class OneDrivePlugin extends NekoriBasePlugin {
     return {
       path: novelPath,
       name: this.videoDisplayName(name),
-      cover: (await this.videoThumbnailUrl({ id, name })) || defaultCover,
+      cover: (await this.videoThumbnailUrl({ id, name })) || undefined,
       status: NovelStatus.Ongoing,
       chapters: [
         {

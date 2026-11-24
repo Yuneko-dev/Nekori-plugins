@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
@@ -53,7 +52,7 @@ class TomatoMTLPlugin extends NekoriBasePlugin {
   name = 'TomatoMTL';
   icon = 'icon.png';
   site = SITE;
-  version = '1.1.0';
+  version = '1.1.1';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -236,7 +235,7 @@ class TomatoMTLPlugin extends NekoriBasePlugin {
       .map(book => ({
         name: String(book.book_name || '').trim() || `#${book.book_id}`,
         path: `/book/${book.book_id}`,
-        cover: this.normalizeCoverUrl(book.thumb_url) || defaultCover,
+        cover: this.normalizeCoverUrl(book.thumb_url) || undefined,
       }));
   }
 
@@ -292,7 +291,7 @@ class TomatoMTLPlugin extends NekoriBasePlugin {
           novels.push({
             name: String(book.book_name || '').trim() || `#${id}`,
             path: `/book/${id}`,
-            cover: this.normalizeCoverUrl(book.thumb_url) || defaultCover,
+            cover: this.normalizeCoverUrl(book.thumb_url) || undefined,
           });
         }
       }
@@ -339,8 +338,7 @@ class TomatoMTLPlugin extends NekoriBasePlugin {
       this.normalizeCoverUrl(inlineCover) ||
       this.normalizeCoverUrl(coverEl.attr('data-src')) ||
       this.normalizeCoverUrl(coverEl.attr('src')) ||
-      this.normalizeCoverUrl($('meta[property="og:image"]').attr('content')) ||
-      defaultCover;
+      this.normalizeCoverUrl($('meta[property="og:image"]').attr('content')) || undefined;
 
     let author = '';
     let status = '';

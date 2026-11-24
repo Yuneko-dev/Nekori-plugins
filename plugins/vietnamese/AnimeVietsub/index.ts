@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 import { NovelStatus } from '@libs/novelStatus';
@@ -17,7 +16,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
   name = 'AnimeVietsub';
   icon = 'icon.png';
   site = 'https://animevietsub.news';
-  version = '1.2.4';
+  version = '1.2.5';
   minApiVersion = 2;
   filters = filters;
   contentType = ContentType.VIDEO;
@@ -122,8 +121,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
         '';
       const cover =
         $el.find('img').first().attr('src') ||
-        $el.find('img').first().attr('data-src') ||
-        defaultCover;
+        $el.find('img').first().attr('data-src') || undefined;
       if (name) {
         novels.push({ name, path, cover });
       }
@@ -140,7 +138,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
         seen.add(path);
         const name =
           $el.find('h3.title-item').text().trim() || $a.attr('title') || '';
-        const cover = $el.find('img').first().attr('src') || defaultCover;
+        const cover = $el.find('img').first().attr('src') || undefined;
         if (name) {
           novels.push({ name, path, cover });
         }
@@ -212,8 +210,7 @@ class AnimeVietsubPlugin extends NekoriBasePlugin {
       cover:
         $('.attachment-img-mov-md').attr('src') ||
         $('meta[property="og:image"]').attr('content') || // ele 1: banner, ele 2: cover
-        $('.Image img').attr('src') ||
-        defaultCover,
+        $('.Image img').attr('src') || undefined,
       summary:
         $('.Description').text().trim() ||
         $('meta[property="og:description"]').attr('content') ||

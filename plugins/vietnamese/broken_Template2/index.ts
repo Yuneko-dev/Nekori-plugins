@@ -4,7 +4,6 @@ import { fetchApi, fetchProto, fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { Filters } from '@libs/filterInputs';
 import { load as loadCheerio } from 'cheerio';
-import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage, localStorage, sessionStorage } from '@libs/storage';
 import { utf8ToBytes, bytesToUtf8 } from '@libs/utils';
@@ -28,7 +27,6 @@ class TemplatePlugin extends NekoriPagePlugin {
     novels.push({
       name: `Novel${pageNo}`,
       path: `/novels/${pageNo}`,
-      cover: defaultCover,
     });
     return novels;
   }
@@ -49,7 +47,6 @@ class TemplatePlugin extends NekoriPagePlugin {
     /* Đoạn mã nguồn để bổ sung dữ liệu vào novel object ở đây. */
     novel.artist = '';
     novel.author = '';
-    novel.cover = defaultCover;
     novel.genres = '';
     novel.status = NovelStatus.Completed;
     novel.summary = '';

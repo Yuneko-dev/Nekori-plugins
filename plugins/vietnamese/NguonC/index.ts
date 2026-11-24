@@ -1,5 +1,4 @@
 import { gcm } from '@libs/aes';
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi, fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -19,7 +18,7 @@ class NguonCPlugin extends NekoriBasePlugin {
   name = 'NguonC';
   icon = 'icon.png';
   site = SITE;
-  version = '1.2.0';
+  version = '1.2.1';
   minApiVersion = 2;
   customJS = 'player.js';
   contentType = ContentType.VIDEO;
@@ -150,7 +149,7 @@ class NguonCPlugin extends NekoriBasePlugin {
       .map((item: any) => ({
         name: item.name || '',
         path: item.slug || '',
-        cover: item.thumb_url || item.poster_url || defaultCover,
+        cover: item.thumb_url || item.poster_url || undefined,
       }))
       .filter((n: Plugin.NovelItem) => n.name && n.path);
   }
@@ -219,7 +218,7 @@ class NguonCPlugin extends NekoriBasePlugin {
     const novel: Plugin.SourceNovel = {
       path: novelPath,
       name: movie.name || '',
-      cover: movie.thumb_url || movie.poster_url || defaultCover,
+      cover: movie.thumb_url || movie.poster_url || undefined,
       summary: movie.description || '',
       author: movie.director || '',
     };

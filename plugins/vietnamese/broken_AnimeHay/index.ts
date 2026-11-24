@@ -4,7 +4,6 @@ import { NekoriBasePlugin } from '@nekori/plugin';
 import { fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';
-import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 
 class AnimeHayPlugin extends NekoriBasePlugin {
@@ -50,10 +49,9 @@ class AnimeHayPlugin extends NekoriBasePlugin {
       let cover =
         $img.attr('src') ||
         $img.attr('data-src') ||
-        $img.attr('data-lazy-src') ||
-        defaultCover;
+        $img.attr('data-lazy-src');
 
-      if (!cover.startsWith('http')) {
+      if (cover && !cover.startsWith('http')) {
         cover = this.site + cover;
       }
 
@@ -91,8 +89,7 @@ class AnimeHayPlugin extends NekoriBasePlugin {
     if (!cover) {
       cover =
         $('img[alt*="Poster"]').first().attr('src') ||
-        $('.rounded-lg img').first().attr('src') ||
-        defaultCover;
+        $('.rounded-lg img').first().attr('src');
     }
     if (cover && !cover.startsWith('http')) {
       cover = this.site + cover;

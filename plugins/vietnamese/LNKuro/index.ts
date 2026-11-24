@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi, fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -13,7 +12,7 @@ class LNKuroPlugin extends NekoriBasePlugin {
   name = 'LNKuro';
   icon = 'icon.png';
   site = 'https://lnkuro.top';
-  version = '1.1.0';
+  version = '1.1.1';
   filters = {
     genre: {
       label: 'Thể loại',
@@ -222,7 +221,7 @@ class LNKuroPlugin extends NekoriBasePlugin {
       author,
     };
 
-    novel.cover = $('.cover_kuro img').attr('data-src') || defaultCover;
+    novel.cover = $('.cover_kuro img').attr('data-src') || undefined;
     novel.genres = $('.genres_kuro a')
       .map((i, el) => $(el).text().trim())
       .get()

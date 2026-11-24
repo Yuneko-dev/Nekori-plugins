@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 import { fetchApi } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
@@ -67,7 +66,7 @@ class TruyenCV implements Plugin.PagePlugin {
   name = 'TruyenCV';
   icon = 'icon.png';
   site = 'https://truyencv.io';
-  version = '1.0.4';
+  version = '1.0.5';
 
   private mangaIdCache = new Map<string, string>();
 
@@ -99,7 +98,7 @@ class TruyenCV implements Plugin.PagePlugin {
       name: item.title?.rendered,
       path: `/truyen/${item.slug}/`,
       cover:
-        item._embedded?.['wp:featuredmedia']?.[0]?.source_url || defaultCover,
+        item._embedded?.['wp:featuredmedia']?.[0]?.source_url || undefined,
     }));
   }
 
@@ -158,7 +157,7 @@ class TruyenCV implements Plugin.PagePlugin {
       path: novelPath,
       name: manga.title?.rendered || 'Không có tiêu đề',
       cover:
-        manga._embedded?.['wp:featuredmedia']?.[0]?.source_url || defaultCover,
+        manga._embedded?.['wp:featuredmedia']?.[0]?.source_url || undefined,
       summary: parseHTML(manga.content?.rendered || '')
         .text()
         .trim(),
@@ -238,7 +237,7 @@ class TruyenCV implements Plugin.PagePlugin {
         return {
           name: item.title?.replace(/<[^>]*>/g, ''),
           path: `/truyen/${slug}/`,
-          cover: item.thumb || defaultCover,
+          cover: item.thumb || undefined,
         };
       });
   }

@@ -26,7 +26,8 @@ A Nekori API version bump is triggered by any of the following:
 | @nekori/cookie | set, get, setFromResponse, flush, removeSessionCookies |
 | @nekori/webview | Not in the plugin import allowlist; implementation is reserved stubs only |
 
-Fetch, storage, filter inputs, novel status and UTF-8 conversion remain in @libs/*.
+Fetch, storage, filter inputs, novel status, plugin errors (`@libs/pluginError`), and UTF-8 conversion remain in `@libs/*`.
+Omit `cover` when a novel has no artwork; `@libs/defaultCover` has been removed and hosts render their default cover placeholder.
 Cookie flush persists cookies; it is not a plugin-storage flush or reader IPC.
 Electron uses Node crypto and Android uses crypto-browserify; only shared algorithms are portable.
 

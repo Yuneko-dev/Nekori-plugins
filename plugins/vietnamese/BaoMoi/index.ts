@@ -1,4 +1,3 @@
-import { defaultCover } from '@libs/defaultCover';
 // Easter Eggs
 import { fetchText } from '@libs/fetch';
 import { Filters, FilterTypes } from '@libs/filterInputs';
@@ -14,7 +13,7 @@ class BaoMoiPlugin extends NekoriBasePlugin {
   name = 'Báo Mới';
   icon = 'icon.png';
   site = 'https://baomoi.com';
-  version = '1.1.0';
+  version = '1.1.1';
   contentType = ContentType.MIXED;
   filters: Filters = {
     page: {
@@ -231,7 +230,7 @@ class BaoMoiPlugin extends NekoriBasePlugin {
             novels.push({
               name: item.title,
               path: item.url,
-              cover: item.thumb || defaultCover,
+              cover: item.thumb || undefined,
             });
             this.cacheSet.add(item.title);
           }
@@ -272,7 +271,7 @@ class BaoMoiPlugin extends NekoriBasePlugin {
       console.log('Parsed __NEXT_DATA__:', data);
       novel.name = data.title;
       novel.author = data.publisher?.name || 'Unknown';
-      novel.cover = data.thumbL || data.thumb || defaultCover;
+      novel.cover = data.thumbL || data.thumb || undefined;
       novel.genres = data.tags?.map((tag: any) => tag.name).join(',') || '';
       novel.status = NovelStatus.Completed;
       novel.summary = data.description || '';
@@ -361,7 +360,7 @@ class BaoMoiPlugin extends NekoriBasePlugin {
         novels.push({
           name: item.title,
           path: item.url,
-          cover: item.thumb || defaultCover,
+          cover: item.thumb || undefined,
         });
       });
     } else {
